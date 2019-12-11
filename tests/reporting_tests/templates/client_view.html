@@ -1,0 +1,37 @@
+{% extends RA_THEME|add:'/view.html' %}
+
+{% load ra_admin_tags %}
+
+{% block content %}
+    <h2>Balance is <span class="clientBalance"></span></h2>
+    {% get_report base_model='client' report_slug='balances' as client_balances %}
+    <div data-report-widget
+         data-report-url="{{ client_balances.get_url }}"
+         data-extra-params="&client_id={{ original.pk }}"
+         data-success-callback="displayBalance">
+
+        <div data-report-chart></div>
+
+        <div data-report-table>
+
+        </div>
+    </div>
+
+    {% get_report base_model='client' report_slug='client_sales_of_products' as client_sales_of_products %}
+    <div data-report-widget
+         data-report-url="{{ client_sales_of_products.get_url }}"
+         data-extra-params="&client_id={{ original.pk }}">
+
+        <div data-report-chart></div>
+        <div data-report-table></div>
+    </div>
+
+{% endblock %}
+{% block extra_js %}
+    <script>
+        function displayBalance(response, $elem) {
+            $('.clientBalance').text(response['data'][0]['__balance__']);
+            unblockDiv($elem);
+        }
+    </script>
+{% endblock %}
