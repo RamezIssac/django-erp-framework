@@ -1,0 +1,32 @@
+.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
+    color: #000000;
+    background-color: transparent;
+}
+
+#changelist .paginator {
+    color: #2f2f2f;
+}
+
+.change-list ul.toplinks .date-back a {
+    color: #5f5f5f;
+}
+
+.navbar-default .navbar-nav > li > a {
+    color: #2f2f2f;
+}
+
+.table > tbody > tr.active > td, {
+    background-color: #efeff7;
+}
+
+.border-main-color {
+    border-color: #000066;
+}
+
+.add-row {
+    border-bottom: solid 1px #000066;
+}
+
+.bg-main-color {
+    background-color: #000066;
+}

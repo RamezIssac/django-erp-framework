@@ -1,0 +1,27 @@
+{% load i18n ra_tags ra_report_tags %}
+<ul class="heading-btn float-right">
+    <a class="btn btn-primary    refreshReport screenOnly"
+       data-toggle="tooltip"
+       title="{% trans 'refresh'|capfirst %}" data-placement="top"
+       href="#{{ report.get_report_slug }}">
+        {% trans 'refresh'|capfirst %}
+        <i class="fa fa-refresh position-left"></i></a>
+    {% can_print_report report as can_print %}
+    {% if can_print %}
+        <a class=" btn btn-default  printReport screenOnly"
+           href="#" data-toggle="tooltip" title="{% trans 'Print' %}"
+           data-placement="top" data-report-url="{{ report.get_url }}" data-report-slug="{{ report.get_report_slug }}">
+            <i class="fa fa-print position-left"></i> </a>
+
+        <div class="btn-group screenOnly download-report">
+            <a class="download-csv btn btn-default    screenOnly"
+               href="#{{ report.get_report_slug }}" data-report-url="{{ report.get_url }}" data-report-slug="{{ report.get_report_slug }}">
+                EXCEL
+                <i class="fa fa-file-excel-o position-left"></i>
+            </a>
+            {#                                                            </li>#}
+            {##}
+            {#                                                        </ul>#}
+        </div>
+    {% endif %}
+</ul>

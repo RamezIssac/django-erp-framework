@@ -1,0 +1,210 @@
+.table-condensed > thead > tr > th, .table-condensed > tbody > tr > th, .table-condensed > tfoot > tr > th, .table-condensed > thead > tr > td, .table-condensed > tbody > tr > td, .table-condensed > tfoot > tr > td {
+    padding: 5px 5px;
+}
+
+.field-discount {
+    width: 50px;
+}
+
+.info_side_bar {
+    border-right: 1px solid #2196F3
+}
+
+/* Menu Search */
+.menu-search {
+    min-width: 100px;
+}
+
+.menu-search:hover {
+    display: block;
+}
+
+.menu-table tr.active {
+    background-color: #26A69A;
+}
+
+.dropdown-menu {
+    z-index: 1020;
+}
+
+.table-xs.tr-sm > tbody > tr > td {
+    padding: 5px 20px;
+}
+
+.affix.affixBtnContainer {
+    top: 20px;
+    left: 65px;
+    z-index: 1050
+}
+
+body.rtl .noty_text {
+    text-align: right;
+}
+
+/*.alert {*/
+/*padding: 7px;*/
+/*width: 85%;*/
+/*margin-top: 5px;*/
+/*margin-bottom: 5px;*/
+/*}*/
+
+tr.deleted, tr.deleted input, tr.deleted span.ra-input-group-addon {
+    background-color: dimgrey !important;
+}
+
+.form-control:not(.default-style) {
+    border-right-color: #ddd;
+    border-right-width: 1px;
+}
+
+.form-control:focus {
+    border-right-width: 0 !important;
+}
+
+input:not(:disabled):focus::-webkit-input-placeholder {
+    color: transparent;
+}
+
+input:not(:disabled):focus:-moz-placeholder {
+    color: transparent;
+}
+
+/* FF 4-18 */
+input:not(:disabled):focus::-moz-placeholder {
+    color: transparent;
+}
+
+/* FF 19+ */
+input:not(:disabled):focus:-ms-input-placeholder {
+    color: transparent;
+}
+
+/* IE 10+ */
+
+.btn {
+    text-transform: initial !important;
+}
+
+.popover-title {
+    /*text-transform: initial !important;*/
+    font-weight: bold !important;
+}
+
+.popover-content {
+    padding: 9px 14px !important;
+}
+
+.blink_me {
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}
+
+span.datetimeshortcuts {
+    margin: 5px;
+}
+
+.column-get_stats_icon {
+    width: 20px;
+}
+
+.position-fixed {
+    position: fixed;
+}
+
+input[id*='quantity'], input[id*='price'] {
+    width: 50px;
+}
+
+input[id*='value'] {
+    width: 100px;
+}
+
+input[id*='discount'] {
+    width: 25px;
+}
+
+.dataTables_info {
+    padding-left: 5px;
+}
+
+span.go-to-change-form {
+    float: right;
+}
+
+body.rtl .related-widget-wrapper {
+    float: right;
+}
+
+body.rtl span.go-to-change-form {
+    float: left;
+}
+
+#content-main #id_slug {
+    width: 10em;
+}
+
+.inline-group .related-widget-wrapper {
+    width: 100%;
+}
+
+td.original > p {
+    display: none;
+}
+
+/* Sticky div*/
+div#sticker {
+    padding: 10px;
+    background: #AAA;
+    width: 100%;
+    z-index: 10;
+}
+
+.stick {
+    position: fixed;
+    top: 0;
+}
+
+@media (max-width: 769px) {
+    .page-container {
+        padding: 5px 5px !important;
+    }
+
+}
+
+.bg-transparent {
+    background-color: transparent;
+}
+
+.btn[class*=bg-transparent]:hover, .btn[class*=bg-transparent]:focus, .btn[class*=bg-transparent].focus {
+    color: initial !important;
+}
+
+div.changeform .heading-elements:not(.visible-elements) {
+    padding-top: 10px;
+}
+
+.report-table, .reportTableContainer {
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .nav-tabs:before {
+        content: '';
+    }
+
+    #reportsTab:before {
+        content: "{% trans 'reports'|capfirst %}";
+    }
+}
+.form-control:focus {
+    outline: 0;
+    border-color: transparent;
+    border-bottom-color: #283593;
+    -webkit-box-shadow: 0 1px 0 #283593;
+    box-shadow: 0 1px 0 #283593;
+}

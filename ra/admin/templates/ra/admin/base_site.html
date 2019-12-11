@@ -1,0 +1,8 @@
+{% extends "ra/admin/base.html" %}
+{% block title %}{{ title|capfirst }} | {{ site_title|default:_('RA ERP') }}{% endblock %}
+
+{% block branding %}
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:'' }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

@@ -1,0 +1,49 @@
+{% load i18n ra_tags %}
+
+<li class="dropdown mega-menu _mega-menu-wide{% if app.app_label == opts.app_label %} active {% endif %}">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+        {% get_app_icon app %} {{ app.name }} <span class="caret"></span>
+    </a>
+
+    <div class="dropdown-menu dropdown-content">
+{#        <div class="dropdown-content-heading">#}
+{#            {{ app.name }}#}
+{#        </div>#}
+
+        <div class="menu-table table-responsive">
+            <table class="table table-xs table-hover table-striped tr-sm">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>
+{#                        {% trans 'search'|capfirst %}#}
+                    </th>
+                    <th>
+{#                        {% trans 'add'|capfirst %}#}
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for model in app.models %}
+                    <tr class="model-{{ model.object_name|lower }}  {% if model.object_name|lower == opts.model_name %} active {% endif %}">
+                        <td><a style="white-space: nowrap;" href="{{ model.admin_url }}">
+                            <span class="title"> {{ model.name }}</span>
+                        </a>
+                        </td>
+                        <td>
+                            <div>
+                                <input class="menu-search menuSearch form-control" placeholder="{% trans 'search'|capfirst %}" data-url="{{ model.admin_url }}"/>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{{ model.admin_url }}add/" data-tooltip="{% trans 'Add' %}">
+                                <i class="icon-plus-circle2  text-indigo-800"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</li>

@@ -1,0 +1,48 @@
+{% load i18n suit_menu %}
+{#{% load url from suit_compat %}#}
+
+{#<div class="left-nav" id="left-nav">#}
+{#  <ul>#}
+{#    {% block menu_home %}#}
+{#      {% url 'admin:index' as index_url %}#}
+{#      <li{% if index_url == request.path %} class="active"{% endif %}>#}
+{#        <a href="{{ index_url }}"><i class="icon-home"></i>{% trans 'Home' %}#}
+{#        </a>#}
+{#      </li>#}
+{#    {% endblock %}#}
+
+{% get_menu request as app_list %}
+{% if app_list %}
+    {% for app in app_list %}
+        {% if app.separator %}
+            <li class="separator"></li>
+        {% else %}
+            <li class="{{ app.is_active|yesno:'menu-open,' }} nav-item has-treeview ">
+                <a class="nav-link {{ app.is_active|yesno:'active,' }}" href="{{ app.url }}"{{ app.blank|yesno:' target=_blank,' }}>
+                        <i class="nav-icon {% firstof app.icon 'fas fa-th' %}"> </i>
+
+                    <p>
+                        {% trans app.label|capfirst %}
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+
+                    {#                <span class="caret"></span>#}
+                </a>
+                {% if app.models %}
+                    <ul class="nav nav-treeview">
+                        {% for model in app.models %}
+                            <li class="nav-item ">
+                                <a href="{{ model.url }}"{{ model.blank|yesno:' target=_blank,' }} class="nav-link {{ model.is_active|yesno:' active,' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>{{ model.label }}</p>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{#  </ul>#}
+{#</div>#}

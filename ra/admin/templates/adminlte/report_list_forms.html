@@ -1,0 +1,100 @@
+{% load ra_tags %}
+{% load ra_report_tags crispy_forms_tags crispy_forms_field %}
+{% load i18n %}
+
+{% if reports %}
+
+    <div class="row reports-container animated {% if LANGUAGE_BIDI %}bounceInRight {% else %}bounceInLeft {% endif %}">
+        <div class="col-sm-12">
+
+            <div class="tabbable" style="" data-action="{{ reports }}">
+                <div class="tab-content">
+                    {% for report in reports.reports %}
+                        <div class="tab-pane animated {% if LANGUAGE_BIDI %}bounceInLeft {% else %}bounceInRight{% endif %}"
+                             id="{{ report.get_report_slug }}"
+                             role="tabpanel"
+                        >
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title"><h5>{{ report.get_report_title }}</h5></div>
+
+
+                                    <div class="card-tools">
+                                        {% include RA_THEME|add:'/report_list_form_buttons.html' %}
+                                    </div>
+
+                                </div>
+                                <div class="card-body">
+                                    <div class="row filters-container">
+                                        <div class="col-sm-12">
+                                            <div class="formContainer" data-report-slug="{{ report.get_report_slug }}">
+                                                {% csrf_token %}
+                                                {% crispy report.initialize_form %}
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                                <div class="card-footer">
+                                    <div class="card-tools">
+                                        {% include RA_THEME|add:'/report_list_form_buttons.html' %}
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="chartContainer screenOnly">
+                                        <div class="controls"></div>
+                                        <div class="reportChart screenOnly" dir="ltr"></div>
+                                        {% if report.chart_settings %}
+                                            <canvas id="{{ report.get_report_slug }}" class="chartsJsCanvas" width="400"
+                                                    height="100"></canvas>
+                                        {% endif %}
+                                    </div>
+                                    <div class="report-table"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    {% endfor %}
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <div id="reportSub" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+
+                    <h5 class="modal-title"></h5>
+                </div>
+
+                <div class="modal-body">
+                    <div class="chartContainer">
+                        <div class="controls"></div>
+                        <div class="reportChart screenOnly" dir="ltr"></div>
+                    </div>
+                    <div class="reportTableContainer">
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <a class=" btn printSubTable" href="#">
+                        <i class="fa fa-print"></i> {% trans "Print" %}</a>
+                    <button type="button" class="btn btn-link"
+                            data-dismiss="modal">{% trans 'Close'|capfirst %}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endif %}

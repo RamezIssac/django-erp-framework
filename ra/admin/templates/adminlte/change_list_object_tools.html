@@ -1,0 +1,16 @@
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  {% if has_add_permission %}
+
+    {% url cl.opts|admin_urlname:'add' as add_url %}
+    <a href="{% add_preserved_filters add_url is_popup to_field %}" class="btn btn-default">
+      {% blocktrans with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktrans %}
+    </a>
+
+  {% endif %}
+    {% if not is_popup and has_add_permission and has_change_permission %}
+        <a href="{% url opts|admin_urlname:'recoverlist' %}" class="btn btn-default">{% blocktrans with cl.opts.verbose_name_plural|escape as name %}Recover deleted {{name}}{% endblocktrans %}</a>
+    {% endif %}
+
+{% endblock %}

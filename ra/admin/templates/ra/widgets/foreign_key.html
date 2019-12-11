@@ -1,0 +1,18 @@
+{% load i18n %}
+<div class="input-group ra-fk-input-group">
+    <input id="{{ widget.attrs.id }}" class="raFkPk ra-foreignkey-widget-pk" name="{{ widget.name }}"
+           style="Display: None" {% if widget.value != None %} value="{{ widget.value|stringformat:'s' }}"{% endif %} />
+    <input type="text" class="form-control ra-fk-slug raFkSlug {{ model_name }}" placeholder="{% trans 'type here'|capfirst %}"
+           ra_autocomplete_bind="true" ra_autocomplete_model="{{ endpoint }}" value="{{ slug }}"
+            tabindex="-1">
+
+
+    <span class="input-group-addon input-group-addon-label ra-fk-title raFkTitle">{{ title|default:'' }}</span>
+    {% if multi_select %}
+        <span class="input-group-btn">
+                <button data-reveal-id="overlay_modal" ra_model="{{ model_name }}"  class="btn btn-default legitRipple" type="button">{{ choose_label }}<span
+                        class="legitRipple-ripple"></span>
+                </button>
+            </span>
+    {% endif %}
+</div>

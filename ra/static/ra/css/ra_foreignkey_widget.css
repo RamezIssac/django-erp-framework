@@ -1,0 +1,29 @@
+
+.input-group-addon-label {
+  width: 90%;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.input-group-addon-label {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1;
+  color: #333333;
+  text-align: center;
+  background-color: transparent;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+    text-align: inherit;
+}
+
+.ra-fk-slug { min-width: 70px;}
+.ra-fk-title { min-width: 140px;}
+
+.ra-fk-input-group  {
+    width: 100%;}
+
+
+.autocomplete_error{
+    border-color: darkred !important;
+}

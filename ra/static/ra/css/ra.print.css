@@ -1,0 +1,118 @@
+@media print {
+
+    .visible-xs {
+        display: none !important;
+    }
+
+    .hidden-xs {
+        display: block !important;
+    }
+
+    table.hidden-xs {
+        display: table;
+    }
+
+    tr.hidden-xs {
+        display: table-row !important;
+    }
+
+    th.hidden-xs,
+    td.hidden-xs {
+        display: table-cell !important;
+    }
+
+    .hidden-xs.hidden-print {
+        display: none !important;
+    }
+
+    .hidden-sm {
+        display: none !important;
+    }
+
+    .visible-sm {
+        display: block !important;
+    }
+
+    table.visible-sm {
+        display: table;
+    }
+
+    tr.visible-sm {
+        display: table-row !important;
+    }
+
+    th.visible-sm,
+    td.visible-sm {
+        display: table-cell !important;
+    }
+
+    .no-print, .screenOnly {
+        display: none
+    }
+
+    /*-----------------------End bootstrap adjsutment ---------------------*/
+    i, div > i {
+        display: none !important;
+    }
+
+    .dataTables_filter {
+        display: None
+    }
+
+    .dataTables_length {
+        display: None;
+    }
+
+    .dataTables_paginate {
+        display: None
+    }
+
+    .dataTables_info {
+        display: None
+    }
+
+    /*tr:last-child td {*/
+    /*border-bottom: 1px solid black;*/
+    /*}*/
+    /*td {*/
+    /*border-left: 1px solid gray;*/
+    /*border-bottom: 1px solid gray;*/
+    /*}*/
+    .panel-tools {
+        display: none;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    a:after {
+        display: none;
+    }
+
+    /*.odd {outline: 1px solid black;}*/
+    /*#page_header:last-child {display: None;}*/
+    /*.printSection:last-of-type {display: None;}*/
+    /*h1, h2, h3, h4, h5, h6, input {*/
+        /*page-break-after: avoid;*/
+        /*page-break-inside: avoid*/
+    /*}*/
+
+    /*table tr , thead, tr, th{*/
+        /*page-break-inside: avoid !important;*/
+    /*}*/
+
+
+    .addlink, .submit-row, .historylink, .viewsitelink, .recoverlink, div#toolbar, .changelink {
+        display: none !important;
+
+    }
+    .table > thead > tr > th, .table > tbody > tr > th, .table > tfoot > tr > th, .table > thead > tr > td, .table > tbody > tr > td, .table > tfoot > tr > td {
+        padding:2px 10px;
+    }
+    .page-container {
+        padding: initial !important; /*10px 15px; */
+    }
+
+
+}

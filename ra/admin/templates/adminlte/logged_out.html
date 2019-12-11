@@ -1,0 +1,22 @@
+{% extends "ra/admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block page_title_container %} {% endblock %}
+{% block page_header %} {% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="center-block" style="width:200px;">
+{#            <h3>{% trans "Logged out" %}</h3>#}
+
+            <br/>
+
+            <p><a class="" href="{% url 'admin:login' %}">{% trans 'Log in again' %}</a></p>
+
+        </div>
+    </div>
+
+
+
+{% endblock %}

@@ -1,0 +1,314 @@
+#page-sidebar {
+    bottom: 0;
+    position: fixed;
+    left: -270px;
+    top: 49px;
+    transition: left 0.3s ease 0s;
+    -webkit-transition: left 0.3s ease 0s;
+    width: 270px;
+    z-index: 999;
+    background: #F6F6F6;
+    border-left: 1px solid #c8c7cc;
+    border-top: 1px solid #c8c7cc;
+}
+
+#page-sidebar .sidebar-wrapper {
+    overflow: hidden;
+    position: relative;
+}
+
+#page-sidebar .sidebar-toggler {
+    background: #F5F5F5;
+    font-size: 16px;
+    color: #999999;
+    height: 50px;
+    overflow: hidden;
+    padding-top: 18px;
+    position: absolute;
+    right: 15px;
+    text-align: center;
+    top: -51px;
+    width: 47px;
+    z-index: 9994;
+}
+
+#page-sidebar .sidebar-wrapper .nav-tabs li a {
+    border-left: none;
+    border-top: none;
+    background: #fff;
+}
+
+#page-sidebar .sidebar-wrapper .nav-tabs li.active a {
+    background: none;
+    border-bottom-color: transparent;
+}
+
+#page-sidebar .sidebar-wrapper .tab-content {
+    border: none;
+    padding: 0;
+    position: relative;
+}
+
+#page-sidebar #users, #page-sidebar #favorites {
+    position: relative;
+    right: 0;
+    top: 0;
+    transition: right 0.3s ease 0s;
+    -webkit-transition: right 0.3s ease 0s;
+}
+
+#page-sidebar .user-chat {
+    position: relative;
+    left: 270px;
+    top: 0;
+}
+
+#page-sidebar .users-list {
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 0;
+}
+
+#page-sidebar .media-list .media {
+    /*border-bottom: 1px solid #c8c7cc;*/
+    margin: 0;
+}
+
+#page-sidebar .media-list .media a {
+    padding: 10px;
+    display: block;
+}
+
+#page-sidebar .media-list .media a:hover {
+    background: #D9D9D9;
+    text-decoration: none;
+}
+
+#page-sidebar .sidebar-title {
+    color: #999;
+    font-size: 11px;
+    margin: 15px 10px 10px 10px;
+    text-transform: uppercase;
+}
+
+#page-sidebar .sidebar-back {
+    color: #999;
+    font-size: 11px;
+    margin: 15px 0 10px 0;
+    text-transform: uppercase;
+}
+
+#page-sidebar .sidebar-back:hover {
+    color: #555555;
+    text-decoration: none;
+}
+
+#page-sidebar .media-list .media .media-object {
+    border-radius: 50% !important;
+    float: left;
+    margin-right: 10px;
+    opacity: 0.8;
+    width: 40px;
+}
+
+#page-sidebar .media-list .media .user-label {
+    display: inline-block;
+    margin-top: 10px;
+    position: absolute;
+    right: 25px;
+}
+
+#page-sidebar .media-list .media .status-online {
+    line-height: 40px;
+    font-size: 6px;
+    position: absolute;
+    right: 10px;
+    display: inline-block;
+    color: #5cb85c;
+}
+
+#page-sidebar .media-list .media .media-heading {
+    color: #555555;
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+#page-sidebar .media-list .media .media-body span {
+    color: #bbbbbb;
+    display: block;
+    font-size: 12px;
+}
+
+#page-sidebar .sidebar-content {
+    padding: 10px;
+}
+
+#page-sidebar .discussion .avatar img {
+    border-radius: 50% !important;
+    width: 40px;
+}
+
+#page-sidebar .discussion .messages {
+    margin-top: 10px;
+}
+
+#page-sidebar .discussion .messages p {
+    font-size: 12px;
+}
+
+/* ---------------------------------------------------------------------- *//*
+
+*/
+/*	PAGE SIDEBAR
+*/
+/* ---------------------------------------------------------------------- *//*
+
+#page-sidebar {
+    bottom: 0;
+    position: fixed;
+    left: -270px;
+    top: 49px;
+    transition: left 0.3s ease 0s;
+    -webkit-transition: left 0.3s ease 0s;
+    width: 270px;
+    z-index: 999;
+    background:#F6F6F6;
+    border-right: 1px solid #c8c7cc;
+    border-top: 1px solid #c8c7cc;
+}
+#page-sidebar .media-list {
+    list-style: none outside none;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#page-sidebar .sidebar-wrapper {
+	overflow: hidden;
+	position: relative;
+}
+#page-sidebar .sidebar-toggler {
+ 	background: #F5F5F5;
+    font-size: 16px;
+    color: #999999;
+    height: 50px;
+    overflow: hidden;
+    padding-top: 18px;
+    position: absolute;
+    left: 15px;
+    text-align: center;
+    top: -51px;
+    width: 47px;
+    z-index: 9994;
+}
+#page-sidebar .sidebar-wrapper .nav-tabs li a {
+	border-right: none;
+	border-top: none;
+	background: #fff;
+}
+#page-sidebar .sidebar-wrapper .nav-tabs li.active a {
+	background: none;
+	border-bottom-color: transparent;
+}
+#page-sidebar .sidebar-wrapper .tab-content {
+    border: none;
+    padding: 0;
+    position: relative;
+}
+#page-sidebar #users, #page-sidebar #favorites {
+	position: relative;
+	right:0;
+	top:0;
+	transition: right 0.3s ease 0s;
+    -webkit-transition: right 0.3s ease 0s;
+}
+#page-sidebar .user-chat {
+	position: relative;
+	left:270px;
+	top:0;
+}
+#page-sidebar .users-list{
+	position: absolute;
+	right:0;
+	left: 0;
+	top:0;
+}
+
+#page-sidebar .media-list .media {
+    border-bottom: 1px solid #c8c7cc;
+    margin:0;
+}
+#page-sidebar .media-list .media a {
+	padding: 10px;
+	display: block;
+}
+#page-sidebar .media-list .media a:hover {
+    background: #D9D9D9;
+    text-decoration: none;
+}
+#page-sidebar .sidebar-title {
+    color: #999;
+    font-size: 11px;
+    margin: 15px 10px 10px 10px;
+    text-transform: uppercase;
+}
+#page-sidebar .sidebar-back {
+    color: #999;
+    font-size: 11px;
+    margin: 15px 0 10px 0;
+    text-transform: uppercase;
+}
+#page-sidebar .sidebar-back:hover {
+    color: #555555;
+    text-decoration: none;
+}
+#page-sidebar .media-list .media .media-object {
+    border-radius: 50% !important;
+    float: right;
+    margin-left: 10px;
+    opacity: 0.8;
+    width: 40px;
+}
+#page-sidebar .media-list .media .user-label {
+    display: inline-block;
+    margin-top: 10px;
+    position: absolute;
+    left: 25px;
+}
+#page-sidebar .media-list .media .status-online {
+	line-height: 40px;
+	font-size: 6px;
+    position: absolute;
+    left: 10px;
+    display: inline-block;
+    color: #5cb85c;
+}
+#page-sidebar .media-list .media .media-heading {
+	color: #555555;
+	display: block;
+	font-size: 13px;
+	margin-bottom: 4px;
+}
+#page-sidebar .media-list .media .media-body span {
+	color: #bbbbbb;
+	display: block;
+	font-size: 12px;
+}
+#page-sidebar .sidebar-content {
+	padding: 10px;
+}
+#page-sidebar .discussion .avatar img {
+    border-radius: 50% !important;
+    width: 40px;
+}
+#page-sidebar .discussion .messages {
+    margin-top: 10px;
+}
+#page-sidebar .discussion .messages p{
+    font-size: 12px;
+}
+#page-sidebar .radio, #page-sidebar .checkbox {
+	padding-left: 0;
+	padding-right: 30px !important;
+}*/

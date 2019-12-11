@@ -1,0 +1,37 @@
+
+html[dir=rtl] .dataTables_wrapper .dataTables_length {
+    /*float: right;*/
+    display: block;
+}
+
+/*html[dir=rtl] .dataTables_wrapper .dataTables_filter {*/
+    /*float: left;*/
+    /*margin: 0 0 20px 20px;*/
+/*}*/
+
+/*html[dir=rtl] .dataTables_wrapper .dataTables_info {*/
+    /*float: right;*/
+/*}*/
+
+/*html[dir=rtl] .dataTables_wrapper .dataTables_paginate {*/
+    /*float: right;*/
+    /*text-align: center;*/
+    /*padding-top: 0.25em;*/
+/*}*/
+
+/*html[dir=rtl]  div.dataTables_wrapper div.dataTables_paginate ul.pagination {*/
+    /*margin: 2px 0;*/
+    /*white-space: initial;*/
+/*}*/
+
+td.details-control {
+    background: url('../images/details_open.png') no-repeat center center;
+    cursor: pointer;
+}
+tr.shown td.details-control {
+    background: url('../images/details_close.png') no-repeat center center;
+}
+
+/*.dataTable th{*/
+    /*font-weight: bold;*/
+/*}*/

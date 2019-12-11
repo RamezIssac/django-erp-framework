@@ -1,0 +1,6 @@
+#txt_total_tax_addition , #txt_total_tax_substract {
+    width: 110%
+}
+#net_value_row{
+    margin-bottom: 15px;
+}
