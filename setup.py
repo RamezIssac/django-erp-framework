@@ -52,7 +52,7 @@ setup(
     ],
     install_requires=['docutils>=0.3',
                       'pytz',
-                      'django==2.2.7',
+                      'django==2.2.8',
                       'psycopg2-binary',
                       'simplejson',
                       'django-crequest==2018.5.11',
