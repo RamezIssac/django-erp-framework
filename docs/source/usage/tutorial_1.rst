@@ -199,13 +199,6 @@ Now we attach that template to our admin model class
 
 Now runserver, go to Sales Order and check the outcome, experiment around and add couple of records.
 
-Notice that you have a help button in the up-right corner which walk you through the controls on the page
-For more information on customizing help check :ref:`page_help`
-
-
-You can see also the save buttons have a popup with a short-cut like `Ctrl + a`, this can serves for quicker data entry
-
-
 Next Section we will create interesting reports about product sales, which product being bought by which clients and client total sales.
 
 Carry on !

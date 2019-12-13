@@ -1,5 +1,5 @@
-Tutorial (Part 4) - Adding report widgets on Homepage and View pages
-=====================================================================
+Adding charts & report widgets on Homepage and View pages (Part 4)
+===================================================================
 
 First let's recap what we did in part 3
 

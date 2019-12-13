@@ -1,33 +1,34 @@
-Getting started
-===============
+Ra Framework
+============
 
-.. note::
-   These instructions assume familiarity with virtual environments , the
-   `Django web framework <https://www.djangoproject.com/>`_ and setting up an `PostgreSQL <https://www.postgresql.org/download//>`_ database.
+*Work in Progress*
 
-   It also assumes familiarities with some basic accounting principles and terms such as double entry , debit and credit , and few other.
-
+A light-weight effective Django based framework to create business application and various resource planing systems,
+equipped with a reporting engine and a responsive dashboard.
 
 
 Dependencies
 ------------
-
 * `Python 3 <https://www.python.org/downloads/>`_
 * `PostgreSQL <https://www.postgresql.org/download//>`_
 
 
-Quick install
--------------
 
-1. Create a virtual environment and install ra-framework from github repository.
+Installation
+------------
 
 .. code-block:: console
 
-    $ pip install git+git@github.com:ra-systems/ra.git@master#egg=django-ra
-      Or over https
-    $ pip install git+https://github.com/ra-systems/RA.git
+    $ pip install django-ra
 
+Quick start
+-----------
 
+1. Create a virtual environment and install ra-framework from Pypi
+
+.. code-block:: console
+
+    $ pip install django-ra
 
 2. Once Ra installed, it provides a command to generate a new project.
 
@@ -35,12 +36,12 @@ Quick install
 
     $ ra-admin start myproject
 
-This will create a new folder `myproject`, based on a template containing everything you need to get started.
+This will create a new project folder `myproject`, based on a template containing everything you need to get started.
 You can always integrate ra framework to your existing project, please refer to :ref:`integrating_into_django`
 
 3. Database
 
-   .. note::
+.. note::
     Ra only support Postgresql.
 
     As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
@@ -48,7 +49,7 @@ You can always integrate ra framework to your existing project, please refer to 
 
 Create a postgres database, and assign its details to ``DATABASES`` setting
 
-4. Run the usual comamnds needed for any django project
+4. Run the usual commands needed for any django project
 
 .. code-block:: console
 
@@ -59,11 +60,31 @@ Create a postgres database, and assign its details to ``DATABASES`` setting
 
 5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
-.. image:: /images/dashboard.png
+.. image:: docs/images/dashboard.png
 
-Let's get started building our first sales monitoring system.
 
-.. toctree::
-    :maxdepth: 1
-    usseage/tutorial_1
-    integrating_into_django
+Documentation
+-------------
+
+Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
+5
+Please Proceed to eh tutorial `*Create a sales application* Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+
+
+Running the tests
+-----------------
+
+To run the test suite, first, create and activate a virtual environment. Then
+clone the repo, install the test requirements and run the tests::
+
+    $ git clone git+git@github.com:ra-systems/RA.git
+    $ cd cd ra/tests
+    $ python -m pip install -e ..
+    $ python -m pip install -r requirements/py3.txt
+    $ ./runtests.py
+    # For Coverage report
+    $ coverage run --include=../* runtests.py [-k]
+    $ coverage html
+    
+
+For more information about the test suite and contribution, we honor https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/.

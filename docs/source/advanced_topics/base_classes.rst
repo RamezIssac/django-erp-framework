@@ -8,3 +8,18 @@ Base Classes
 
 BaseInfo
 --------
+
+BasePersonInfo
+--------------
+
+
+BaseMovementInfo
+----------------
+
+BaseMovementItemInfo
+--------------------
+
+
+QuanValueMovementItem
+----------------------
+

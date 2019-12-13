@@ -24,15 +24,11 @@ Installation
 Quick start
 -----------
 
-1. Create a virtual environment and install ra-framework from github repository.
+1. Create a virtual environment and install ra-framework from Pypi
 
 .. code-block:: console
 
-    $ pip install git+git@github.com:ra-systems/ra.git@master#egg=django-ra
-      Or over https
-    $ pip install git+https://github.com/ra-systems/RA.git
-
-
+    $ pip install django-ra
 
 2. Once Ra installed, it provides a command to generate a new project.
 
@@ -40,12 +36,12 @@ Quick start
 
     $ ra-admin start myproject
 
-This will create a new folder `myproject`, based on a template containing everything you need to get started.
+This will create a new project folder `myproject`, based on a template containing everything you need to get started.
 You can always integrate ra framework to your existing project, please refer to :ref:`integrating_into_django`
 
 3. Database
 
-   .. note::
+.. note::
     Ra only support Postgresql.
 
     As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
@@ -71,7 +67,7 @@ Documentation
 -------------
 
 Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
-
+5
 Please Proceed to eh tutorial `*Create a sales application* Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 

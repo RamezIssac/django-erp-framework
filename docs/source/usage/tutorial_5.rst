@@ -1,5 +1,5 @@
-Tutorial (Part 5) - Proper Invoice Design
-=========================================
+Real world Invoice Design (Part 5)
+==================================
 
 Usually an invoice will formed by at least 2 table / models 1 table where
 One tale to hold teh invoice general data , and another the invoice details
