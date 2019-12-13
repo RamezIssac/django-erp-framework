@@ -24,6 +24,7 @@ class RaDateDateTimeField(forms.SplitDateTimeField):
                 new_value.append(i)
         return super(RaDateDateTimeField, self).clean(new_value)
 
+
 class RaAutocompleteSelectMultiple(AutocompleteSelectMultiple):
 
     def __init__(self, rel, admin_site, attrs=None, choices=(), using=None):
@@ -68,12 +69,12 @@ class RaAutocompleteSelectMultiple(AutocompleteSelectMultiple):
         i18n_file = ('admin/js/vendor/select2/i18n/%s.js' % i18n_name,) if i18n_name else ()
         return forms.Media(
             js=(
-                # 'admin/js/vendor/jquery/jquery%s.js' % extra,
-                # 'admin/js/vendor/select2/select2.full%s.js' % extra,
-            ) + i18n_file + (
-                # 'admin/js/jquery.init.js',
-                # 'admin/js/autocomplete.js',
-            ),
+                   # 'admin/js/vendor/jquery/jquery%s.js' % extra,
+                   # 'admin/js/vendor/select2/select2.full%s.js' % extra,
+               ) + i18n_file + (
+                   # 'admin/js/jquery.init.js',
+                   # 'admin/js/autocomplete.js',
+               ),
             css={
                 'screen': (
                     # 'admin/css/vendor/select2/select2%s.css' % extra,
@@ -81,4 +82,3 @@ class RaAutocompleteSelectMultiple(AutocompleteSelectMultiple):
                 ),
             },
         )
-

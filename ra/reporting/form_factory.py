@@ -307,12 +307,10 @@ class BaseReportForm(object):
                         if not saved_report_meta.get('can_edit_time_series_pattern',
                                                      False) or u'time_series_pattern' not in data:
                             data[field] = saved_report_meta[field]
-
-                    elif field == 'matrix_entities' or field == 'matrix_show_other':
-                        if not saved_report_meta.get('can_edit_matrix_entities',
-                                                     False) or u'matrix_entities' not in data:
-                            data[field] = saved_report_meta[field]
-
+                    elif field == 'matrix_show_other':
+                        data[field] = saved_report_meta[field]
+                    elif field == 'matrix_entities':
+                        pass
                     elif field == 'doc_types':
                         if not saved_report_meta.get('can_edit_doc_types',
                                                      False) or u'doc_types' not in data:
@@ -327,16 +325,19 @@ class BaseReportForm(object):
 
         if data:
             kwargs['data'] = data
+
+        if data['matrix']:
+            from ra.admin.admin import ra_admin_site
+            matrix_field = self.foreign_keys[data['matrix'] + '_id']
+            formfield = matrix_field.formfield(
+                **{'form_class': forms.ModelMultipleChoiceField,
+                   'required': False,
+                   'widget': RaAutocompleteSelectMultiple(matrix_field.remote_field, ra_admin_site,
+                                                          attrs={'class': 'select2bs4'})})
+            self.base_fields['matrix_entities'] = formfield
+
         super(BaseReportForm, self).__init__(*args, **kwargs)
         self.is_valid()
-        if hasattr(self, 'cleaned_data'):
-            if self.cleaned_data['matrix'] != '':
-                self.fields['matrix_entities'].widget = RaBootstrapForeignKeyWidget(
-                    model_name=self.cleaned_data['matrix'],
-                    allow_multi=True)
-                self.fields['matrix_entities'].label = _(
-                    self.cleaned_data[
-                        'matrix'])
 
         self.helper = FormHelper()
         self.helper.form_class = 'form-horizontal'
@@ -528,8 +529,8 @@ class BaseReportForm(object):
 
     def get_matrix_fields(self):
         report_columns = self.cleaned_data['matrix_columns']
-        series = self.cleaned_data['matrix_entities'].split(',')
-        if self.cleaned_data['matrix_show_other'] and series:
+        series = self.get_matrix_ids()
+        if self.cleaned_data['matrix_show_other']:
             series.append('----')
         entity_name = self.cleaned_data['matrix']
         series = [entity_name + '-' + id for id in series if id != '']
@@ -541,14 +542,17 @@ class BaseReportForm(object):
             _values = [col + dt for dt in series for col in report_columns]
         return _values
 
+    def get_matrix_ids(self):
+        return [str(x.pk) for x in self.cleaned_data['matrix_entities']]
+
     def get_filter_from_matrix_field(self, field):
         entity = field.split('_MX')[1]
         entity = entity.split('-')
         _id = entity[1]
         entity = entity[0] + '_id'
         if _id == '' or _id == u'':
-            selected_entities = self.cleaned_data['matrix_entities'].split(',')
-            selected_entities = [e.encode('ascii', 'ignore') for e in selected_entities if e != '']
+            selected_entities = self.get_matrix_ids()
+            # selected_entities = [e.encode('ascii', 'ignore') for e in selected_entities if e != '']
             entity += '__in'
             q = Q(**{entity: selected_entities})
             q = ~q
@@ -562,7 +566,7 @@ class BaseReportForm(object):
         return []
 
     def get_matrix_core_columns(self):
-        series = self.cleaned_data['matrix_entities'].split(',')
+        series = self.get_matrix_ids()
         if self.cleaned_data['matrix_show_other'] is True and series:
             series.append('----')
         entity_name = self.cleaned_data['matrix']
@@ -789,10 +793,7 @@ def report_form_factory(model, base_model=None,
 
     fields['matrix_show_other'] = forms.BooleanField(required=False, widget=forms.CheckboxInput(),
                                                      label=_('Show [The rest]'), initial=True)
-    fields['matrix_entities'] = forms.CharField(required=False, label=_('matrix entities'),
-                                                widget=RaBootstrapForeignKeyWidget(attrs={'keepcloseeye': True},
-                                                                                   model_name='matrix_entities',
-                                                                                   allow_multi=True))
+    fields['matrix_entities'] = forms.CharField(required=False, label=_('matrix entities'))
 
     fields['matrix_scope'] = forms.ChoiceField(required=False, widget=forms.Select,
                                                choices=scopes, label=_('matrix scope'), initial='both')
