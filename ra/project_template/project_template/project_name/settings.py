@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'crequest',
-    'compressor',
     'crispy_forms',
     'reversion',
     'tabular_permissions',
@@ -46,7 +45,6 @@ INSTALLED_APPS = [
     'ra.admin',
     'ra.activity',
     'ra.reporting',
-    'ra_demo',
 ]
 
 MIDDLEWARE = [
@@ -115,7 +113,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = False
+USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
@@ -143,5 +141,5 @@ CRISPY_TEMPLATE_PACK = 'bootstrap3'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'compressor.finders.CompressorFinder',
+
 )

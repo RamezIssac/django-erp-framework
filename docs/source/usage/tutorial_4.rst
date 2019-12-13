@@ -21,12 +21,12 @@ Table Report Widget
 ~~~~~~~~~~~~~~~~~~~
 
 
-First let's create a template ``ra_demo/index.html`` template,
+First let's create a template ``sales/index.html`` template,
 Then in our settings.py we set this template to be displayed as the index page
 
 .. code-block:: python
 
-    RA_ADMIN_INDEX_PAGE = 'ra_demo/index.html
+    RA_ADMIN_INDEX_PAGE = 'sales/index.html
 view.html
 
 
@@ -110,22 +110,22 @@ If you go to the Clients change list page,for example, you'd find a column calle
 Same like what we did with the home page, we can add widgets to be displayed for this specific object.
 Let's see how.
 
-First we need a custom template, so lets create `templates/ra_demo/admin/client_view.html`
+First we need a custom template, so lets create `templates/sales/admin/client_view.html`
 and assign it to the model admin `view_template`
 
 .. hint::
     Template location can also follow django template finding procedure.
 
-in `ra_demo/admin.py`
+in `sales/admin.py`
 
 .. code-block:: python
 
     class ClientAdmin(RaAdmin):
         ...
-        view_template = 'ra_demo/admin/client_view.html'
+        view_template = 'sales/admin/client_view.html'
 
 
-And in `templates/ra_demo/admin/client_view.html` let's use the same code we used in the home page, and check the results.
+And in `templates/sales/admin/client_view.html` let's use the same code we used in the home page, and check the results.
 
 Sure enough, the chart the the table should be displayed, but there is a small problem.
 

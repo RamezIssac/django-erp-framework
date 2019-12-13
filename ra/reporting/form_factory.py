@@ -14,10 +14,9 @@ from django.http import QueryDict
 from django.utils.text import capfirst
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy
-from mptt.models import MPTTModel
 
 from ra.base import app_settings
-from ra.base.widgets import RaBootstrapForeignKeyWidget, RaBootstrapDateTime
+from ra.base.widgets import RaBootstrapDateTime
 from ra.reporting.form_fields import RaDateDateTimeField, RaAutocompleteSelectMultiple
 from ra.reporting.helpers import choices_from_list, get_model_fields2, apply_order_to_list, get_foreign_keys, \
     get_user_formLayout

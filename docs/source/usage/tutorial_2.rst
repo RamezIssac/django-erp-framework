@@ -14,7 +14,7 @@ We want to know
     for each client, the total bought of each product
 
 
-In our ra_demo app, let's create a `reports.py` file *it can be any name, this is just a convention*
+In our sales app, let's create a `reports.py` file *it can be any name, this is just a convention*
 
 .. code-block:: python
 

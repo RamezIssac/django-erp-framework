@@ -1,23 +1,28 @@
-Getting started
-===============
+Ra Framework
+============
 
-.. note::
-   These instructions assume familiarity with virtual environments , the
-   `Django web framework <https://www.djangoproject.com/>`_ and setting up an `PostgreSQL <https://www.postgresql.org/download//>`_ database.
+Work in Progress
 
-   It also assumes familiarities with some basic accounting principles and terms such as double entry , debit and credit , and few other.
-
+A light-weight effective Django based framework to create business application and various resource planing systems,
+equipped with a reporting engine and a responsive dashboard.
 
 
 Dependencies
 ------------
-
 * `Python 3 <https://www.python.org/downloads/>`_
 * `PostgreSQL <https://www.postgresql.org/download//>`_
 
 
-Quick install
--------------
+
+Installation
+------------
+
+.. code-block:: console
+
+    $ pip install django-ra
+
+Quick start
+-----------
 
 1. Create a virtual environment and install ra-framework from github repository.
 
@@ -48,7 +53,7 @@ You can always integrate ra framework to your existing project, please refer to 
 
 Create a postgres database, and assign its details to ``DATABASES`` setting
 
-4. Run the usual comamnds needed for any django project
+4. Run the usual commands needed for any django project
 
 .. code-block:: console
 
@@ -59,11 +64,31 @@ Create a postgres database, and assign its details to ``DATABASES`` setting
 
 5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
-.. image:: /images/dashboard.png
+.. image:: docs/images/dashboard.png
 
-Let's get started building our first sales monitoring system.
 
-.. toctree::
-    :maxdepth: 1
-    usseage/tutorial_1
-    integrating_into_django
+Documentation
+-------------
+
+Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
+
+Please Proceed to eh tutorial `*Create a sales application* Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+
+
+Running the tests
+-----------------
+
+To run the test suite, first, create and activate a virtual environment. Then
+clone the repo, install the test requirements and run the tests::
+
+    $ git clone git+git@github.com:ra-systems/RA.git
+    $ cd cd ra/tests
+    $ python -m pip install -e ..
+    $ python -m pip install -r requirements/py3.txt
+    $ ./runtests.py
+    # For Coverage report
+    $ coverage run --include=../* runtests.py [-k]
+    $ coverage html
+    
+
+For more information about the test suite and contribution, we honor https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/.

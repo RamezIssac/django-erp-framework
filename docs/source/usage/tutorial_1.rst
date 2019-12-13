@@ -1,13 +1,20 @@
-Tutorial (Part 1) - Simple Sales App
-=====================================
+Create a sales application* Part 1
+==================================
 
-Let's use the project we just generated and build a small app that records and track product sales to clients in the project.
+Let's use the project we just generated in the Quickstart section and build an app that records and track product sales to clients.
+
+First we need to create an app
+
+.. code-block:: console
+
+    $ django-admin startapp sales
+
 
 Models
 ------
 
-To track Product sales to clients we would need 3 models, Client, Product and A Sales Transaction model.
-Open `ra_demo/models.py` and let's start by adding the code below.
+To track product sales to clients we would need 3 models, Client, Product and A Sales Transaction model.
+Open `sales/models.py` and let's start by adding the code below.
 
 
 .. code-block:: python
@@ -66,7 +73,7 @@ We do so by:
 
 We will learn more about document types as we go along.
 
-Run ``python manage.py makemigrations ra_demo``, then
+Run ``python manage.py makemigrations sales``, then
 ``python manage.py migrate`` to update the database with your model
 
 The Admin
@@ -105,7 +112,7 @@ Also we register our models with their AdminModel with `ra_admin_site` which is 
 
 
 Let's run and access our Ra Dashboard, enter your username and password already created with `createsuperuser`.
-In the right hand menu you'd find RA_Demo menu, which will contains links to Clients / Products & SimpleSales admin changelists.
+In the right hand menu you'd find sales menu, which will contains links to Clients / Products & SimpleSales admin changelists.
 
 
 We notice 2 things there:
@@ -142,8 +149,8 @@ It also should be the result of multiplying price and quantity and this should b
 Let's enhance our Sales Page and make value read only and computed on the front end.
 
 First we need to add a little javascript to handle the client side calculation, to do that we'll need a create our own template.
-in your `ra_demo` app directory, create a `templates` folder, and inside it you can create
-a template file `ra_demo/admin/salesorder_changeform.html`
+in your `sales` app directory, create a `templates` folder, and inside it you can create
+a template file `sales/admin/salesorder_changeform.html`
 
 In this file please type
 
@@ -182,7 +189,7 @@ Now we attach that template to our admin model class
 
     class SalesOrderAdmin(RaMovementAdmin):
         fields = ['slug', 'doc_date', 'client', ('product', 'price', 'quantity', 'value')]
-        add_form_template = change_form_template = 'ra_demo/admin/salesorder_changeform.html'
+        add_form_template = change_form_template = 'sales/admin/salesorder_changeform.html'
 
         def formfield_for_dbfield(self, db_field, request, **kwargs):
             formfield = super().formfield_for_dbfield(db_field, request, **kwargs)

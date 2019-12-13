@@ -1,15 +1,11 @@
-docutils>=0.3
 pytz
-django==2.2.7
+django==2.2.8
 psycopg2-binary
 simplejson
 django-crequest==2018.5.11
 django-tabular-permissions==2.3
-django-select2==7.1.1
 django-crispy-forms==1.8.0
 dateutils==0.6.7
-django-mptt==0.10.0
 unicodecsv==0.14.1
 django-braces==1.13
 swapper==1.1.1
-django-compressor==2.3
