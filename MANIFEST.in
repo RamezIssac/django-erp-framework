@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+recursive-include ra/static *
+recursive-include ra/admin/templates *
+recursive-include ra/project_template *
+recursive-exclude project_files/ *

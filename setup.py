@@ -1,5 +1,5 @@
 import os
-
+import setuptools
 from setuptools import setup
 
 # exec(open('ra/version.py').read())
@@ -19,8 +19,8 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-ra',
-    version='0.0.5',
-    packages=['ra'],
+    version='0.0.5.1',
+    packages=setuptools.find_packages(),
     include_package_data=True,
     # cmdclass={
     #     'install': build_with_submodules,
