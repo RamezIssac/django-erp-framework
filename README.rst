@@ -1,7 +1,7 @@
 Ra Framework
 ============
 
-Work in Progress
+*Work in Progress*
 
 A light-weight effective Django based framework to create business application and various resource planing systems,
 equipped with a reporting engine and a responsive dashboard.
@@ -42,6 +42,7 @@ You can always integrate ra framework to your existing project, please refer to 
 3. Database
 
 .. note::
+
     Ra only support Postgresql.
 
     As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
@@ -67,8 +68,8 @@ Documentation
 -------------
 
 Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
-5
-Please Proceed to eh tutorial `*Create a sales application* Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+
+Please Proceed to eh tutorial `*Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 
 Running the tests
@@ -88,3 +89,4 @@ clone the repo, install the test requirements and run the tests::
     
 
 For more information about the test suite and contribution, we honor https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/.
+
