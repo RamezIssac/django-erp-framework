@@ -14,7 +14,8 @@ Let's display total client sales report table directly into our home.
 
 
 Customizing the Home page
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
+
 
 Table Report Widget
 ~~~~~~~~~~~~~~~~~~~

@@ -19,7 +19,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-ra',
-    version='0.0.4',
+    version='0.0.5',
     packages=['ra'],
     include_package_data=True,
     # cmdclass={
@@ -71,9 +71,8 @@ setup(
                       'django-session-security', 'Pillow',
                       ],
 
-    entry_points="""
-        [console_scripts]
-        ra-admin=ra.project_template.ra:main
-""",
+    entry_points={
+        'console_scripts': ['ra-admin=ra.project_template.ra:main'],
+    }
 
 )
