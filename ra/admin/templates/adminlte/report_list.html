@@ -69,6 +69,10 @@
 {% endblock %}
 {% block bottom_script %}
     <script>
+        $('.select2bs4').select2({
+            theme: 'bootstrap4'
+        });
+
         var hash = document.location.hash;
         var prefix = "tab_";
         var myChart;
@@ -93,7 +97,9 @@
         });
 
         function loadReport(report_slug, params, callback) {
-            var params = report_slug + '/?' + $(report_slug).find('form').serialize();
+            if (typeof(params) == "undefined"){
+                params = report_slug + '/?' + $(report_slug).find('form').serialize();
+            }
             var $tabcontent = $('#' + report_slug);
             blockDiv($tabcontent);
             var url = params;

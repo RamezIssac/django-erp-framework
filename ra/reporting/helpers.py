@@ -204,7 +204,7 @@ def get_user_formLayout(_fkeys, report_settings, form_inst):
             Div(StackedField2('to_doc_date', css_class='form-control dateinput'), css_class='col-sm-6'),
 
             css_class='row raReportDateRange'),
-        Div(css_class="mt-20")
+        Div(css_class="mt-20", style='margin-top:20px')
     )
 
     # We add foreign keys to 3rd item in the layout object (count top level only) , which is the
@@ -222,7 +222,7 @@ def get_user_formLayout(_fkeys, report_settings, form_inst):
     for k in _fkeys:
         # if k[:-3] in report_settings['fkey_visibility'] and k[:-3] != report_settings['matrix']:
         if k[:-3] != report_settings['matrix']:
-            entry_point.append(k)
+            entry_point.append(Field(k))
 
     if report_settings.get('can_edit_primary_index', False):
         layout.append(Column(Field('group_by'), css_class='col-sm-3'))

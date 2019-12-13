@@ -18,7 +18,7 @@ from mptt.models import MPTTModel
 
 from ra.base import app_settings
 from ra.base.widgets import RaBootstrapForeignKeyWidget, RaBootstrapDateTime
-from ra.reporting.form_fields import RaDateDateTimeField
+from ra.reporting.form_fields import RaDateDateTimeField, RaAutocompleteSelectMultiple
 from ra.reporting.helpers import choices_from_list, get_model_fields2, apply_order_to_list, get_foreign_keys, \
     get_user_formLayout
 from ra.reporting.registry import field_registry
@@ -31,27 +31,19 @@ class BaseReportForm(object):
     '''
 
     def get_fk_filters(self):
+        """
+        Get the foreign key filters for report queryset,
+        :return: a dicttionary of filters to be used with QuerySet.filter(**returned_value)
+        """
+        # todo: implement cross tab support
         _values = {}
         if self.is_valid():
-            # print(self.cleaned_data)
-            for k, v in self.foreign_keys.items():
-                is_mptt = MPTTModel in v.related_model().__class__.__mro__
-                key = k  # k.replace('_id', '')
+            for key, field in self.foreign_keys.items():
                 if key in self.cleaned_data:
                     val = self.cleaned_data[key]
-                    val = str(val)
-                    if not (val is None or val == '' or val == 'None'):
-                        if ',' in val:
-                            val = val.split(',')
-                            val = [filtered for filtered in val if filtered != '']
-                        else:
-                            val = [val]
-                        if is_mptt:
-                            # We need to load the selected and use the mptt to selects its decendants
-                            mptt_instances = v.related_model._meta.model.objects.filter(id__in=val)
-                            val = mptt_instances.get_descendants(True).values_list('id', flat=True)
-
-                        _values['%s__in' % k] = val
+                    if val:
+                        val = [x for x in val.values_list('pk', flat=True)]
+                        _values['%s__in' % key] = val
             return _values
 
     def get_date_filters(self):
@@ -279,11 +271,6 @@ class BaseReportForm(object):
                 if field in saved_report_meta:
                     if type(self.base_fields[field]) == forms.MultipleChoiceField and not field == 'doc_types':
                         data.setlist(field, saved_report_meta[field] or [])
-                    elif field[-3:] == '_id':
-                        if field in data:
-                            if enforce:
-                                data[field] = saved_report_meta[field]
-
                     elif field in ['from_doc_date']:  # , 'to_doc_date']:
 
                         if hasattr(saved_report_meta[field], '_proxy____cast'):
@@ -334,11 +321,12 @@ class BaseReportForm(object):
 
 
                     else:
-                        data[field] = saved_report_meta[field]
+
+                        if field not in self.foreign_keys.keys():
+                            data[field] = saved_report_meta[field]
 
         if data:
             kwargs['data'] = data
-
         super(BaseReportForm, self).__init__(*args, **kwargs)
         self.is_valid()
         if hasattr(self, 'cleaned_data'):
@@ -356,9 +344,6 @@ class BaseReportForm(object):
         self.helper.field_class = 'col-sm-10 col-md-10 col-lg-11'
         self.helper.form_tag = True
 
-        # if admin_state:
-        #     self.helper.layout = get_formLayout(self._fkeys, self)
-        # else:
         self.helper.layout = get_user_formLayout(self._fkeys, saved_report_meta, self)
 
     def get_form_settings(self):
@@ -814,19 +799,14 @@ def report_form_factory(model, base_model=None,
 
     for name, f_field in fkeys_map.items():
         fkeys_list.append(name)
-        # todo ModelMultipleChoiceField
-        # fields[name.replace('_id', '')] = forms.ModelMultipleChoiceField(required=False,
-        #                                       widget=RaBootstrapForeignKeyWidget(allow_multi=True),
-        #                                       label=f_field.related_model()._meta.verbose_name,
-        #                                       queryset=f_field.related_model.objects.all())
 
-        # Cannt be a modelChoice Field because the case of multiple selection
-        # maybe it can be multiModel
-        f = name
-        fields[name] = forms.CharField(max_length=2400, required=False,
-                                       widget=RaBootstrapForeignKeyWidget(model_name=f[:-3], id_container=f,
-                                                                          allow_multi=True),
-                                       label=capfirst(ugettext_lazy(f[:-3])))
+        from ra.admin.admin import ra_admin_site
+
+        fields[name] = f_field.formfield(
+            **{'form_class': forms.ModelMultipleChoiceField,
+               'required': False,
+               'widget': RaAutocompleteSelectMultiple(f_field.remote_field, ra_admin_site,
+                                                      attrs={'class': 'select2bs4'})})
 
     fields['doc_date'] = forms.DateField(input_formats=["%Y-%m-%d"], required=False, label=ugettext_lazy('at date'))
 

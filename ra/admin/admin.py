@@ -25,7 +25,7 @@ from django.forms.widgets import TextInput, NumberInput
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.defaultfilters import capfirst
 from django.template.response import TemplateResponse
-from django.urls import reverse
+from django.urls import reverse, path
 from django.utils.decorators import method_decorator
 from django.utils.encoding import force_text
 from django.utils.html import escape
@@ -160,8 +160,8 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
     history_latest_first = True
     search_fields = ['title', 'slug']
     formfield_overrides = {
-        DateTimeField: {'widget': AdminSplitDateTime},
-        DecimalField: {'widget': NumberInput},
+        # DateTimeField: {'widget': AdminSplitDateTime},
+        # DecimalField: {'widget': NumberInput},
         # ForeignKey: {'widget': RaBootstrapForeignKeyWidget},
         TextField: {'widget': AdminTextareaWidget(attrs={'rows': 2})}
     }
@@ -244,10 +244,10 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         extra_context['enable_enter_as_tab'] = self.enable_enter_as_tab
         # extra_context['ra_tour_template'] = self.add_form_tour_template
         return super(RaAdmin, self).add_view(request, form_url, extra_context)
-
-    def get_typed_reports(self, request, **kwargs):
-        return get_reports_map(self.model.get_class_name().lower(), request.user, request,
-                               self.typed_reports_order_list)
+    #
+    # def get_typed_reports(self, request, **kwargs):
+    #     return get_reports_map(self.model.get_class_name().lower(), request.user, request,
+    #                            self.typed_reports_order_list)
 
     # Permissions
     def has_view_permission(self, request, obj=None):
@@ -398,6 +398,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         # ------------------------------------------------------------------------------
 
         my_urls = [
+            path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
             url(r'^check/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.check_view)),
             url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug)),
         ]
@@ -458,10 +459,10 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
                     )
             return app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, formfield, request, **kwargs)
 
-        if db_field.name == 'doc_date' and db_field.__class__ == DateTimeField:
-            field = forms.SplitDateTimeField(widget=AdminSplitDateTimeNoBr, label=_('Date'))
-        else:
-            field = super(RaAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
+        # if db_field.name == 'doc_date' and db_field.__class__ == DateTimeField:
+        #     field = forms.SplitDateTimeField(widget=AdminSplitDateTimeNoBr, label=_('Date'))
+        # else:
+        field = super(RaAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == 'slug' and self.enable_next_serial:
             field.initial = self.get_next_serial()
         elif db_field.name == 'doc_date':
@@ -732,7 +733,7 @@ class RaMovementAdmin(RaAdmin):
 
 
 class RaMovementInlineAdmin(admin.TabularInline):
-    # template = 'ra/admin/edit_inline/tabular.html'
+    template = f'{app_settings.RA_THEME}/edit_inline/tabular.html'
     extra = 2
     exclude = ('slug', 'doc_date', 'doc_type', 'lastmod', 'lastmod_user', 'owner', 'creation_date')
     formfield_overrides = {

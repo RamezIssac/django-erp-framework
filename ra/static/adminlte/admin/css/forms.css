@@ -424,9 +424,9 @@ body.popup .submit-row {
     color: #fff;
 }
 
-.inline-group .tabular fieldset.module {
-    border: none;
-}
+/*.inline-group .tabular fieldset.module {*/
+/*    border: none;*/
+/*}*/
 
 .inline-related.tabular fieldset.module table {
     width: 100%;
