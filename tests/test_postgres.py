@@ -21,6 +21,5 @@ PASSWORD_HASHERS = [
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'compressor.finders.CompressorFinder',
 )
 CRISPY_TEMPLATE_PACK = 'bootstrap4'

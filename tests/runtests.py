@@ -69,7 +69,6 @@ ALWAYS_INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'crequest',
-    'compressor',
     'crispy_forms',
     'reversion',
     'tabular_permissions',
@@ -119,7 +118,7 @@ def get_test_modules():
 
 
 def get_installed():
-    ignore_apps = ['compressor', 'crispy_forms']
+    ignore_apps = ['crispy_forms']
     return [app_config.name for app_config in apps.get_app_configs() if app_config.name not in ignore_apps]
 
 
