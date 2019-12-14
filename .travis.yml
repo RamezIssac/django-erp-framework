@@ -6,7 +6,7 @@ python:
   - "3.8"
 
 env:
-  - DJANGO=django==2.2.7 DATABASE_NAME = 'travis_ci_test' DATABASE_USER = 'postgres' DATABASE_PASSWORD = ''
+  - DJANGO=django==2.2.7
 
 services:
   - postgresql
