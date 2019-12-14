@@ -4,11 +4,9 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
+
 env:
-  - DJANGO=django==2.2.7
-  - DATABASE_NAME = 'travis_ci_test'
-  - DATABASE_USER = 'postgres'
-  - DATABASE_PASSWORD = ''
+  - DJANGO=django==2.2.7 DATABASE_NAME = 'travis_ci_test' DATABASE_USER = 'postgres' DATABASE_PASSWORD = ''
 
 services:
   - postgresql
@@ -18,13 +16,13 @@ before_script:
 
 # command to install dependencies
 install:
-    - pip install -r tests/requirements/py3.txt
-    - pip install $DJANGO
-    - pip install codecov
+  - pip install -r tests/requirements/py3.txt
+  - pip install $DJANGO
+  - pip install codecov
 
 script:
-    - cd tests/
-    - coverage run --include=../* runtests.py
+  - cd tests/
+  - coverage run --include=../* runtests.py
 
 after_success:
   - codecov
