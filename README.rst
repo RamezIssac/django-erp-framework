@@ -12,6 +12,14 @@ Dependencies
 * `Python 3 <https://www.python.org/downloads/>`_
 * `PostgreSQL <https://www.postgresql.org/download//>`_
 
+Features
+--------
+
+- A responsive dashboard built on top of Django's admin.
+- Reporting Engine that filters and compute several types of reports with simple lines of code.
+- A charting capabilities to turn reports into attractive charts.
+- A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
+- Tools and goodies to extend and customize the framework behavior from top to bottom.
 
 
 Installation
