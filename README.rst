@@ -61,7 +61,9 @@ Create a postgres database, and assign its details to ``DATABASES`` setting
 
 5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
-.. image:: docs/images/dashboard.png
+.. image:: https://rasystems.io/static/images/raframework/dashboard.png
+    :target: https://rasystems.io/static/images/raframework/dashboard.png
+    :alt: Landing Ra framework Dashboard
 
 
 Documentation
@@ -69,7 +71,7 @@ Documentation
 
 Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
 
-Please Proceed to eh tutorial `*Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+Please Proceed to the tutorial `*Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 
 Running the tests

@@ -61,7 +61,9 @@ Create a postgres database, and assign its details to ``DATABASES`` setting
 
 5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
-.. image:: docs/images/dashboard.png
+.. image:: https://rasystems.io/static/images/raframework/dashboard.png
+    :target: https://rasystems.io/static/images/raframework/dashboard.png
+    :alt: Landing Ra framework Dashboard
 
 
 Documentation
@@ -86,6 +88,7 @@ clone the repo, install the test requirements and run the tests::
     # For Coverage report
     $ coverage run --include=../* runtests.py [-k]
     $ coverage html
-    
+
 
 For more information about the test suite and contribution, we honor https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/.
+
