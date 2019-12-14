@@ -1,3 +1,15 @@
+.. image:: https://img.shields.io/pypi/v/django-ra.svg
+    :target: https://pypi.org/project/django-ra
+
+.. image:: https://img.shields.io/pypi/pyversions/django-ra.svg
+    :target: https://pypi.org/project/django-ra
+
+.. image:: https://img.shields.io/readthedocs/ra-framework
+    :target: https://ra-framework.readthedocs.io/
+
+.. image:: https://img.shields.io/travis/com/ra-systems/RA
+    :target: https://travis-ci.org/ra-systems/RA
+
 Ra Framework
 ============
 
@@ -12,7 +24,8 @@ Features
 - A charting capabilities to turn reports into attractive charts.
 - A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
-- Django >= 2.2 Compatible
+- Python 3.6 / 3.7 / 3.8
+- Django 2.2 Compatible *(Django 3.0 compatible coming soon following `Django-braces <https://github.com/brack3t/django-braces>`_)*
 
 
 Dependencies

@@ -8,7 +8,6 @@ from django.apps import apps
 from django.db import connection
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, NoReverseMatch
-from django.utils import six
 from django.utils.encoding import force_text
 
 logger = logging.getLogger(__name__)
@@ -127,7 +126,7 @@ def admin_get_app_list(request, admin_site):
                     }
 
     # Sort the apps alphabetically.
-    app_list = list(six.itervalues(app_dict))
+    app_list = list(app_dict.values())
     app_list.sort(key=lambda x: x['name'].lower())
 
     # Sort the models alphabetically within each app.
