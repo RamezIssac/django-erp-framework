@@ -7,7 +7,7 @@
 .. image:: https://img.shields.io/readthedocs/ra-framework
     :target: https://ra-framework.readthedocs.io/
 
-.. image:: https://img.shields.io/travis/com/ra-systems/RA
+.. image:: https://api.travis-ci.org/ra-systems/RA.svg?branch=master
     :target: https://travis-ci.org/ra-systems/RA
 
 Ra Framework
