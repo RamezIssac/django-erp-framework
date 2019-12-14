@@ -10,6 +10,11 @@
 .. image:: https://api.travis-ci.org/ra-systems/RA.svg?branch=master
     :target: https://travis-ci.org/ra-systems/RA
 
+.. image:: https://img.shields.io/codecov/c/github/ra-systems/RA
+    :target: https://codecov.io/gh/ra-systems/RA
+
+
+
 Ra Framework
 ============
 
@@ -25,7 +30,7 @@ Features
 - A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
 - Python 3.6 / 3.7 / 3.8
-- Django 2.2 Compatible *(Django 3.0 compatible coming soon following `Django-braces <https://github.com/brack3t/django-braces>`_)*
+- Django 2.2 Compatible *(Django 3.0 compatible coming soon following `Django-braces <https://github.com/brack3t/django-braces>`_ )*
 
 
 Dependencies
@@ -58,9 +63,9 @@ Quick start
         $ ra-admin start myproject
 
     This will create a new project folder `myproject`, based on a template containing everything you need to get started.
-    You can always integrate ra framework to your existing project, please refer to :ref:`integrating_into_django`
+    You can always integrate ra framework to your existing project, please refer to the docs `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
 
-3. Database
+3. Create a postgres database, and assign its details to ``DATABASES`` setting
 
     .. note::
 
@@ -69,7 +74,6 @@ Quick start
         As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
         ``distinct(*fields)`` is used by the reporting engine.
 
-    Create a postgres database, and assign its details to ``DATABASES`` setting
 
 4. Run the usual commands needed for any django project
 
@@ -80,7 +84,7 @@ Quick start
         $ ./manage.py runserver
 
 
-5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
+5. Voila!! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
 .. image:: https://rasystems.io/static/images/raframework/dashboard.png
     :target: https://rasystems.io/static/images/raframework/dashboard.png
@@ -95,8 +99,8 @@ Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
 Please Proceed to the tutorial `*Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 
-Running the tests
------------------
+Testing and contribution
+------------------------
 
 To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
@@ -108,16 +112,16 @@ clone the repo, install the test requirements and run the tests::
     $ python -m pip install -r requirements/py3.txt
 
     # 2. Set the test database connection details in the environment
-    export DATABASE_NAME=<database name>
-    export DATABASE_USER=<database user>
-    export DATABASE_PASSWORD=<database password if any>
+    $ export DATABASE_NAME=<database name>
+    $ export DATABASE_USER=<database user>
+    $ export DATABASE_PASSWORD=<database password if any>
 
     # 3. Run the tests
     $ ./runtests.py
-    # For Coverage report
+    # And for Coverage report
     $ coverage run --include=../* runtests.py [-k]
     $ coverage html
     
 
-For more information about the test suite and contribution, we honor https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/.
+For more information on contributing, we honor `Django's guidelines <https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/>`_.
 
