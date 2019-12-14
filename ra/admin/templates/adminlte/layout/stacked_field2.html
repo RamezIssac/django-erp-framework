@@ -1,0 +1,22 @@
+{% load crispy_forms_field %}
+
+{% if field.is_hidden %}
+	{{ field }}
+{% else %}
+    {% if field|is_checkbox %}
+        <div id="div_{{ field.auto_id }}" class="checkbox ra-stacked-field">
+            <label for="{{ field.id_for_label }}" class="{% if field.field.required %} requiredField{% endif %}">
+            {{ field.label|safe }}
+                {% crispy_field field 'class' 'checkbox' %}
+
+            </label>
+        </div>
+    {% else %}
+        <div id="div_{{ field.auto_id }}" class="">
+            <label for="{{ field.id_for_label }}" class="{% if field.field.required %} requiredField{% endif %}">
+                {{ field.label|safe }}
+            </label>
+            {% crispy_field field %}
+        </div>
+    {% endif %}
+{% endif %}

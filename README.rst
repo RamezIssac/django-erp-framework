@@ -1,16 +1,8 @@
 Ra Framework
 ============
 
-*Work in Progress*
-
 A light-weight effective Django based framework to create business application and various resource planing systems,
 equipped with a reporting engine and a responsive dashboard.
-
-
-Dependencies
-------------
-* `Python 3 <https://www.python.org/downloads/>`_
-* `PostgreSQL <https://www.postgresql.org/download//>`_
 
 Features
 --------
@@ -20,6 +12,13 @@ Features
 - A charting capabilities to turn reports into attractive charts.
 - A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
+- Django >= 2.2 Compatible
+
+
+Dependencies
+------------
+* `Python 3 <https://www.python.org/downloads/>`_
+* `PostgreSQL <https://www.postgresql.org/download//>`_
 
 
 Installation
@@ -29,42 +28,43 @@ Installation
 
     $ pip install django-ra
 
+
 Quick start
 -----------
 
 1. Create a virtual environment and install ra-framework from Pypi
 
-.. code-block:: console
+    .. code-block:: console
 
-    $ pip install django-ra
+        $ pip install django-ra
 
 2. Once Ra installed, it provides a command to generate a new project.
 
-.. code-block:: console
+    .. code-block:: console
 
-    $ ra-admin start myproject
+        $ ra-admin start myproject
 
-This will create a new project folder `myproject`, based on a template containing everything you need to get started.
-You can always integrate ra framework to your existing project, please refer to :ref:`integrating_into_django`
+    This will create a new project folder `myproject`, based on a template containing everything you need to get started.
+    You can always integrate ra framework to your existing project, please refer to :ref:`integrating_into_django`
 
 3. Database
 
-.. note::
+    .. note::
 
-    Ra only support Postgresql.
+        Ra only support Postgresql.
 
-    As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
-    ``distinct(*fields)`` is used by the reporting engine.
+        As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
+        ``distinct(*fields)`` is used by the reporting engine.
 
-Create a postgres database, and assign its details to ``DATABASES`` setting
+    Create a postgres database, and assign its details to ``DATABASES`` setting
 
 4. Run the usual commands needed for any django project
 
-.. code-block:: console
+    .. code-block:: console
 
-    $ ./manage.py migrate
-    $ ./manage.py createsuperuser
-    $ ./manage.py runserver
+        $ ./manage.py migrate
+        $ ./manage.py createsuperuser
+        $ ./manage.py runserver
 
 
 5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
@@ -88,10 +88,18 @@ Running the tests
 To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
+    # 1. Clone and install requirements
     $ git clone git+git@github.com:ra-systems/RA.git
     $ cd tests
     $ python -m pip install -e ..
     $ python -m pip install -r requirements/py3.txt
+
+    # 2. Set the test database connection details in the environment
+    export DATABASE_NAME=<database name>
+    export DATABASE_USER=<database user>
+    export DATABASE_PASSWORD=<database password if any>
+
+    # 3. Run the tests
     $ ./runtests.py
     # For Coverage report
     $ coverage run --include=../* runtests.py [-k]

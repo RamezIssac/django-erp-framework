@@ -7,6 +7,7 @@ python:
 
 env:
   - DJANGO=django==2.2.8
+  - DJANGO=django==3.0
 
 services:
   - postgresql
