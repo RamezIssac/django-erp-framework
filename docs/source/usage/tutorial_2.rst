@@ -12,7 +12,9 @@ We would like to know
     1. How much each Client bought (in value).
     2. How much each Product is Sold (In value and in quantity)
     3. For each client, the total bought of each product
+    4. A Client statement
 
+Then we will be adding charts
 
 How much each Client bought (in value)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,8 +175,12 @@ We created 2 report view classes
     * The new computation field ``__balance_quan__`` which operate on the `quantity` field, *where `__balance__` operates on the `value` field.
 
 
-Before we finish this section we can create a final easy report. Detailed statement.
-a simple list of the sales transaction
+Now for the final report in this this section.
+
+A Client Detailed statement.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Which is a simple list of the sales transaction
 
 
 .. code-block:: python
@@ -192,12 +198,52 @@ a simple list of the sales transaction
             'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
         }
 
-Check the results on your browser, filter by client and hit refresh to update the results.
+Adding Charts
+~~~~~~~~~~~~~~
 
-In the next section we will create more interesting reports.
+Default Charts library used on front end `Charts.js <https://www.chartjs.org/>`_ Open source HTML5 Charts.
 
-1. We want to know how much each product was sold, per month.
-2. Same for the client, how much was their sales, per month.
+To add charts to a report, you'd need to add to ``chart_settings`` .
+Here is an example we will add two charts to teh first report we created `ClientTotalBalance`
+
+.. code-block:: python
+
+    class ClientTotalBalances(ReportView):
+        ...
+        chart_settings = [
+            {
+                'id': 'pie_chart',
+                'type': 'pie',
+                'title': _('Client Balances'),
+                'data_source': '__balance__',
+                'title_source': 'client__title',
+            },
+            {
+                'id': 'bar_chart',
+                'type': 'bar',
+                'title': _('Client Balances [Bar]'),
+                'data_source': '__balance__',
+                'title_source': 'client__title',
+            },
+        ]
+
+Reload your development server and check how those charts are displayed in the Client Balances report.
+
+Neat right ?
+
+So to create a report we need to a dictionary to a ``chart_settings`` list containing
+
+* id: how we would refer to this exact chart in front end (we will use that in :ref:`adding_charts_widgets`
+* type: what kind of chart it is bar , pie, line
+* data_source: Field name of containing the numbers we want to chart,
+* title_source: Field name of containing the labels of those numbers
+* title: the chart title
+
+FOr Other settings available, see :ref:`charts_configuration`
+
+In the next section we will create even more interesting reports types like
+
+1. Time Series: We want to know how much each product was sold, per month.
 3. Crosstab product sales to clients (or the opposite).
 
 Keep on reading !

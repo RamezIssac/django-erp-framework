@@ -6,15 +6,16 @@ In this section we will create time series report and crosstab report with chart
 
 First let's recap what we did in Part 2
 
-1. We created a `reports.py` in which we organised our report classes
-2. we explored crating a report by inheriting from a `ReportView`class and assign the needed attributes.
+1. We created a `reports.py` in which we organised our ``ReportView`` classes and we made sure to import it in the `AppConfig.ready()`
+2. we explored ``ReportView`` class needed attributes like base_model, report model, form_settings
 3. we got introduced to the report fields like `__balance__` and `__balance_quan__` , and that they compute the needed values.
-4. we got introduced to the a 2 layer report and introduced to charts.
+4. we got introduced to the a 2 layer report, also a report with no group where it displays the records directly.
+5- We created charts using ``chart_settings``
 
 Time Series
 ~~~~~~~~~~~
-It's a report where the columns represents time unit (year/month/week/day)
 
+A time series is a report where the columns represents time unit (year/month/week/day)
 
 Let's see an example
 
@@ -22,7 +23,7 @@ Let's see an example
 .. code-block:: python
 
     @register_report_view
-    class ProductSalesMonthlySeries(ReportView):
+    class ProductSalesMonthly(ReportView):
         report_title = _('Product Sales Monthly')
 
         base_model = Product
@@ -38,12 +39,18 @@ Let's see an example
         }
 
 
-We just added ``time_series_pattern`` which describe which pattern you want to compute (more pattern :ref:`time_series_pattern`)
-and ``time_series_fields`` where we indicated on which field to compute in this time series.
+Reload your development server , go to Product reports, and check the Product Sales Monthly report.
 
-Noticed that ``time_series_fields`` is a list, which means that we can have more fields computed.
-In the above report, we knew the value of sales for each product in each month, We can also know how much units sold each month as well.
-Add `__balance_quan__` in the `time_series_fields`.
+All we did was adding
+
+* ``time_series_pattern`` which describe which pattern you want to compute (daily/monthly/yearly)\
+* ``time_series_fields`` where we indicated on which field to compute in this time series.
+
+Noticed that ``time_series_fields`` is a list, which means that we can have more fields computed in the time series.
+
+In the above report, we knew the sum of *value* of sales for each product, in each month, We can also know the sum of *quantity* of each product sold each month as well.
+
+Add ``'__balance_quan__'`` to the ``time_series_fields`` list,
 
 
 .. code-block::python
@@ -58,6 +65,9 @@ Add `__balance_quan__` in the `time_series_fields`.
 
         }
 
+        swap_sign = True
+* swap_sign will do as the name suggest. Why results are negative in the first place ? Remember `sales` doc_type is registered to "minus" Product and this is *modeling* from accounting.
+
 Reload your app and check the results. You should see that for each month, we have 2 fields "Balance QTY" and "Balance"
 
 
@@ -70,34 +80,68 @@ Now let's add some charts, shall we ?
     class ProductSalesMonthlySeries(ReportView):
         ...
         chart_settings = [
-                {
-                    'id': 'column_chart',
-                    'title': _('comparison - column'),
-                    'settings': {
-                        'chart_type': 'column',
-                        'title': _('Product sales monthly '),
-                        'sub_title': _('{date_verbose}'),
-                        'y_sources': ['__balance__'],
-                        'series_names': [_('Sales value')],
-                    }
-                },
-                {
-                    'id': 'movement_line',
-                    'title': _('comparison - line'),
-                    'settings': {
-                        'chart_type': 'line',
-                        'title': _('Product sales monthly '),
-                        'sub_title': _('{date_verbose}'),
-                        'y_sources': ['__balance__'],
-                        'series_names': [_('Sales value')],
-                    }
-                },
-            ]
+            {
+                'id': 'movement_bar',
+                'title': _('comparison - Bar - Stacked'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'bar',
+                'stacked': True,
+            },
+            {
+                'id': 'movement_column_ns',
+                'title': _('comparison - Bar'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'bar',
+                'stacked': False,
+            },
 
+            {
+                'id': 'movement_column_total',
+                'title': _('comparison - Bar - Total'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'bar',
+                'plot_total': True,
+            },
 
+            {
+                'id': 'movement_line_stacked',
+                'title': _('comparison - line - Stacked'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'line',
+                'stacked': True,
+            },
 
-You can now create a time series report for client sales on your own.
-We encourage you to try and do it by yourself and then comeback and compare what you wrote to our code.
+            {
+                'id': 'movement_line',
+                'title': _('comparison - line'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'line',
+            },
+            {
+                'id': 'movement_line_total',
+                'title': _('comparison - line - Total'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'line',
+                'plot_total': True,
+            },
+        ]
+
+6 charts to highlight the patterns. Reload the development server and *the report page* and check the output.
+
+The charts brings our attention that the slops are always rising ... that's because we're using the __balance__ report field. which is a *compound* total of the sales.
+In fact here, we might be more interested in the *non* compound total, and there is a report field for that that comes by default called ``__total__``
+
+Let's change ``__balance__`` with ``__total__`` and check the results.
+
+You can now create a time series report for the Client sales per month Yeah ?
+
+It would look like something like this
 
 .. code-block:: python
 
@@ -115,11 +159,15 @@ We encourage you to try and do it by yourself and then comeback and compare what
             'time_series_pattern': 'monthly',
             'time_series_fields': ['__balance__'],
         }
-Notice that in this report we didnt use `__balance_quan__`, We can't aggregate quantity of different products.
+
+You can add charts to this report too !
 
 
 Cross-tab report
 ~~~~~~~~~~~~~~~~
+
+A cross tab report is when the column represents another different named data object
+
 
 .. code-block:: python
 
@@ -137,13 +185,20 @@ Cross-tab report
             'matrix': 'client',
             'matrix_columns': ['__total__'],
 
-            # custom name for the field
-            'matrix_columns_names': {
-                '__total__': _('movement')
-            },
         }
 
         # sales decreases our product balance, accounting speaking,
         # but for reports sometimes we need the value sign reversed.
         swap_sign = True
+
+Lke with the time series pattern, we added
+
+1- ``matrix``: the field to use as comparison column
+2. ``matrix_column`` the report field we want to compare per the crosstab .
+3- we used ``__total__`` report field.
+
+   Example:
+
+   If total Sales are 10, 15, 20 for the months January to March respectively, balance For those 3 month would be 10, 25, 45.
+
 
