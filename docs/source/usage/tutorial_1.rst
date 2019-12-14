@@ -112,8 +112,14 @@ With this information in mind, let's add this piece of code into `admin.py`
     ra_admin_site.register(SimpleSales, SalesOrderAdmin)
 
 
-This is pretty straight forward. Note that, like with models, here we inherit our admin models from a ``RaAdmin`` and ``RaMovementAdmin``.
-Also we register our model with their AdminModel with ``ra_admin_site`` which is a totally independent admin site then the normal django one.
+This is pretty straight forward. Note that, like with models, here we inherit our admin models from ``RaAdmin`` and ``RaMovementAdmin``.
+Also we register our model with their AdminModel with ``ra_admin_site`` which is a totally independent admin site than the "normal" django one.
+
+.. note::
+
+    Keep in mind that RaAdmin and RaMovementAdmin are just subclasses of admin.ModelAdmin. So you can customize it as you'd do normally with any ModelAdmin.
+
+    For example: You can add list_filter, make the foreign key widget to be Select2, adjust which fields and teh fieldsets on the change_form etc.
 
 Read more about :ref:`ra_admin`
 
@@ -121,10 +127,11 @@ Let's run and access our Ra Dashboard, enter your username and password already 
 In the left hand menu you'd find sales menu, which will contains links to Clients, Products & SimpleSales admin pages as you'd expect.
 
 
-Going to the sales order page, we notice that *value field* is editable, it should be read only.
-It also should be the result of multiplying price and quantity and this should be done automatically.
+Go to the sales order page, add a couple of sale transaction entries.
+Now, we notice that *value field* is editable, while it should be read only, it also should be the result of multiplying price and quantity and this should be done automatically.
 
 .. note::
+
     `value` is *always* checked and adjusted on server level to as quantity * price (minus any discounts)
 
 .. note::
@@ -139,7 +146,7 @@ To do that we need to add a little javascript to handle the client side calculat
 In your `sales` app directory, create a `templates` folder, and inside it you can create
 a template file `sales/admin/salesorder_changeform.html` and in it we can write:
 
-.. code-block:: javascript
+.. code-block:: Django
 
     {% extends RA_THEME|add:'/change_form.html' %}
 
@@ -152,7 +159,6 @@ a template file `sales/admin/salesorder_changeform.html` and in it we can write:
                 function calculateTotal(e) {
                     let quantity = smartParseFloat($quantity.val());
                     let price = smartParseFloat($price.val());
-
                     $('[name*=value]').val(quantity * price)
                 }
 
@@ -165,9 +171,10 @@ a template file `sales/admin/salesorder_changeform.html` and in it we can write:
 Notice here:
 
 1. we `extends` from `RA_THEME|add:'change_form.html'`
-
    This enables you to change themes of your Ra dashboard rather easily. You can read more about :ref:`theming`
-2. we use :func:`smartParseFloat`in the javascript.
+
+
+2. we use :func:`smartParseFloat` in the javascript.
    This is a Ra custom javascript tool to handle string or empty value when numbers are expected (in which case `value` result would be `NaN`.
    If you want to try just replace smartParseFloat with normal `parseFloat` and enter a string or make empty the quantity and/or price field.
 

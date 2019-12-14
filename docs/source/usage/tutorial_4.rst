@@ -1,3 +1,5 @@
+.. _adding_charts_widgets:
+
 Adding charts & report widgets on Homepage and View pages (Part 4)
 ===================================================================
 
