@@ -89,7 +89,7 @@ To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
     $ git clone git+git@github.com:ra-systems/RA.git
-    $ cd cd ra/tests
+    $ cd tests
     $ python -m pip install -e ..
     $ python -m pip install -r requirements/py3.txt
     $ ./runtests.py

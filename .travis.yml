@@ -18,7 +18,7 @@ before_script:
 
 # command to install dependencies
 install:
-    - pip install -r ra/tests/requirements/py3.txt
+    - pip install -r tests/requirements/py3.txt
     - pip install $DJANGO
     - pip install codecov
 
