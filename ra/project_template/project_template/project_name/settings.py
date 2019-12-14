@@ -136,7 +136,7 @@ DATABASES = {
 }
 
 STATIC_ROOT = os.path.join(BASE_DIR, '..', 'collected_static')
-CRISPY_TEMPLATE_PACK = 'bootstrap3'
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',

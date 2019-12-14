@@ -68,7 +68,7 @@ Finally, as Ra use Crispy-forms on bootstrap 3, Add
 
 .. code-block:: python
 
-    CRISPY_TEMPLATE_PACK = 'bootstrap3'
+    CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 Various other settings are available to configure Ra's behaviour - see :doc:`/advanced_topics/settings`.
 

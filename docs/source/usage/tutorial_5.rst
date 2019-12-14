@@ -1,3 +1,5 @@
+.. _real_world_invoice:
+
 Real world Invoice Design (Part 5)
 ==================================
 
