@@ -1,7 +1,5 @@
-Ra Framework
-============
-
-*Work in Progress*
+Quick Start
+===========
 
 A light-weight effective Django based framework to create business application and various resource planing systems,
 equipped with a reporting engine and a responsive dashboard.
@@ -21,8 +19,8 @@ Installation
 
     $ pip install django-ra
 
-Quick start
------------
+Create your first Ra project
+-----------------------------
 
 1. Create a virtual environment and install ra-framework from Pypi
 

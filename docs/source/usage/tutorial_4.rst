@@ -104,7 +104,8 @@ Now, You can organize your template as you see fit, create bootstrap rows and co
 
 
 Customizing the View page
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
+
 Ra also provide a view page for each BaseInfo subclass, registered with `RaAdmin`.
 If you go to the Clients change list page,for example, you'd find a column called "Stats" which will redirect you to a blank page with the title
 *Statistics for <Client name>*

@@ -14,7 +14,7 @@ First let's recap what we did in Part 2
 
 
 Generating test data
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 Before we begin, charts and reporting get more fun and interesting the more data available.
 So below you can find a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.

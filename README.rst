@@ -96,7 +96,7 @@ Documentation
 
 Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
 
-Please Proceed to the tutorial `*Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+Please Proceed to the tutorial `Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 
 Testing and contribution

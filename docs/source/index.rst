@@ -1,40 +1,22 @@
 Welcome to RA's documentation
 ==================================
 
-RA is a high level open source ERP framework written in `Python <https://www.python.org/>`_ and built on the `Django web framework <https://www.djangoproject.com/>`_.
+A light-weight effective Django based framework to create business application equipped with a reporting engine and a responsive dashboard written in `Python <https://www.python.org/>`_ and built on the `Django web framework <https://www.djangoproject.com/>`_.
 
-
-What is RA framework ?
-----------------------
-
-A light-weight effective Django based ERP framework with responsive dashboard and a reporting engine.
-RA makes it easy to build powerful ERP solutions faster, more secure and with less code.
-Saving you from the hassle of creating data entry forms, and repeated reports calculation which are easy to brake whenever the business flow evolves or changes.
-
-History
+Features
 --------
-RA was originally developed as an ERP solution, which turned early on to evolve to a framework created by https://rasystems.io .
-By the end of 2019, we decided to open source the framework.
 
+- A responsive dashboard built on top of Django's admin.
+- Reporting Engine that filters and compute several types of reports with simple lines of code.
+- A charting capabilities to turn reports into attractive charts.
+- A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
+- Tools and goodies to extend and customize the framework behavior from top to bottom.
+- Python 3.6 / 3.7 / 3.8
 
-
-.. note:: Demo application
-    If you'd like to get a quick feel for Ra & explore *a full fledged system* visit https://erp-demo.rasystems.io
-        | username: manager
-        | password:stpasswd
-
-
-    ***First steps**
-
-      * :doc:`usage/quickstart`
-      * :doc:`usage/integrating_into_django`
-
-
-        **Using RA**
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Tutorial:
 
    usage/quickstart
    usage/tutorial_1
@@ -43,6 +25,12 @@ By the end of 2019, we decided to open source the framework.
    usage/tutorial_4
    usage/tutorial_5
    usage/integrating_into_django
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API:
+
    advanced_topics/settings
    advanced_topics/reporting
    advanced_topics/report_fields
@@ -51,6 +39,8 @@ By the end of 2019, we decided to open source the framework.
    advanced_topics/customizing_print
    advanced_topics/javascript
    advanced_topics/roadmap
+
+
 
 Indices and tables
 ==================
