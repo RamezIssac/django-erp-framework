@@ -12,6 +12,90 @@ First let's recap what we did in Part 2
 4. we got introduced to the a 2 layer report, also a report with no group where it displays the records directly.
 5- We created charts using ``chart_settings``
 
+
+Generating test data
+--------------------
+
+Before we begin, charts and reporting get more fun and interesting the more data available.
+So below you can find a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.
+This will definitely enhance your experience with this next section. Also we will be using it for benchmarking Ra Performance.
+
+.. code-block:: python
+
+    import random
+    import datetime
+    import pytz
+    from django.core.management import BaseCommand
+
+
+    class Command(BaseCommand):
+        help = 'Generates data for simple sales app'
+
+        def add_arguments(self, parser):
+            parser.add_argument('--clients', type=int, action='store', help='Number of client to get generated, default 10')
+            parser.add_argument('--product', type=int, action='store',
+                                help='Number of products t0o get generated, default 10')
+            parser.add_argument('--records', type=int, action='store', help='Number of records per day,  default 10')
+
+        def handle(self, *args, **options):
+            from ...models import Client, Product, SimpleSales
+            from django.contrib.auth.models import User
+            user_id = User.objects.first().pk
+            client_count = options.get('clients', 10)
+            product_count = options.get('products', 10)
+            records_per_day = options.get('records', 10)
+
+            # Generating clients
+            already_recorded = Client.objects.all().count()
+            clients_needed = client_count - already_recorded
+            if clients_needed > 0:
+                for index in range(already_recorded, already_recorded + clients_needed):
+                    Client.objects.create(title=f'Client {index}', lastmod_user_id=user_id)
+                self.stdout.write(f'{clients_needed} client(s) created')
+
+            # Product
+            already_recorded = Product.objects.all().count()
+            product_needed = product_count - already_recorded
+            if product_needed > 0:
+                for index in range(already_recorded, already_recorded + product_needed):
+                    Product.objects.create(title=f'Product {index}', lastmod_user_id=user_id)
+                self.stdout.write(f'{product_needed} product(s) created')
+
+            # generating sales
+            # we will generate 10 records per day for teh whole current year
+            sdate = datetime.datetime(datetime.date.today().year, 1, 1)
+            edate = datetime.datetime(datetime.date.today().year, 12, 31)
+
+            client_ids = Client.objects.values_list('pk', flat=True)
+            product_ids = Product.objects.values_list('pk', flat=True)
+
+            delta = edate - sdate  # as timedelta
+            for i in range(delta.days + 1):
+                day = sdate + datetime.timedelta(days=i)
+                day = pytz.utc.localize(day)
+                for z in range(1, records_per_day):
+                    SimpleSales.objects.create(
+                        doc_date=day,
+                        product_id=random.choice(product_ids),
+                        client_id=random.choice(client_ids),
+                        quantity=random.randrange(1, 10),
+                        price=random.randrange(1, 10),
+                        lastmod_user_id=user_id
+                    )
+                self.stdout.write('.', ending='')
+
+            self.stdout.write('')
+            self.stdout.write('Done')
+
+After adding this code to 'sales/management/commands/generate_data.py', you can now run
+
+.. code-block:: console
+
+    $ python manage.py generate_data
+
+Note that this commands accept arguments to decide how many record you want to generate.
+
+
 Time Series
 ~~~~~~~~~~~
 
@@ -81,12 +165,12 @@ Now let's add some charts, shall we ?
         ...
         chart_settings = [
             {
-                'id': 'movement_bar',
-                'title': _('comparison - Bar - Stacked'),
+                'id': 'movement_column_total',
+                'title': _('comparison - Bar - Total'),
                 'data_source': '__balance__',
                 'title_source': 'product__title',
                 'type': 'bar',
-                'stacked': True,
+                'plot_total': True,
             },
             {
                 'id': 'movement_column_ns',
@@ -96,31 +180,13 @@ Now let's add some charts, shall we ?
                 'type': 'bar',
                 'stacked': False,
             },
-
             {
-                'id': 'movement_column_total',
-                'title': _('comparison - Bar - Total'),
+                'id': 'movement_bar',
+                'title': _('comparison - Bar - Stacked'),
                 'data_source': '__balance__',
                 'title_source': 'product__title',
                 'type': 'bar',
-                'plot_total': True,
-            },
-
-            {
-                'id': 'movement_line_stacked',
-                'title': _('comparison - line - Stacked'),
-                'data_source': '__balance__',
-                'title_source': 'product__title',
-                'type': 'line',
                 'stacked': True,
-            },
-
-            {
-                'id': 'movement_line',
-                'title': _('comparison - line'),
-                'data_source': '__balance__',
-                'title_source': 'product__title',
-                'type': 'line',
             },
             {
                 'id': 'movement_line_total',
@@ -130,14 +196,30 @@ Now let's add some charts, shall we ?
                 'type': 'line',
                 'plot_total': True,
             },
+            {
+                'id': 'movement_line',
+                'title': _('comparison - line'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'line',
+            },
+            {
+                'id': 'movement_line_stacked',
+                'title': _('comparison - line - Stacked'),
+                'data_source': '__balance__',
+                'title_source': 'product__title',
+                'type': 'line',
+                'stacked': True,
+            },
         ]
 
-6 charts to highlight the patterns. Reload the development server and *the report page* and check the output.
+6 charts to highlight the patterns. Reload the development server and *reload the report page* and check the output.
 
-The charts brings our attention that the slops are always rising ... that's because we're using the __balance__ report field. which is a *compound* total of the sales.
-In fact here, we might be more interested in the *non* compound total, and there is a report field for that that comes by default called ``__total__``
+The charts brings our attention that the slops are always rising ... that's because we're using the ``__balance__`` report field. which is a *compound* total of the sales.
+In fact here, we might be more interested in the *non* compound total, and there is a report field for that which comes by default called ``__total__``
 
 Let's change ``__balance__`` with ``__total__`` and check the results.
+
 
 You can now create a time series report for the Client sales per month Yeah ?
 
