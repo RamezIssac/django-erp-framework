@@ -114,6 +114,7 @@ For more information about available option in form_settings :ref:`reporting`
 
 Now let's create a 3rd report.
 
+.. _header_report_tutorial:
 How much each client bought of each product ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

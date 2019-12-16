@@ -124,7 +124,7 @@ And in `sales/admin/client_view.html` let's reuse the exact same code we used in
 Sure enough, the chart the the table should be displayed, but there is a small problem.
 In this page, we're not interested in *all* the clients data, we're only interested in *one client*.
 
-To add apply this information, we only need to add ``data-extra-params`` to the ``data-report-widget`` html element with the active client id.
+To add apply this information, we only need to add ``data-extra-params`` to the ``data-report-widget`` html element with the active client id and other parameters too as well if you feel like doing so.
 
 .. code-block:: javascript
 
@@ -146,17 +146,16 @@ To add apply this information, we only need to add ``data-extra-params`` to the 
 
 Reload the page and you should see only the relevant data.
 
-But the chart here is not very helpful, so we can remove it.
-Also a table with only one row can be a little overkill as well, don't you think?
+But the chart here is not very helpful, so we can remove it, slso a table with only one row can be a little overkill as well, don't you think?
 
 We can further enhance our widget by using the `data-success-callback`
 `data-success-callback` take a function name which will be called when server successfully replies with the report data.
 This javascript callback must accept two parameters
 
-* response: The json response sent by teh server and contains the results of the report (along with other data).
+* response: The json response sent by the server and contains the results of the report (along with other data).
 * $elem: the report jquery element *(ie the relevant `$('[data-report-widget]')`)*
 
-Let's see how our `client_view.html` would look like now
+Let's see how would that look like
 
 .. code-block:: javascript
 
@@ -169,11 +168,8 @@ Let's see how our `client_view.html` would look like now
          data-report-url="{{ client_balances.get_url }}"
          data-extra-params="&client_id={{ original.pk }}"
          data-success-callback="displayBalance">
-
-        <div data-report-chart></div>
-        <div data-report-table>
-
     </div>
+    <div data-report-table></div>
     {% endblock %}
 
 
@@ -188,20 +184,19 @@ Let's see how our `client_view.html` would look like now
 
 So what did we do ?
 
-1. we used `data-success-callback="displayBalance"` *which should be accessible from the javascript context.*
+1. we used `data-success-callback="displayBalance"` which should be accessible to the javascript context.
 2. we accessed the response sent from the server `data` which is a list of the results, we accessed the first item in that array, and got the `__balance__` property
 3. As now control is delegated to our callback, we're in charge to `unblockDiv`, or else the loader will keep on spinning.
 
 .. hint::
     The default success callback `$.ra.report_loader.loadComponents` checks for the existence of elements with attr `[data-report-chart]`
-    if found it calls `$.ra.report_loader..displayChart` .
+    if found it calls `$.ra.report_loader..displayChart`.
     It also check for children elements with attr `[data-report-table]` , if found it calls `$.ra.datatable.buildAdnInitializeDatatable` and pass the response, $elem arguments.
 
 
-Before we finish this section, let's bring up the 2 layer report we did before.
-Displaying this report here makes perfect sense.
+Before we finish this section, let's bring up the 2 layer report we did before in :ref:`header_report_tutorial` as displaying this report here makes perfect sense.
 
-*Remember the report displayed a list of clients (header_report) and choosing a client it opens a popup with the totals of product sales for that client*
+*Refreshment: the report displayed a list of clients (header_report) and choosing a client it opens a popup with the totals of product sales for that client*
 
 This report makes perfect sense to be displayed here on the client view page.
 
@@ -214,7 +209,6 @@ Let's add it.
          data-report-url="{{ client_sales_of_products.get_url }}"
          data-extra-params="&client_id={{ original.pk }}">
 
-        <div data-report-chart></div>
         <div data-report-table></div>
     </div>
 
