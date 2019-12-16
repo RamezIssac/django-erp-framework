@@ -10,13 +10,12 @@ First let's recap what we did in part 3
 
 Now let's continue.
 
-Our home page seems little empty, it would be nice if we can have have *report widgets* to it, some tables with relevant data and charts, Yeah ?
-Let's display total client sales report table directly into our home.
-
-
 
 Customizing the Home page
 -------------------------
+
+Our home page seems little empty, it would be nice if we can have a *report widgets* on it, some tables with relevant data and charts, Yeah ?
+Let's display total client sales report table directly into our home.
 
 
 Table Report Widget
@@ -24,13 +23,11 @@ Table Report Widget
 
 
 First let's create a template ``sales/index.html`` template,
-Then in our settings.py we set this template to be displayed as the index page
+then in our settings.py we set this template to be displayed as the index page
 
 .. code-block:: python
 
-    RA_ADMIN_INDEX_PAGE = 'sales/index.html
-view.html
-
+    RA_ADMIN_INDEX_PAGE = 'sales/index.html'
 
 And in the our template we add code like this
 
@@ -49,50 +46,44 @@ And in the our template we add code like this
     {% endblock %}
 
 
-Then let's visit our home page..
+Then let's visit our home page, you should see a table with the client balances on our dashboard.
 
 Here is what we basically did
 
-1. We loaded the report with ``get_report`` providing the `base model` name and the `report slug`.
-2. Then we created a div with attrs ``data-report-widget`` which tell Ra javascript that we need to load a report in that section.
+1. We loaded the report with ``get_report`` providing the `base model` name and the ``report slug`` (which is basically the report class name).
+2. We created a div with attrs ``data-report-widget`` which tell Ra javascript that we need to load a report in that section/div.
 3. We provided the url to that report ``data-report-url`` via the ``.get_url`` method of the `ReportView`
-4. Finally, we created a child div with attr ``data-report-table`` to load the report in.
+4. Finally, we created a child div with attr ``data-report-table`` to load the report table in.
 
 
-Now we can do pretty much the same for Charts.
-Let's first create a pie chart for Clients balances report and display that our index page as well.
+Now we can do pretty much the same for Charts. We'll use th pie chart we created in Part 2 of this tutorial :ref:`adding_charts_tutorial`
 
-Remember how to add charts to a report ? Let's revise.
+Chart Widget
+~~~~~~~~~~~~
 
-.. code-block:: python
 
-    # in report.py file
-
-    class ClientTotalBalance(ReportView):
-        ....
-        # add charts settings
-        chart_settings = [
-        {
-            'id': 'balance_pie',
-            'title': _('pie'),
-            'settings': {
-                'chart_type': 'pie',
-                'title': _('Clients Balance'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Clients Balance')],
-            }
-        },
-    ]
-
-then in our template, we add add a div with `data-report-chart` child to the `[data-report-widget]` div.
-like this
+In our index template, we add add a canvas with `data-report-chart` attr as child to the `[data-report-widget]` div.
+Like this
 
 .. code-block:: html
 
         <div data-report-widget
              data-report-url="{{ client_balances.get_url }}">
 
-            <div data-report-chart></div>  <!--  The new line -->
+            <canvas data-report-chart height="50"></canvas>  <!--  The new line -->
+            <div data-report-table></div>
+        </div>
+
+The above code loaded the first chart as default. If you want to change the chart to another one available,
+just add attribute to  the canvas elem ``data-report-default-chart="YOUR_CHART_ID"``
+
+
+.. code-block:: html
+
+        <div data-report-widget
+             data-report-url="{{ client_balances.get_url }}">
+
+            <canvas data-report-chart height="50" data-report-default-chart="bar_chart"></canvas>
             <div data-report-table></div>
         </div>
 
@@ -100,7 +91,7 @@ like this
 You can explore the different attributes supported to
 control how the widget is displayed and extra query parameters sent to server :ref:`report_loader_api`.
 
-Now, You can organize your template as you see fit, create bootstrap rows and column, use panels. The world is yours.
+Now, You can organize your template as you see fit, create bootstrap rows and column, use cards, the world is yours. :)
 
 
 Customizing the View page
@@ -113,7 +104,7 @@ If you go to the Clients change list page,for example, you'd find a column calle
 Same like what we did with the home page, we can add widgets to be displayed for this specific object.
 Let's see how.
 
-First we need a custom template, so lets create `templates/sales/admin/client_view.html`
+First we need a custom template, so lets create `sales/admin/client_view.html`
 and assign it to the model admin `view_template`
 
 .. hint::
@@ -128,11 +119,10 @@ in `sales/admin.py`
         view_template = 'sales/admin/client_view.html'
 
 
-And in `templates/sales/admin/client_view.html` let's use the same code we used in the home page, and check the results.
+And in `sales/admin/client_view.html` let's reuse the exact same code we used in the home page, and check the results.
 
 Sure enough, the chart the the table should be displayed, but there is a small problem.
-
-In this page, we're not interested in all the clients data, we're only interested in *one client*.
+In this page, we're not interested in *all* the clients data, we're only interested in *one client*.
 
 To add apply this information, we only need to add ``data-extra-params`` to the ``data-report-widget`` html element with the active client id.
 
@@ -143,13 +133,15 @@ To add apply this information, we only need to add ``data-extra-params`` to the 
 
     {% block content %}
         {% get_report base_model='client' report_slug='clienttotalbalance' as client_balances %}
+
         <div data-report-widget
-             data-report-url="{{ client_sales_of_products.get_url }}"
+             data-report-url="{{ client_balances.get_url }}"
              data-extra-params="&client_id={{ original.pk }}">
 
-            <div data-report-chart></div>
+            <canvas data-report-chart height="50" data-report-default-chart="bar_chart"></canvas>
             <div data-report-table></div>
         </div>
+
     {% endblock %}
 
 Reload the page and you should see only the relevant data.

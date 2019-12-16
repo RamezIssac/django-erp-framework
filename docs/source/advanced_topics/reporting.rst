@@ -15,4 +15,14 @@ Time Series
 * Order
 
 
-Chart
+Javascript
+~~~~~~~~~~~
+
+
+.. _report_loader_api:
+
+Report Loader API
+-----------------
+
+Coming soon
+

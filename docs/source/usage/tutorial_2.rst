@@ -198,6 +198,8 @@ Which is a simple list of the sales transaction
             'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
         }
 
+.. _adding_charts_tutorial:
+
 Adding Charts
 ~~~~~~~~~~~~~~
 
