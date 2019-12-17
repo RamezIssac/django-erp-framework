@@ -41,6 +41,18 @@ class ClientTotalBalance(ReportView):
 
 
 @register_report_view
+class ClientTotalBalancesOrdered(ClientTotalBalance):
+    report_slug = None
+    default_order_by = '__balance__'
+
+
+@register_report_view
+class ClientTotalBalancesOrderedDESC(ClientTotalBalance):
+    report_slug = None
+    default_order_by = '-__balance__'
+
+
+@register_report_view
 class ProductTotalSales(ReportView):
     report_title = _('Product Sales')
 
@@ -188,6 +200,7 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
         'time_series_fields': ['__debit__', '__credit__', '__balance__', '__total__'],
     }
 
+
 @register_report_view
 class ClientDetailedStatement(ReportView):
     report_title = _('client statment')
@@ -201,7 +214,6 @@ class ClientDetailedStatement(ReportView):
         'group_by': '',
         'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
     }
-
 
 
 @register_report_view

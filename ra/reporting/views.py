@@ -163,35 +163,71 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
 class ReportView(UserPassesTestMixin, FormView):
     """
     The Base class for reports .
+    It handles the report ajax request, load the report form which provides the needed filers,
+    Load the report generator class , csv_export_class and the printing class.
+
     """
+    # the class responsible for exporting to CSV
     csv_export_class = ExportToCSV
-    namespace_title = ''
-    report_model = None
-    _imposed_start_date = False
+
+    # class responsible for generating the report, applying the filter and computing
     report_generator_class = ReportGenerator
-    no_distinct = False  # a flag to the report generator telling it to get get the main queryset from base_model
-    form_class = None
-    base_model = None
-    other_namespaces = None
-    form_settings = None
-    chart_settings = None
-    report_slug = ''
+
+    # class responsible for supplying meta data for front end
     report_meta_data_class = ReportMetaData
+
+    # class responsible for customizing the output for print
+    printing_class = HTMLPrintingClass
+
+    # required. the model which holds the data
+    report_model = None
+
+    # required , the model which the report is about
+    base_model = None
+
+    # the report form, A subclass of ReportForm is to expected
+    form_class = None
+
+    # control the settings of report
+    form_settings = None
+
+    # control the chart settings, passed to front end as is.
+    chart_settings = None
+
+
+    _imposed_start_date = False
+    no_distinct = False  # a flag to the report generator telling it to get get the main queryset from base_model
+
+    other_namespaces = None
+
+    report_slug = ''
     page_title = None
     report_title = None
+
+    # default order by for the results.
+    # ordering can also be controlled on run time by passing order_by='field_name'
+    # For DESC order supply order_by='-field_name'
     default_order_by = None
-    printing_class = HTMLPrintingClass
+
+    # this report will not be visible on the menu or accessed on its own
     hidden = False
+
+    # will swap the sign on the report, useful when reporting on object which main side is credit
     swap_sign = False
 
+    # Control the header report function
     must_exist_filter = None
     header_report = None
-    is_header_report = False
 
-    limit_records = False  # to limit records not to exceed certain number, useful for very large reports
+    # to limit records not to exceed certain number, useful for very large reports
+    limit_records = False
 
     perform_regroup_when_print = False  # Handling printing header & sub data
+
+    # size for printing , useful on very large data
     print_buffer = 10000
+
+    # control the caching
     cache = True
     cache_duration = 300
 
@@ -516,7 +552,7 @@ class ReportView(UserPassesTestMixin, FormView):
         """
         order the results based on GET parameter or default_order_by
         :param data: List of Dict to be ordered
-        :return: Order data
+        :return: Ordered data
         """
         order_field, asc = OrderByForm(self.request.GET).get_order_by(self.default_order_by)
         if order_field:

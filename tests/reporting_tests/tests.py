@@ -174,9 +174,37 @@ class ReportTest(BaseTestData, TestCase):
         response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')),
                                    data={
                                        'csv': True,
-                                       'matrix_show_other': True},)
-                                   # HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+                                       'matrix_show_other': True}, )
+        # HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200, response)
+
+    def test_default_order_by(self):
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:report', args=('client', 'clienttotalbalancesordered')),
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        previous_balance = 0
+        self.assertTrue(len(data['data']) > 1)
+        for i, line in enumerate(data['data']):
+            if i == 0:
+                previous_balance = line['__balance__']
+            else:
+                self.assertTrue(line['__balance__'] > previous_balance)
+
+    def test_default_order_by_reversed(self):
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:report', args=('client', 'ClientTotalBalancesOrderedDESC')),
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        previous_balance = 0
+        self.assertTrue(len(data['data']) > 1)
+        for i, line in enumerate(data['data']):
+            if i == 0:
+                previous_balance = line['__balance__']
+            else:
+                self.assertTrue(line['__balance__'] < previous_balance)
 
 
 @override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=True, USE_TZ=False)

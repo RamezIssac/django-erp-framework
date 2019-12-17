@@ -126,7 +126,7 @@ class ReportRegistry(object):
         try:
             return self._store[slug_id.lower()]
         except KeyError:
-            raise NotRegistered('Report "%s" base model "%s" not found, different base model maybe?' % (report_slug, namespace))
+            raise NotRegistered("Report '%s' base model '%s' not found, Did you register it? If yes, then maybe it's has different base model ?" % (report_slug, namespace))
 
     def get_base_models(self):
         return self._base_models
