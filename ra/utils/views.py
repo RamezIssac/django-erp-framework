@@ -1,15 +1,12 @@
 import copy
 import re
-import simplejson as json
-from django.apps import apps
-from django.db.models import Q
-from django.http import HttpResponse
-from django.shortcuts import redirect, render
+
+from django.shortcuts import render
 from django.urls import reverse, NoReverseMatch
 from django.utils.encoding import force_text
 from django.utils.translation import get_language_bidi
 
-from ra.base import app_settings, registry
+from ra.base import app_settings
 
 easter_western_map = {1776: 48,  # 0
                       1777: 49,  # 1
@@ -42,6 +39,7 @@ DEFAULT_PRINT_BIDI = app_settings.RA_PRINT_SETTINGS_RTL
 
 def get_linkable_slug_title(model_name, pk, field_value, target_blank=False):
     return_val = field_value
+    # import pdb; pdb.set_trace()
     from ra.admin.admin import ra_admin_site
 
     model_map = ra_admin_site.get_admin_by_model_name(model_name)
@@ -71,7 +69,6 @@ def get_decorated_slug(field_name, field_value, obj, dict_format=True, new_page=
                        use_push_state=False, *args,
                        **kwargs):
     from ra.base.registry import get_model_settings, get_doc_type_settings
-
     models = get_model_settings()
     doc_types = get_doc_type_settings()
 
@@ -174,83 +171,6 @@ def get_typed_reports_for_templates(model_name, user=None, request=None, only_re
     return report_list
 
 
-
-def autocomplete(request, model, para1=None, para2=None, para3=None, **kwargs):
-    '''
-    The Auto -complete handler basicly for ra_autocomplete custom widgets
-    :param request:
-    :param model:
-    :param para1:
-    :param para2:
-    :param kwargs:
-    :return:
-    '''
-    from ra.base import loading
-
-    BaseInfo = loading.get_baseinfo_model()
-    is_exact = kwargs.get('exact', False)
-
-    if type(model) == str:
-        MODELS = registry.get_model_settings()
-        if model in app_settings.RA_AUTOCOMPLETE_ALIASES:
-            model = apps.get_model(*app_settings.RA_AUTOCOMPLETE_ALIASES[model].split('.'))
-
-        elif model in MODELS:
-            model = MODELS[model]['model']
-
-        # if model == 'costcenter':
-        #     from .models import CostCenter
-        #     model = CostCenter
-
-    results = []
-    columns = []
-    column_names = []
-
-    if type(model) != str:
-
-        filters = Q()
-
-        if para1:
-            para1 = para1.translate(easter_western_map)
-
-        if para2:
-            para2 = para2.translate(easter_western_map)
-        filters = model.get_autocomplete_filters(filters, para2, para3, is_exact)
-        columns, column_names = model.get_autocomplete_field_names(para2, para3)
-
-        if BaseInfo in model.__mro__:
-            if para1 is not None:
-                if kwargs.get('exact', False):
-                    # print para1
-                    filters = filters & (Q(slug=para1) | Q(title=para1))
-                else:
-                    filters = filters & (Q(slug__icontains=para1) | Q(title__icontains=para1))
-
-                objects = model.objects.filter(filters)[:5]
-            else:
-                objects = model.objects.filter(filters)
-
-        else:
-            if kwargs.get('exact', False):
-                filters = filters & (Q(slug=para1))  # | Q(title=para1))
-            else:
-                filters = filters & (Q(slug__icontains=para1))  # | Q(title__icontains=para1))
-
-            objects = model.objects.filter(filters)[:5]
-
-        for o in objects:
-            result = o.get_autocomplete_fields(para2, para3, is_exact)
-            results.append(result)
-    response = {
-        'columns': columns,
-        'column_names': column_names,
-        'data': results
-    }
-    data = json.dumps(response)
-    mimetype = 'application/json'
-    return HttpResponse(data, content_type=mimetype)
-
-
 def access_denied(request):
     return render(request, template_name='ra/access_denied.html')
 
@@ -277,5 +197,3 @@ def not_found_error(request, template_name='404.html'):
     response = render(request, '404.html', {})
     response.status_code = 404
     return response
-
-

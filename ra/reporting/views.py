@@ -194,7 +194,6 @@ class ReportView(UserPassesTestMixin, FormView):
     # control the chart settings, passed to front end as is.
     chart_settings = None
 
-
     _imposed_start_date = False
     no_distinct = False  # a flag to the report generator telling it to get get the main queryset from base_model
 

@@ -1,5 +1,5 @@
-
 from django.db import models
+from django.urls import reverse_lazy
 
 from ra.base.models import BaseInfo, BasePersonInfo, BaseMovementInfo, QuanValueMovementItem
 from ra.base.registry import register_doc_type
@@ -30,10 +30,8 @@ class SimpleSales(QuanValueMovementItem):
         verbose_name = _('Sale')
         verbose_name_plural = _('Sales')
 
-sales = {'name': 'sales', 'plus_list': ['Client'], 'minus_list': ['Product'], }
+
+sales = {'name': 'sales', 'plus_list': ['Client'], 'minus_list': ['Product'],
+         'redirect_url_prefix': reverse_lazy('ra_admin:reporting_tests_simplesales_changelist')}
 
 register_doc_type(sales)
-
-
-
-

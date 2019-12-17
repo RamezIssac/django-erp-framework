@@ -129,11 +129,46 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
-    def test_client_statememnt(self):
+    def test_client_statement(self):
         self.client.login(username='super', password='secret')
         response = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
+
+    def test_client_statement_detail(self):
+        """
+        Test the detail statement
+        This is do pass by making a document slug clickable (<a> elem)
+        and it also passes by the slug search of the model admin
+        :return:
+        """
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
+                                   data={'client_id': self.client1.pk},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+
+    def test_report_movement_redirect(self):
+        """
+        When showing a report, if it contains transactions the slug of the transaction is transformed into an
+        <a> elem, here we test that the <a redirect to an actual change form
+        :return:
+        """
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
+                                   data={'client_id': self.client1.pk},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        data = response.json()
+        a_elem = pq(data['data'][0]['slug'])
+        doc_type = data['data'][0]['doc_type']
+        url = a_elem.attr('href')
+        response = self.client.get(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        instance = response.context['original']
+        self.assertEqual(instance.slug, a_elem.text())
+        self.assertEqual(instance.doc_type, doc_type)
+
 
     def test_report_list(self):
         url = Client.get_report_list_url()
@@ -323,7 +358,7 @@ class TestAdmin(BaseTestData, TestCase):
             'title': 'test client %s' % now(),
         })
         url = reverse('admin:reporting_tests_client_delete', args=(inst.pk,))
-        self.client.post(url, data={'post':'yes'})
+        self.client.post(url, data={'post': 'yes'})
 
         response = self.client.get(reverse('ra_admin:activity_myactivity_changelist'))
         self.assertEqual(response.status_code, 200)
@@ -332,7 +367,6 @@ class TestAdmin(BaseTestData, TestCase):
         self.client.login(username='super', password='secret')
         response = self.client.get(reverse('ra_admin:admin_logentry_changelist'))
         self.assertEqual(response.status_code, 200)
-
 
     def test_login(self):
         response = self.client.get(reverse('ra_admin:login'))

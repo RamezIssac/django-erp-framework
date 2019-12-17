@@ -68,7 +68,7 @@ class RaAdminSiteBase(AdminSite):
     reports_menu_template = None
 
     def get_urls(self):
-        from ra.utils.views import access_denied, autocomplete
+        from ra.utils.views import access_denied
         def wrap(view, cacheable=False):
             def wrapper(*args, **kwargs):
                 return self.admin_view(view, cacheable)(*args, **kwargs)
@@ -97,30 +97,6 @@ class RaAdminSiteBase(AdminSite):
             # new from sites
             path('top-search/', TopSearchView.as_view(), name='top-search'),
             path('access-denied/', access_denied, name='access-denied'),
-
-            # Auto complete
-            url(r'^autocomplete/(?P<model>[\w]+)/$', cache_page(CACHE_DURATION)(autocomplete)),
-            url(r'^autocomplete/(?P<model>[\w]+)/all/$', cache_page(CACHE_DURATION)(autocomplete),
-                kwargs={'all': True}),
-            url(r'^autocomplete/$', cache_page(CACHE_DURATION)(autocomplete), kwargs={'model': None},
-                name='autocomplete'),
-
-            url(r'^autocomplete/(?P<model>[\w]+)/(?P<para1>[\w-]+)/$',
-                cache_page(CACHE_DURATION)(autocomplete), kwargs={'exact': False}),
-            url(r'^autocomplete/(?P<model>[\w]+)/(?P<para1>[\w-]+)/exact/$', autocomplete, {'exact': True}),
-
-            url(r'^autocomplete/(?P<model>[\w]+)/(?P<para1>[\w-]+)/exact/(?P<para2>[\w-]+)/$', autocomplete,
-                {'exact': True}),
-            url(r'^autocomplete/(?P<model>[\w]+)/(?P<para1>[\w-]+)/(?P<para2>[\w-]+)/$',
-                cache_page(CACHE_DURATION)(autocomplete), {'exact': False}),
-
-            url(
-                r'^autocomplete/(?P<model>[\w]+)/(?P<para1>[\w-]+)/exact/(?P<para2>[\w-]+)/(?P<para3>[\w-]+)/$',
-                autocomplete,
-                {'exact': True}),
-            url(r'^autocomplete/(?P<model>[\w]+)/(?P<para1>[\w-]+)/(?P<para2>[\w-]+)/(?P<para3>[\w-]+)/$',
-                cache_page(CACHE_DURATION)(autocomplete), {'exact': False}),
-
         ]
 
         return urls + help_center + ct_checks + settings_update + urlpatterns
