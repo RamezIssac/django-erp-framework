@@ -235,12 +235,12 @@ class TestAdmin(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_delete_post(self):
-        def test_delete_view(self):
-            self.client.login(username='super', password='secret')
-            url = reverse('admin:reporting_tests_client_delete', args=(self.client2.pk,))
-            response = self.client.post(url)
-            self.assertEqual(response.status_code, 200)
-            self.assertFalse(Client.objects.filter(pk=self.client2.pk).exists())
+        self.client.login(username='super', password='secret')
+        url = reverse('admin:reporting_tests_client_delete', args=(self.client2.pk,))
+        response = self.client.post(url, data={'post': 'yes'})
+        self.assertEqual(response.status_code, 302)
+        # import pdb; pdb.set_trace()
+        self.assertFalse(Client.objects.filter(pk=self.client2.pk).exists())
 
     def test_history_view(self):
         self.client.login(username='super', password='secret')
@@ -310,7 +310,29 @@ class TestAdmin(BaseTestData, TestCase):
         self.client.login(username='super', password='secret')
         response = self.client.get(reverse('ra_admin:app_list', args=('reporting_tests',)))
         self.assertEqual(response.status_code, 200)
-        # self.assertTrue(Client.objects.filter(slug=123).exists())
+
+    def test_my_activity(self):
+        self.client.login(username='super', password='secret')
+        self.client.post(reverse('ra_admin:reporting_tests_client_add'), data={
+            'slug': 123,
+            'title': 'test client %s' % now(),
+        })
+        inst = Client.objects.get(slug='123')
+        response = self.client.post(reverse('ra_admin:reporting_tests_client_change', args=(inst.pk,)), data={
+            'slug': 1232,
+            'title': 'test client %s' % now(),
+        })
+        url = reverse('admin:reporting_tests_client_delete', args=(inst.pk,))
+        self.client.post(url, data={'post':'yes'})
+
+        response = self.client.get(reverse('ra_admin:activity_myactivity_changelist'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_logentry(self):
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:admin_logentry_changelist'))
+        self.assertEqual(response.status_code, 200)
+
 
     def test_login(self):
         response = self.client.get(reverse('ra_admin:login'))
@@ -336,6 +358,10 @@ class TestAdmin(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 403, response)
 
     def test_report_access_limited_user_direct(self):
+        """
+        Test the access of a non authorized user
+        :return:
+        """
         self.assertTrue(self.client.login(username='limited', password='password'))
         response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')))
         self.assertEqual(response.status_code, 302, response)

@@ -500,18 +500,6 @@ class ReportView(UserPassesTestMixin, FormView):
             return HttpResponseRedirect(reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name())))
 
     @classmethod
-    def get_page_title(cls):
-        """
-        :return: the page tile
-        """
-        if cls.page_title:
-            title = cls.page_title
-        else:
-            title = cls.get_report_title()
-            title = title or '%s %s' % (cls.base_model._meta.verbose_name_plural, ugettext_lazy('reports'))
-        return capfirst(title)
-
-    @classmethod
     def get_report_title(cls):
         """
         :return: The report title

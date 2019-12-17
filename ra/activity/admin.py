@@ -16,7 +16,7 @@ from ra.activity.models import MyActivity
 from ra.base import app_settings
 from ra.base.helpers import RaPermissionWidgetExclude
 
-from ra.admin.admin import ra_admin_site
+from ra.admin.admin import ra_admin_site, RaThemeMixin
 
 action_names = {
     ADDITION: 'Addition',
@@ -153,10 +153,7 @@ class RAContentTypeFilter(admin.SimpleListFilter):
         # return tuple((u.id, u.username) for u in User.objects.filter(is_staff=True))
 
 
-class LogEntryAdmin(admin.ModelAdmin):
-    change_list_template = 'ra/admin/logentry_change_list.html'
-    # change_list_template = 'ra/admin/change_list.html'
-
+class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
     date_hierarchy = 'action_time'
     actions = None
     list_display_links = None
@@ -219,7 +216,7 @@ class LogEntryAdmin(admin.ModelAdmin):
             link = u'<a href="%s">%s</a>' % (href, repr_)
         except NoReverseMatch:
             link = repr_
-        return link if obj.action_flag != DELETION else repr_
+        return mark_safe(link) if obj.action_flag != DELETION else repr_
 
     object_link.allow_tags = True
     object_link.admin_order_field = 'object_repr'
@@ -231,13 +228,6 @@ class LogEntryAdmin(admin.ModelAdmin):
         if not request.user.is_superuser:
             queryset = queryset.filter(user__id=request.user.pk)
         return queryset
-
-    # def queryset(self, request):
-    #     queryset= super(LogEntryAdmin, self).queryset(request) \
-    #         .prefetch_related('content_type')
-    #     if not request.user.is_superuser:
-    #         queryset = queryset.filter(user__id=request.user.pk)
-    #     return queryset
 
     def get_list_filter(self, request):
         filters = super(LogEntryAdmin, self).get_list_filter(request)
@@ -262,8 +252,11 @@ class LogEntryAdmin(admin.ModelAdmin):
 
     def review(self, obj):
         if obj.action_flag == 2:
-            url = reverse('%s:%s_%s_history' % (app_settings.RA_ADMIN_SITE_NAME, obj.content_type.app_label,
-                                                obj.content_type.model), args=(obj.object_id,))
+            try:
+                url = reverse('%s:%s_%s_history' % (app_settings.RA_ADMIN_SITE_NAME, obj.content_type.app_label,
+                                                    obj.content_type.model), args=(obj.object_id,))
+            except NoReverseMatch:
+                url = ''
             link = """<a href="%s" class="legitRipple" data-popup="tooltip" title="%s">
                 <i class="fas fa-history text-indigo-800"></i>
                 <span class="legitRipple-ripple"></span></a>""" % (url, _('History'))
@@ -288,6 +281,12 @@ class LogEntryAdmin(admin.ModelAdmin):
 
 
 class MyActivityAdmin(LogEntryAdmin):
+    list_filter = [
+
+        ActionFilter,
+        RAContentTypeFilter,
+    ]
+
     def get_queryset(self, request):
         qs = super(MyActivityAdmin, self).get_queryset(request)
         qs = qs.filter(user_id=request.user.pk)
