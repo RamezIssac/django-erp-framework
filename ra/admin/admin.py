@@ -2,27 +2,27 @@ from __future__ import unicode_literals
 
 import logging
 from functools import update_wrapper
-from urllib.parse import urlencode
 
-import simplejson as json
 from crequest.middleware import CrequestMiddleware
-from django import forms
 from django.contrib import admin
+from django.contrib.admin import helpers
 from django.contrib.admin.exceptions import DisallowedModelAdminToField
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR, get_content_type_for_model
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
-from django.contrib.admin.utils import (quote, unquote, )
-from django.contrib.admin.widgets import AdminTextareaWidget, AdminSplitDateTime
+from django.contrib.admin.utils import (quote, unquote, flatten_fieldsets)
+from django.contrib.admin.widgets import AdminTextareaWidget
 from django.contrib.auth import get_permission_codename
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.db import models
-from django.db.models import DateTimeField, DecimalField, ForeignKey, TextField
+from django.db.models import DecimalField, ForeignKey, TextField
 from django.db.models.base import ModelBase
+from django.dispatch import Signal
+from django.forms import all_valid
 from django.forms.widgets import TextInput, NumberInput
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404
 from django.template.defaultfilters import capfirst
 from django.template.response import TemplateResponse
 from django.urls import reverse, path
@@ -38,10 +38,10 @@ from tabular_permissions.admin import UserTabularPermissionsMixin, GroupTabularP
 
 from ra.admin.forms import RaUserChangeForm
 from ra.reporting.printing import HTMLPrintingClass
-from ra.utils.views import get_print_settings, get_typed_reports_for_templates, get_typed_reports_map, \
+from ra.utils.views import get_typed_reports_for_templates, get_typed_reports_map, \
     apply_order_to_typed_reports
 from .base import RaAdminSiteBase
-from ..base import app_settings, loading
+from ..base import app_settings
 from ..base.widgets import RaRelatedFieldWidgetWrapper
 
 csrf_protect_m = method_decorator(csrf_protect)
@@ -58,6 +58,8 @@ default_list_display = ('title', 'slug', 'notes')
 logger = logging.getLogger(__name__)
 
 from django.contrib.admin.views.main import ChangeList
+
+changeform_saved = Signal(providing_args=["instance", "created", 'using'])
 
 
 def get_reports_map(model_name, user, request, order_list=None):
@@ -173,7 +175,6 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
     print_template = None
     no_records_message = _('No Data')
 
-    enable_enter_as_tab = True
     typed_reports_order_list = None
     # new attrs:
     print_settings = {}
@@ -232,23 +233,6 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
 
     get_stats_icon.short_description = _('Stats')
 
-    def _get_context_report_suffix(self):
-        try:
-            return self.model().get_pk_name()
-        except:
-            return self.model.__name__.lower() + '_id'
-
-    def add_view(self, request, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['enable_enter_as_tab'] = self.enable_enter_as_tab
-        # extra_context['ra_tour_template'] = self.add_form_tour_template
-        return super(RaAdmin, self).add_view(request, form_url, extra_context)
-
-    #
-    # def get_typed_reports(self, request, **kwargs):
-    #     return get_reports_map(self.model.get_class_name().lower(), request.user, request,
-    #                            self.typed_reports_order_list)
-
     # Permissions
     def has_view_permission(self, request, obj=None):
         if not self.enable_view_view:
@@ -256,14 +240,6 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         opts = self.opts
         codename = get_permission_codename('view', opts)
         return request.user.has_perm("%s.%s" % (opts.app_label, codename))
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        return super(RaAdmin, self).change_view(request, object_id, form_url, extra_context)
-
-    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
-        context['has_view_permission'] = self.has_view_permission(request, obj)
-        return super(RaAdmin, self).render_change_form(request, context, add, change, form_url, obj)
 
     def view_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
@@ -399,7 +375,6 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
 
         my_urls = [
             path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
-            url(r'^check/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.check_view)),
             url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug)),
         ]
         return my_urls + reversion_urls + urlpatterns
@@ -414,30 +389,6 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
             return HttpResponseRedirect(admin_url)
         else:
             raise Http404
-
-    def check_view(self, request, **kwargs):
-        results = self.model.simple_query(**kwargs)
-        if results:
-            result, query = results
-        else:
-            result, query = None, None
-        if result:
-            query = query[0]
-            admin_url = reverse('admin:%s_%s_change' % (self.model._meta.app_label, self.model._meta.model_name),
-                                args=(query.id,))
-            is_new = False
-        else:
-            admin_url = reverse('%s:%s_%s_add' % (
-                app_settings.RA_ADMIN_SITE_NAME, self.model._meta.app_label, self.model._meta.model_name))
-            admin_url += '?%s' % urlencode(kwargs)
-            is_new = True
-
-        context = {
-            'result': True,
-            'is_new': is_new,
-            'admin_url': admin_url
-        }
-        return HttpResponse(json.dumps(context), content_type="application/json")
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if isinstance(db_field, models.ForeignKey):
@@ -505,115 +456,32 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         """
         pass
 
-    # -------
-    # Printing
-    # -------
-    def get_printing_class(self, request, object_id=None, form_url='', extra_context=None):
-        return self.print_class
-
-    def get_print_sub_title(self, print_theme, request=None, object_id=None, obj=None, **kwargs):
-        return getattr(obj, 'doc_date', '')
-
-    def get_print_title(self, print_theme, request=None, object_id=None, obj=None, **kwargs):
-        if not self.print_title:
-            if self.model:
-                return force_text(u'%s - %s' % (self.model._meta.verbose_name, obj.slug))
-            return u''
-        return force_text(self.print_title)
-
-    def get_print_settings(self, print_theme):
-        # duplicated in MainReportFactory
-        default_print_settings = get_print_settings()
-        default_print_settings['pre_header_template'] = 'ra/tex/formset_pre_table.html'
-
-        print_setting = self.print_settings or {}
-        print_setting = print_setting.get(print_theme, {})
-        default_print_settings.update(print_setting)
-        return default_print_settings.copy()
-
-    def get_print_data(self, request, form, formsets, object_id=None, form_url='', extra_context=None):
+    ###
+    def _changeform_view(self, request, object_id, form_url, extra_context):
         """
-        Return Columns , column_names and data tuple
+        A copy of original django method with 4 tricks
+        1. Calls whole_changeform_validation
+        2. Calls pre_save() before saving
+        3. Calls post_save() after saving
+        4. emits the signal changeform_saved signal
+
         :param request:
         :param object_id:
         :param form_url:
         :param extra_context:
-        :return: (columns, column_names, data, doc_date)
-        """
-
-        formset = None
-        if formsets:
-            formset = formsets[0]
-
-        columns, column_names = self._get_columns_data(formset)
-        data = self._get_data_from_formset(formset, columns, object_id, extra_context)
-        doc_date = self.get_obj_print_date(request, formset)
-        return columns, column_names, data, doc_date
-
-    def _get_columns_data(self, formset, *args, **kwargs):
-        if not formset:
-            return [], []
-        column_names = []
-        columns = []
-        for field_name in formset[0].fields.keys():
-            if field_name != 'DELETE':
-                if not formset[0].fields[field_name].widget.is_hidden:
-                    columns.append(field_name)
-                    column_names.append(force_text(formset[0].fields[field_name].label))
-        return columns, column_names
-
-    def _get_data_from_formset(self, formset, columns, object_id, extra_context):
-        BaseInfo = loading.get_baseinfo_model()
-        BaseMovementInfo = loading.get_basemovementinfo_model()
-        data = []
-        if formset:
-            for form in formset.queryset:
-                data_line = {}
-                for field_name in columns:
-                    try:
-                        field = form.__getattribute__(field_name)
-                    except:
-                        field = ''
-
-                    mro = type(field).__mro__
-                    # info = ''
-
-                    if BaseInfo in mro:
-                        info = field.title
-                    elif BaseMovementInfo in mro:
-                        info = field.slug
-                    else:
-                        info = field
-
-                    data_line[field_name] = info
-                data.append(data_line)
-        return data
-
-    def get_obj_print_date(self, request, formset, object_id=None, form_url='', extra_context=None):
-        if formset:
-            return formset.instance.doc_date
-        return now()
-
-    def get_print_template(self, request, print_theme=None, **kwargs):
-        """
-        Return the print template
-        :param request:
-        :param print_theme: if any
-        :param kwargs:
         :return:
         """
-        return self.print_template
-
-    def print_document(self, request, object_id=None, form_url='', extra_context=None):
-
         to_field = request.POST.get(TO_FIELD_VAR, request.GET.get(TO_FIELD_VAR))
         if to_field and not self.to_field_allowed(request, to_field):
             raise DisallowedModelAdminToField("The field %s cannot be referenced." % to_field)
 
-        download = request.GET.get('download', False)
-        add = object_id is None
         model = self.model
         opts = model._meta
+
+        if request.method == 'POST' and '_saveasnew' in request.POST:
+            object_id = None
+
+        add = object_id is None
 
         if add:
             if not self.has_add_permission(request):
@@ -623,49 +491,95 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         else:
             obj = self.get_object(request, unquote(object_id), to_field)
 
-            if not self.has_change_permission(request, obj):
+            if not self.has_view_or_change_permission(request, obj):
                 raise PermissionDenied
 
             if obj is None:
-                raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {
-                    'name': force_text(opts.verbose_name), 'key': escape(object_id)})
+                return self._get_obj_does_not_exist_redirect(request, opts, object_id)
 
-        ModelForm = self.get_form(request, obj)
-        if add:
-            initial = self.get_changeform_initial_data(request)
-            form = ModelForm(initial=initial)
-            formsets, inline_instances = self._create_formsets(request, self.model(), change=False)
+        ModelForm = self.get_form(request, obj, change=not add)
+        if request.method == 'POST':
+            form = ModelForm(request.POST, request.FILES, instance=obj)
+            form_validated = form.is_valid()
+            if form_validated:
+                new_object = self.save_form(request, form, change=not add)
+            else:
+                new_object = form.instance
+            formsets, inline_instances = self._create_formsets(request, new_object, change=not add)
+            if all_valid(formsets) and form_validated and self.whole_changeform_validation(request, form, formsets,
+                                                                                           not add):
+                self.pre_save(form, formsets, change=not add)
+                self.save_model(request, new_object, form, not add)
+                self.save_related(request, form, formsets, not add)
+                self.post_save(request, new_object, form, formsets, not add)
+                changeform_saved.send(self.model, instance=new_object, created=add)
+
+                change_message = self.construct_change_message(request, form, formsets, add)
+                if add:
+                    self.log_addition(request, new_object, change_message)
+                    return self.response_add(request, new_object)
+                else:
+                    self.log_change(request, new_object, change_message)
+                    return self.response_change(request, new_object)
+            else:
+                form_validated = False
         else:
-            form = ModelForm(instance=obj)
-            formsets, inline_instances = self._create_formsets(request, obj, change=True)
-        extra_context['obj'] = obj
-        print_theme = request.GET.get('print_theme', 'default')
-        extra_context['theme'] = print_theme
-        columns, column_names, data, doc_date = self.get_print_data(request, form, formsets, object_id, form_url,
-                                                                    extra_context)
-        print_settings = self.get_print_settings(print_theme)
-        response = {
-            'is_group': True,
-            'columns': columns,
-            'column_names': column_names,
-            'data': data,
-            'report_title': self.get_print_title(print_theme, request, object_id, obj),
-            'report_sub_title': self.get_print_sub_title(print_theme, request, object_id, obj),
-            'form_settings': {
-                'doc_date': doc_date,
-            },
-            'print_settings': print_settings,
+            if add:
+                initial = self.get_changeform_initial_data(request)
+                form = ModelForm(initial=initial)
+                formsets, inline_instances = self._create_formsets(request, form.instance, change=False)
+            else:
+                form = ModelForm(instance=obj)
+                formsets, inline_instances = self._create_formsets(request, obj, change=True)
+
+        if not add and not self.has_change_permission(request, obj):
+            readonly_fields = flatten_fieldsets(self.get_fieldsets(request, obj))
+        else:
+            readonly_fields = self.get_readonly_fields(request, obj)
+        adminForm = helpers.AdminForm(
+            form,
+            list(self.get_fieldsets(request, obj)),
+            # Clear prepopulated fields on a view-only form to avoid a crash.
+            self.get_prepopulated_fields(request, obj) if add or self.has_change_permission(request, obj) else {},
+            readonly_fields,
+            model_admin=self)
+        media = self.media + adminForm.media
+
+        inline_formsets = self.get_inline_formsets(request, formsets, inline_instances, obj)
+        for inline_formset in inline_formsets:
+            media = media + inline_formset.media
+
+        if add:
+            title = _('Add %s')
+        elif self.has_change_permission(request, obj):
+            title = _('Change %s')
+        else:
+            title = _('View %s')
+        context = {
+            **self.admin_site.each_context(request),
+            'title': title % opts.verbose_name,
+            'adminform': adminForm,
+            'object_id': object_id,
+            'original': obj,
+            'is_popup': IS_POPUP_VAR in request.POST or IS_POPUP_VAR in request.GET,
+            'to_field': to_field,
+            'media': media,
+            'inline_admin_formsets': inline_formsets,
+            'errors': helpers.AdminErrorList(form, formsets),
+            'preserved_filters': self.get_preserved_filters(request),
         }
 
-        if formsets:
-            extra_context['formset'] = formsets[0]
-            extra_context['formsets'] = formsets
-        extra_context['form'] = form
-        print_klass = self.get_printing_class(request, object_id, form_url, extra_context)
-        print_class = print_klass(request, form_settings=response['form_settings'], response=response,
-                                  print_settings=print_settings)
+        # Hide the "Save" and "Save and continue" buttons if "Save as New" was
+        # previously chosen to prevent the interface from getting confusing.
+        if request.method == 'POST' and not form_validated and "_saveasnew" in request.POST:
+            context['show_save'] = False
+            context['show_save_and_continue'] = False
+            # Use the change template instead of the add template.
+            add = False
 
-        return print_class.get_response(template_name=self.get_print_template(request, print_theme))
+        context.update(extra_context or {})
+
+        return self.render_change_form(request, context, add=add, change=not add, obj=obj, form_url=form_url)
 
     def get_actions(self, request):
         actions = super(RaAdmin, self).get_actions(request)

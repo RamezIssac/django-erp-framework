@@ -6,20 +6,17 @@ from functools import update_wrapper
 from django.apps import apps
 from django.conf.urls import url, include
 from django.contrib.admin import AdminSite
-from django.core.exceptions import ObjectDoesNotExist, FieldError
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils.module_loading import import_string
 from django.utils.translation import ugettext_lazy as _
-from django.views.decorators.cache import cache_page
 
 from ra.admin.helpers import get_each_context
 from ra.base import app_settings
 from ra.base.helpers import get_from_list
 from ra.top_search.views import TopSearchView
-from .forms import CtCheckForm, CtReverseCheckForm
 
 logger = logging.getLogger(__name__)
 CACHE_DURATION = 0
@@ -85,12 +82,6 @@ class RaAdminSiteBase(AdminSite):
             url(r'^sw.js$', self.service_worker_view, name='service-worker'),
         ]
 
-        ct_checks = [
-            url("^check/$", wrap(self.ct_check_view),
-                name='ct_check'),
-            url("^check-reverse/$", wrap(self.ct_reverse_check_view),
-                name='ct_reverse_check'),
-        ]
         urlpatterns = [
             url(r'^reports/(?P<base_model>[\w-]+)/$', get_report_list_class, name='report_list'),
             url(r'^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$', get_report_view, name='report'),
@@ -99,7 +90,7 @@ class RaAdminSiteBase(AdminSite):
             path('access-denied/', access_denied, name='access-denied'),
         ]
 
-        return urls + help_center + ct_checks + settings_update + urlpatterns
+        return urls + help_center + settings_update + urlpatterns
 
     def service_worker_view(self, request):
 
@@ -132,52 +123,6 @@ class RaAdminSiteBase(AdminSite):
             "background_color": "#fff",
         }
         return JsonResponse(json, status=200)
-
-    def ct_check_view(self, request, extra_context=None, **kwargs):
-        """
-        Sent content_type_id and an object slug;
-        it return the object id if exists
-
-        :return: JsonResponse
-        """
-        response = {}
-        form = CtCheckForm(request.GET)
-        if form.is_valid():
-            ct = form.cleaned_data['content_type']
-            model = ct.model_class()
-            try:
-                inst = model.objects.get(slug=form.cleaned_data['object_slug'])
-                response['result'] = 'OK'
-                response['object_id'] = inst.pk
-            except ObjectDoesNotExist:
-                response['result'] = 'FAIL'
-            except FieldError:
-                response['result'] = 'FAIL'
-        return JsonResponse(response, status=200)
-
-    def ct_reverse_check_view(self, request, extra_context=None, **kwargs):
-        """
-            Sent content_type_id and an object id;
-            it return the object slug if exists.
-
-            :return: JsonResponse
-            """
-        response = {}
-        form = CtReverseCheckForm(request.GET)
-        if form.is_valid():
-            ct = form.cleaned_data['content_type']
-            model = ct.model_class()
-            try:
-                inst = model.objects.get(pk=form.cleaned_data['object_id'])
-                response['result'] = 'OK'
-                response['object_slug'] = inst.slug
-            except ObjectDoesNotExist:
-                response['result'] = 'FAIL'
-            except FieldError:
-                response['result'] = 'FAIL'
-        else:
-            response = form.errors
-        return JsonResponse(response, status=200)
 
     def __init__(self, name='admin'):
         super(RaAdminSiteBase, self).__init__(name)
