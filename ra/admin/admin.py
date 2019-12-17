@@ -42,8 +42,7 @@ from ra.utils.views import get_print_settings, get_typed_reports_for_templates, 
     apply_order_to_typed_reports
 from .base import RaAdminSiteBase
 from ..base import app_settings, loading
-from ..base.widgets import AdminSplitDateTimeNoBr, RaBootstrapForeignKeyWidget, \
-    RaRelatedFieldWidgetWrapper
+from ..base.widgets import RaRelatedFieldWidgetWrapper
 
 csrf_protect_m = method_decorator(csrf_protect)
 
@@ -244,6 +243,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         extra_context['enable_enter_as_tab'] = self.enable_enter_as_tab
         # extra_context['ra_tour_template'] = self.add_form_tour_template
         return super(RaAdmin, self).add_view(request, form_url, extra_context)
+
     #
     # def get_typed_reports(self, request, **kwargs):
     #     return get_reports_map(self.model.get_class_name().lower(), request.user, request,
@@ -855,8 +855,6 @@ class RaGenericTabularInline(GenericTabularInline):
     formfield_overrides = {
         TextField: {'widget': TextInput},
         DecimalField: {'widget': NumberInput},
-        ForeignKey: {'widget': RaBootstrapForeignKeyWidget},
-
     }
     view_on_site = False
 

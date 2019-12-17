@@ -269,13 +269,19 @@ class BaseInfo(RAModel):
 
     @classmethod
     def get_report_list_url(cls):
-        try:
-            return reverse('%s:report_list' % app_settings.RA_ADMIN_SITE_NAME, args=(cls.get_class_name().lower(),))
-        except NoReverseMatch:
-            return False
+        """
+        Return the url for the report list for this model
+        :return: a string url
+        """
+
+        return reverse('%s:report_list' % app_settings.RA_ADMIN_SITE_NAME, args=(cls.get_class_name().lower(),))
 
     @classmethod
     def get_redirect_url_prefix(cls):
+        """
+        Get the url for the change list of this model
+        :return: a string url
+        """
         return reverse('%s:%s_%s_changelist' % (
             app_settings.RA_ADMIN_SITE_NAME, cls._meta.app_label, cls.get_class_name().lower()))
 
@@ -366,16 +372,10 @@ class BaseMovementInfo(DiffingMixin, models.Model):
 
         return None, None
 
-    @classmethod
-    def get_typed_reports(cls):
-        return []
-
     def __init__(self, *args, **kwargs):
         super(BaseMovementInfo, self).__init__(*args, **kwargs)
         self.send_report_attention_event = True
         self.children = None
-        self.items_model = None
-        self.main_itemset = None
         self.reporting_models = []
 
     def __str__(self):
@@ -402,10 +402,18 @@ class BaseMovementInfo(DiffingMixin, models.Model):
     class Meta:
         abstract = True
 
-    def get_changed_columns(self):
-        return self.changed_columns()
-
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        """
+        Custom save, it assign the user  As owner and the last modifed
+        it sets the doc_type
+        make sure that dlc_date has correct timezone ?!
+        :param force_insert:
+        :param force_update:
+        :param using:
+        :param update_fields:
+        :return:
+        """
+
         from ra.base.helpers import get_next_serial
         request = CrequestMiddleware.get_request()
         self.doc_type = self.get_doc_type()
@@ -433,19 +441,19 @@ class BaseMovementInfo(DiffingMixin, models.Model):
                 self.doc_date = pytz.utc.localize(self.doc_date)
 
         super(BaseMovementInfo, self).save(force_insert, force_update, using, update_fields)
-
-    @classmethod
-    def get_doc_type_verbose_name(cls, doc_type):
-        """
-        Return the doc_type verbose name , Must be implemented when needed by children
-        @param doc_type: the doc_type field value
-        @return: the description of the doc_type
-        Example: In: get_doc_type_verbose_name('1')
-                Out: Purchase
-        """
-        # Example :
-        # if doc_type == '1': return _('purchase')
-        raise NotImplemented()
+    #
+    # @classmethod
+    # def get_doc_type_verbose_name(cls, doc_type):
+    #     """
+    #     Return the doc_type verbose name , Must be implemented when needed by children
+    #     @param doc_type: the doc_type field value
+    #     @return: the description of the doc_type
+    #     Example: In: get_doc_type_verbose_name('1')
+    #             Out: Purchase
+    #     """
+    #     # Example :
+    #     # if doc_type == '1': return _('purchase')
+    #     raise NotImplemented()
 
     def get_absolute_url(self):
         doc_types = registry.get_doc_type_settings()

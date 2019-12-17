@@ -172,6 +172,11 @@ def get_ra_relevant_content_types():
 
 
 def get_next_serial(model):
+    """
+    Get the next serial to put in the slug based on the maximum slug found + 1
+    :param model: the model to get the next serial for
+    :return: a string
+    """
     try:
         doc_type = model.get_doc_type()
     except:
@@ -202,6 +207,7 @@ def get_next_serial(model):
             max_slug = '1'
         return max_slug
     except Exception as e:
+        raise e
         logger.error(e)
         return repr(time.time()).replace('.', '')
 
