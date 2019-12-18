@@ -28,8 +28,8 @@
     <link rel="stylesheet" href="{% static 'adminlte/css/adminlte.min.css' %}">
 
     <link rel="stylesheet" href="{% static 'adminlte/plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-{#    <!-- Daterange picker -->#}
-{#    <link rel="stylesheet" href="{% static 'adminlte/plugins/daterangepicker/daterangepicker.css' %}">#}
+    {#    <!-- Daterange picker -->#}
+    {#    <link rel="stylesheet" href="{% static 'adminlte/plugins/daterangepicker/daterangepicker.css' %}">#}
 
     <link href="{{ STATIC_URL }}ra/css/animate.min.css" rel="stylesheet"
           type="text/css">
@@ -39,7 +39,7 @@
           href="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/css/dataTables.bootstrap4.css"/>
     <link rel="stylesheet" href="{% static "adminlte/plugins/select2/css/select2.min.css" %}">
     <link rel="stylesheet" href="{% static "adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css" %}">
-{#    <link rel="stylesheet" href="{% static 'adminlte/plugins/daterangepicker/daterangepicker.css' %}">#}
+    {#    <link rel="stylesheet" href="{% static 'adminlte/plugins/daterangepicker/daterangepicker.css' %}">#}
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     {% block blockbots %}
@@ -81,23 +81,38 @@
 
     </style>
 
-<style>
-    .sidebar-dark-primary{
-        background-color: #263238;
-    }
-    .table thead{
-        background-color: #f8f8f8;
-    }
-    .go-to-change-form {
-        float: right;
-    }
-    .groupChartControllers {
-        text-align: center;
-    }
-    .object-tools {
-        float: right;
-    }
-</style>
+    <style>
+        .sidebar-dark-primary {
+            background-color: #263238;
+        }
+
+        .table thead {
+            background-color: #f8f8f8;
+        }
+
+        .go-to-change-form {
+            float: right;
+        }
+
+        .groupChartControllers {
+            text-align: center;
+        }
+
+        .object-tools {
+            float: right;
+        }
+
+        .nav-charts {
+            display: inline-block;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-charts li {
+            float: left;
+            padding: 2px 5px;
+        }
+    </style>
 </head>
 <body class="hold-transition sidebar-mini {% if is_popup %}popup {% endif %} {% block bodyclass %}  {% endblock %} {% block bodyclass_sidebar_collapse %}sidebar-collapse {% endblock %}"
       data-admin-utc-offset="{% now "Z" %}">

@@ -189,8 +189,8 @@
         var chartList = data['chart_settings'];
         var report_slug = data['report_slug'];
         if (chartList.length != 0) {
-            $container.append('<div class="groupChartControllers">' + $.ra.defaults.messages.availableCharts +
-                ': <ul class="nav reports"></ul></div>');
+            $container.append('<div class="groupChartControllers">' +
+                '<ul class="nav nav-charts"></ul></div>');
         }
         var ul = $container.find('ul');
         for (var i = 0; i < chartList.length; i++) {
@@ -198,10 +198,10 @@
             var chart = chartList[i];
             if (chart.disabled) continue;
             var chart_type = chart.type;
-            if (chart_type == 'pie') icon = '<i class="fas fa-pie-chart"></i>';
-            else if (chart_type == 'line') icon = '<i class="fas fa-line-chart"></i>';
-            else if (chart_type == 'area') icon = '<i class="icon-chart"></i>';
-            else icon = '<i class="fa fas-bar-chart"></i>';
+            if (chart_type == 'pie') icon = '<i class="fas fa-chart-pie"></i>';
+            else if (chart_type == 'line') icon = '<i class="fas fa-chart-line"></i>';
+            else if (chart_type == 'area') icon = '<i class="fas fa-chart-area"></i>';
+            else icon = '<i class="fas fa-chart-bar"></i>';
 
             ul.append('<li class="nav-link"><a href class="' + a_class + '" data-chart-id="' + chart.id + '" ' +
                 'data-report-slug="' + report_slug + '">' + icon + ' ' + capfirst(chart.title) + '</a></li>')
