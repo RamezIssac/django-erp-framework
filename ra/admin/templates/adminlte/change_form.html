@@ -39,44 +39,52 @@
 {% block content %}
     <div id="content-main">
         {% block object-tools %}
-            {% if change %}{% if not is_popup %}
-                <ul class="object-tools">
-                    {% block object-tools-items %}
-                        {% change_form_object_tools %}
-                    {% endblock %}
-                </ul>
-            {% endif %}{% endif %}
+            <div class="row">
+                <div class="col-sm">
+                    <div class="btn-group">
+
+                        {% if change %}{% if not is_popup %}
+
+                                {% block object-tools-items %}
+                                    {% ra_change_form_object_tools %}
+                                {% endblock %}
+
+                        {% endif %}{% endif %}
+                    </div>
+                </div>
+            </div>
         {% endblock %}
         <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post"
-              id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+              id="{{ opts.model_name }}_form" novalidate class="mt-3">{% csrf_token %}{% block form_top %}{% endblock %}
             <div>
                 {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
                 {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
                 <div class="card">
                     {% if save_on_top %}{% block submit_buttons_top %}{% ra_submit_row %}{% endblock %}{% endif %}
-                    {% if errors %}
-                        <p class="errornote">
-                            {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
-                        </p>
-                        {{ adminform.form.non_field_errors }}
-                    {% endif %}
+                    <div class="card-body">
+                        {% if errors %}
+                            <p class="errornote">
+                                {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+                            </p>
+                            {{ adminform.form.non_field_errors }}
+                        {% endif %}
 
-                    {% block field_sets %}
-                        {% for fieldset in adminform %}
-                            {% include  RA_THEME|add:'/includes/fieldset.html' %}
-                        {% endfor %}
-                    {% endblock %}
+                        {% block field_sets %}
+                            {% for fieldset in adminform %}
+                                {% include  RA_THEME|add:'/includes/fieldset.html' %}
+                            {% endfor %}
+                        {% endblock %}
 
-                    {% block after_field_sets %}{% endblock %}
+                        {% block after_field_sets %}{% endblock %}
 
-                    {% block inline_field_sets %}
-                        {% for inline_admin_formset in inline_admin_formsets %}
-                            {% include inline_admin_formset.opts.template %}
-                        {% endfor %}
-                    {% endblock %}
+                        {% block inline_field_sets %}
+                            {% for inline_admin_formset in inline_admin_formsets %}
+                                {% include inline_admin_formset.opts.template %}
+                            {% endfor %}
+                        {% endblock %}
 
-                    {% block after_related_objects %}{% endblock %}
-
+                        {% block after_related_objects %}{% endblock %}
+                    </div>
                     {% block submit_buttons_bottom %}{% ra_submit_row %}{% endblock %}
                 </div>
 

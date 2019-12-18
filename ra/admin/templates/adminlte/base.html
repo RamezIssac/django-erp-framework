@@ -79,8 +79,17 @@
             margin-top: 1em;
         }
     </style>
+
+<style>
+    .sidebar-dark-primary{
+        background-color: #263238;
+    }
+    .table thead{
+        background-color: #f8f8f8;
+    }
+</style>
 </head>
-<body class="hold-transition sidebar-mini {% if is_popup %}popup {% endif %}{% block bodyclass %} {% endblock %} {% block bodyclass_sidebar_collapse %}sidebar-collapse {% endblock %}"
+<body class="hold-transition sidebar-mini {% if is_popup %}popup {% endif %} {% block bodyclass %}  {% endblock %} {% block bodyclass_sidebar_collapse %}sidebar-collapse {% endblock %}"
       data-admin-utc-offset="{% now "Z" %}">
 {% block wrapper %}
     <div class="wrapper">
@@ -152,14 +161,14 @@
                                  alt="Logo"
                                  class="brand-image img-circle elevation-3"
                                  style="opacity: .8">
-                            <span class="brand-text font-weight-light">Ra</span>
+                            <span class="brand-text font-weight-light">Ra framework</span>
                         </a>
 
                         <!-- Sidebar -->
                         <div class="sidebar">
                             <nav class="mt-2">
 
-                                <ul class="nav nav-pills nav-sidebar flex-column nav-collapse-hide-child nav-flat nav-legacy"
+                                <ul class="nav nav-pills nav-sidebar flex-column nav-collapse-hide-child nav-flat text-sm"
                                     data-widget="treeview" role="menu"
                                     data-accordion="false">
                                     <!-- Add icons to the links using the .nav-icon class
@@ -178,7 +187,7 @@
             {% endblock %}
         {% endif %}
         <!-- Content Wrapper. Contains page content -->
-        <div class="content-wrapper">
+        <div class="content-wrapper text-sm">
             <!-- Content Header (Page header) -->
             <section class="content-header">
                 <div class="container-fluid">

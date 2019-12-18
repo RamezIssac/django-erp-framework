@@ -45,11 +45,17 @@
 
 {% block content %}
     <div id="content-main">
+
         {% block object-tools %}
-            <div class="btn-group">
-                {% block object-tools-items %}
-                    {% ra_change_list_object_tools %}
-                {% endblock %}
+            <div class="row">
+                <div class="col-sm">
+                    <div class="btn-group">
+                        {% block object-tools-items %}
+                            {% ra_change_list_object_tools %}
+                        {% endblock %}
+
+                    </div>
+                </div>
             </div>
         {% endblock %}
         {% if cl.formset and cl.formset.errors %}
@@ -65,7 +71,7 @@
                 {% if cl.has_filters %}
                     <div class="filters-section">
                         <div class="row">
-                        <h6>{% trans 'Filters' %}</h6>
+                            <h6>{% trans 'Filters' %}</h6>
                             {% for spec in cl.filter_specs %}{% ra_admin_list_filter cl spec %}{% endfor %}
 
                         </div>

@@ -90,6 +90,17 @@ def change_list_object_tools_tag(parser, token):
         template_name=f'{app_settings.RA_THEME}/change_list_object_tools.html',
     )
 
+
+@register.tag(name='ra_change_form_object_tools')
+def change_form_object_tools_tag(parser, token):
+    """Display the row of change form object tools."""
+    return InclusionAdminNode(
+        parser, token,
+        func=lambda context: context,
+        template_name=f'{app_settings.RA_THEME}/change_form_object_tools.html',
+    )
+
+
 @register.simple_tag
 def ra_admin_list_filter(cl, spec):
     tpl = get_template(f'{app_settings.RA_THEME}/filter.html')

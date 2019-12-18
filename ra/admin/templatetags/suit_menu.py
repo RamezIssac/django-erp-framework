@@ -23,6 +23,7 @@ def default_config():
         'MENU_ICONS': {
             'auth': 'fas fa-lock',
             'sites': 'icon-leaf',
+            'activity': 'fas fa-heartbeat',
         },
         'MENU_LABELS': {
             'auth': 'Permission'
