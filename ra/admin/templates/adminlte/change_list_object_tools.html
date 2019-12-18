@@ -3,13 +3,13 @@
 {% block object-tools-items %}
     {% if has_add_permission %}
         {% url cl.opts|admin_urlname:'add' as add_url %}
-        <a href="{% add_preserved_filters add_url is_popup to_field %}" class=" ml-2">
+        <a href="{% add_preserved_filters add_url is_popup to_field %}" class=" btn btn-outline-primary btn-flat ml-2">
             <i class="fas fa-plus-circle"></i>
             {% blocktrans with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktrans %}
         </a>
     {% endif %}
     {% if not is_popup and has_add_permission and has_change_permission %}
-        <a href="{% url opts|admin_urlname:'recoverlist' %}" class="ml-2 ">
+        <a href="{% url opts|admin_urlname:'recoverlist' %}" class="btn btn-outline-primary btn-flat ml-2 ">
             <i class="fas fa-undo-alt"></i>
             {% blocktrans with cl.opts.verbose_name_plural|escape as name %}Recover deleted {{ name }}{% endblocktrans %}
         </a>

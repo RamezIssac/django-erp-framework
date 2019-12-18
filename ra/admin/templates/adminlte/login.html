@@ -7,7 +7,7 @@
     {{ form.media }}
 {% endblock %}
 
-{% block bodyclass %}{{ block.super }} login login-page{% endblock %}
+{% block bodyclass %}{{ block.super }} hold-transition login-page {% endblock %}
 
 {% block usertools %}{% endblock %}
 
@@ -20,6 +20,20 @@
 
 
 {% block wrapper %}
+    <style>
+        .invalid-feedback {
+            display: initial;
+        }
+
+        .errorlist {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+     .errornote{
+         text-align: center;
+     }
+    </style>
 
     <div class="login-box">
         <div class="login-logo">
@@ -55,21 +69,25 @@
                 <form action="{{ app_path }}" method="post">
                     {% csrf_token %}
                     <div class="input-group mb-3">
-                        {{ form.username.errors }}
                         <input class="form-control" placeholder="{% trans 'Username' %}" name="username">
                         <div class="input-group-append">
                             <div class="input-group-text">
                                 <span class="fas fa-user"></span>
                             </div>
                         </div>
+                        <div class="invalid-feedback">{{ form.username.errors }}
+                        </div>
                     </div>
                     <div class="input-group mb-3">
-                        {{ form.password.errors }}
+                        {#                        {{ form.password.errors }}#}
                         <input type="password" class="form-control" placeholder="Password" name="password">
                         <div class="input-group-append">
                             <div class="input-group-text">
                                 <span class="fas fa-lock"></span>
                             </div>
+                        </div>
+                        <div class="invalid-feedback">
+                            {{ form.password.errors }}
                         </div>
                     </div>
                     <div class="row">
@@ -83,7 +101,7 @@
                         </div>
                         <!-- /.col -->
                         <div class="col-4">
-                            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                            <button type="submit" class="btn btn-block btn-outline-primary">{% trans "Sign In" %}</button>
                         </div>
                         <!-- /.col -->
                         {% url 'admin_password_reset' as password_reset_url %}

@@ -9,14 +9,14 @@
 
 {% load i18n %}
 <div class="col-sm">
-<div class="form-group">
-
+<div class="form-group input-group-sm">
+<label>Filter By {{ title|capfirst }}</label>
     <select data-name="{{ field_name }}"
             class="form-control select2 search-filter{% if spec.lookup_val or spec.used_parameters %} active{% endif %}"
             style="">
         {% for choice in choices %}
             {% if forloop.first %}
-                <option value="">{{ title|capfirst }}</option>
+{#                <option value="">{{ title|capfirst }}</option>#}
                 <option value="">---</option>
             {% else %}
                 <option {% if choice.selected %} class="selected"{% endif %}

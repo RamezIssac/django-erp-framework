@@ -190,7 +190,7 @@
         var report_slug = data['report_slug'];
         if (chartList.length != 0) {
             $container.append('<div class="groupChartControllers">' + $.ra.defaults.messages.availableCharts +
-                ': <ul class="list-inline reports"></ul></div>');
+                ': <ul class="nav reports"></ul></div>');
         }
         var ul = $container.find('ul');
         for (var i = 0; i < chartList.length; i++) {
@@ -203,7 +203,7 @@
             else if (chart_type == 'area') icon = '<i class="icon-chart"></i>';
             else icon = '<i class="fa fas-bar-chart"></i>';
 
-            ul.append('<li><a class="' + a_class + '" data-chart-id="' + chart.id + '" ' +
+            ul.append('<li class="nav-link"><a href class="' + a_class + '" data-chart-id="' + chart.id + '" ' +
                 'data-report-slug="' + report_slug + '">' + icon + ' ' + capfirst(chart.title) + '</a></li>')
         }
         return $container
