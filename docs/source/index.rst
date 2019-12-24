@@ -25,6 +25,7 @@ Features
    usage/tutorial_4
    usage/tutorial_5
    usage/integrating_into_django
+   usage/faq
 
 
 .. toctree::
