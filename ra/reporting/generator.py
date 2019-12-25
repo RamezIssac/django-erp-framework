@@ -3,7 +3,7 @@ import logging
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import F
 
-import six
+
 from django.utils.translation import ugettext_lazy
 
 from ra.base.cache import get_cached_name, get_cached_slug
@@ -382,10 +382,10 @@ class ReportGenerator(object):
         column_data = u''
         if has_attr_fk2_field and self._fk2_field:
             column_data = obj[self._fk2_field]
-            if six.PY2 and isinstance(column_data, str):  # not unicode
-                column_data = column_data.decode('utf-8')
+            # if six.PY2 and isinstance(column_data, str):  # not unicode
+            #     column_data = column_data.decode('utf-8')
 
-            fk2_field = six.text_type(column_data)
+            fk2_field = str(column_data)
 
         _decimal_fields = self._decimal_fields
 
@@ -472,10 +472,10 @@ class ReportGenerator(object):
                     if name in DATE_FIELDS:
                         data[name] = column_data
                     else:
-                        if six.PY2 and isinstance(column_data, str):  # not unicode
-                            column_data = column_data.decode('utf-8')
+                        # if six.PY2 and isinstance(column_data, str):  # not unicode
+                        #     column_data = column_data.decode('utf-8')
 
-                        data[name] = six.text_type(column_data)
+                        data[name] = str(column_data)
 
                 '''Apply redirect link'''
                 if (name == 'slug') and not print_flag:

@@ -4,13 +4,7 @@ from django.contrib import admin
 from django.contrib.admin import AdminSite
 from django.http import HttpRequest
 
-try:
-    from django.core.urlresolvers import reverse, resolve
-except ImportError:
-    # For Django >= 2.0
-    from django.urls import reverse, resolve
-
-from django.utils.six import string_types
+from django.urls import reverse, resolve
 
 import re
 import warnings
@@ -172,7 +166,7 @@ class Menu(object):
     def make_app(self, app_def):
         if isinstance(app_def, dict):
             app = app_def.copy()
-        elif isinstance(app_def, string_types):
+        elif isinstance(app_def, str):
             if app_def == '-':
                 app = self.make_separator()
             else:
@@ -310,7 +304,7 @@ class Menu(object):
         app['models'] = models
 
     def make_models(self, model_def, app_name):
-        if not isinstance(model_def, string_types):
+        if not isinstance(model_def, str):
             model = self.make_model(model_def, app_name)
             return [model] if model else []
         match = self.MULTIPLE_MODELS_RE.match(model_def)
@@ -332,7 +326,7 @@ class Menu(object):
     def make_model(self, model_def, app_name):
         if isinstance(model_def, dict):
             model = model_def.copy()
-        elif isinstance(model_def, string_types):
+        elif isinstance(model_def, str):
             model = self.make_model_from_native(model_def, app_name)
         else:
             raise TypeError('MENU list item must be string or dict. Got %s'
@@ -539,7 +533,7 @@ class Menu(object):
             if isinstance(order, (tuple, list)):
                 app_name = order[0]
                 models_order = order[1] if len(order) > 1 else None
-                if isinstance(app_name, string_types):
+                if isinstance(app_name, str):
                     new_app['app'] = app_name
                 elif isinstance(app_name, (tuple, list)):
                     mapping = ('label', 'url', 'icon', 'permissions')
@@ -548,7 +542,7 @@ class Menu(object):
                 if models_order and isinstance(models_order, (tuple, list)):
                     models = []
                     for model in models_order:
-                        if isinstance(model, string_types):
+                        if isinstance(model, str):
                             models.append({'model': model})
                         elif isinstance(model, (list, tuple)):
                             mapping = ('label', 'url', 'permissions')
