@@ -30,7 +30,7 @@ Features
 - A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
 - Python 3.6 / 3.7 / 3.8
-- Django 2.2 Compatible (Django 3.0 compatible coming soon following `Django-braces <https://github.com/brack3t/django-braces>`_ )
+- Django 2.2, 3.0 Compatible
 
 
 Dependencies

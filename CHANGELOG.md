@@ -3,10 +3,14 @@ All notable changes to this project are/will be documented in this file.
 
 
 ## [Unreleased]
+
+## [0.0.9] - 2019-12-25
 ### Added
 - Added changelog, docs/faq
 - Drop Use of Django Braces
+- Support For Django 3
 - Upgrade Django to >= 2.2.9
+
 
 ## [0.0.8] - 2019-12-18
 ### Added
