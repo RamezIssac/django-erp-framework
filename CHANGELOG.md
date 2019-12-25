@@ -5,7 +5,8 @@ All notable changes to this project are/will be documented in this file.
 ## [Unreleased]
 ### Added
 - Added changelog, docs/faq
-
+- Drop Use of Django Braces
+- Upgrade Django to >= 2.2.9
 
 ## [0.0.8] - 2019-12-18
 ### Added
