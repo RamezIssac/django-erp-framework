@@ -1,5 +1,3 @@
-from django.utils.version import get_version
-
 default_app_config = 'ra.apps.RaConfig'
 
 VERSION = (0, 0, 9)
