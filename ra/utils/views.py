@@ -1,10 +1,9 @@
-import copy
+
 import re
 
 from django.shortcuts import render
 from django.urls import reverse, NoReverseMatch
 from django.utils.encoding import force_text
-from django.utils.translation import get_language_bidi
 
 from ra.base import app_settings
 
@@ -32,9 +31,6 @@ easter_western_map = {1776: 48,  # 0
                       }  # 9
 
 re_time_series = re.compile('TS\d+')
-
-DEFAULT_PRINT = app_settings.RA_PRINT_SETTINGS
-DEFAULT_PRINT_BIDI = app_settings.RA_PRINT_SETTINGS_RTL
 
 
 def get_linkable_slug_title(model_name, pk, field_value, target_blank=False):
@@ -105,18 +101,6 @@ def get_decorated_slug(field_name, field_value, obj, dict_format=True, new_page=
             return_val = field_value
 
     return return_val
-
-
-def get_print_settings():
-    '''
-    Get the print_settings while taking BIDI into account
-    :return: default appropriate print settings
-    '''
-    default_print_settings = copy.deepcopy(DEFAULT_PRINT)
-    if get_language_bidi():
-        default_print_settings.update(copy.deepcopy(DEFAULT_PRINT_BIDI))
-    return default_print_settings
-
 
 def get_typed_reports_map(typed_reports, only_report_slug=None):
     """

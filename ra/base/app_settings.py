@@ -44,44 +44,6 @@ RA_BASEMOVEMENTINFO_MODEL = getattr(settings, 'RA_BASEINFO_MODEL', 'ra.abstract_
 RA_QUANVALUEMOVEMENTITEM_MODEL = getattr(settings, 'RA_QUANVALUEMOVEMENTITEM_MODEL',
                                          'ra.base.models.QuanValueMovementItem')
 
-_default_print = {
-    'left_header': r'Company name \\ Company address \\ Company Telephone \\',
-    'center_header': '',
-    'right_header': '',
-    'center_footer': r'',
-    'left_footer': '',
-    'right_footer': r'\thepage\ / \pageref{LastPage}',
-    'pre_table_template': 'ra/tex/pre_table_typed_report.html',
-    'documentclass': 'article',
-    'documentsize': 'a4paper',
-    'document_orientation': 'portrait',
-    'pre_headers': '',
-    'provide_total': 'auto',
-    'provide_total_on': False,
-    'hide_all_fk_slugs': False,
-    'enable_smart_date': True,
-    'col_sizes': {},
-    'time_series_col_size': 'C{1cm}|',
-    'extra_row_separator': r' \hline',
-}
-# _default_print_bidi = {
-#     'right_header': r'Company name \\ Company address \\ Company Telephone \\',
-#     'left_header': '',
-#
-# }
-
-
-_user_print_settings = getattr(settings, 'RA_PRINT_SETTINGS', {})
-_default_print.update(_user_print_settings)
-RA_PRINT_SETTINGS = _default_print
-_default_print_bidi = {
-    'right_header': RA_PRINT_SETTINGS['left_header'],
-    'left_header': ''
-}
-_user_print_settings = getattr(settings, 'RA_PRINT_SETTINGS_RTL', {})
-_default_print_bidi.update(_user_print_settings)
-RA_PRINT_SETTINGS_RTL = _default_print_bidi
-
 RA_APP_ICONS = getattr(settings, 'RA_APP_ICONS', {})
 
 RA_ADMIN_SITE_NAME = getattr(settings, 'RA_ADMIN_SITE_NAME', 'ra_admin')

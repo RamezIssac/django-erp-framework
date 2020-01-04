@@ -41,9 +41,9 @@ This will definitely enhance your experience with this next section. Also we wil
             from ...models import Client, Product, SimpleSales
             from django.contrib.auth.models import User
             user_id = User.objects.first().pk
-            client_count = options.get('clients', 10)
-            product_count = options.get('products', 10)
-            records_per_day = options.get('records', 10)
+            client_count = options.get('clients', 10) or 10
+            product_count = options.get('products', 10) or 10
+            records_per_day = options.get('records', 10) or 10
 
             # Generating clients
             already_recorded = Client.objects.all().count()

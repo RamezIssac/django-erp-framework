@@ -21,7 +21,7 @@ from django.views.generic import FormView, TemplateView
 
 from ra.base import app_settings, registry
 from ra.base.app_settings import RA_ADMIN_SITE_NAME
-from ra.base.helpers import admin_get_app_list, dictsort
+from ra.base.helpers import dictsort
 from ra.reporting.form_factory import report_form_factory
 from ra.reporting.forms import OrderByForm
 from ra.reporting.printing import regroup_data, HTMLPrintingClass, ExportToCSV

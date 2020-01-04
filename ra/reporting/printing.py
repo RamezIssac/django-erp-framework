@@ -5,7 +5,7 @@ import unicodecsv as csv
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from ra.utils.views import re_time_series, get_print_settings
+from ra.utils.views import re_time_series
 from ra.base import app_settings
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ def is_partial_text_in_list(text, lst):
 class HTMLPrintingClass(object):
     def __init__(self, request, form_settings, response, header_report=None, header_group=None, report_view=None,
                  print_settings=None):
-        self.DEFAULT_PRINT = get_print_settings()
         self.reverse_when_bidi = True
         self.request = request
         self.response = response
@@ -96,7 +95,6 @@ class ExportToCSV(object):
 
     def __init__(self, request, form_settings, response, header_report=None, header_group=None, report_view=None,
                  print_settings=None):
-        self.DEFAULT_PRINT = get_print_settings()
         self.reverse_when_bidi = True
         self.request = request
         self.response = response
