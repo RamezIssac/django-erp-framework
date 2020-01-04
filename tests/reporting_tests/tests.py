@@ -101,7 +101,6 @@ class ReportTest(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         # self.assertEqual(data['data'][0]['__balance__TS%s0331' % year], 300)
-        import pdb; pdb.set_trace()
         self.assertEqual(data['data'][0]['__balance__TS%s0229' % year], 200)
         self.assertEqual(data['data'][0]['__balance__TS%s0131' % year], 100)
 
