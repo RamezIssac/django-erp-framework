@@ -323,6 +323,7 @@ class ReportView(UserPassesTestMixin, FormView):
             settings = {}
         settings.update(cls.form_settings or {})
         settings['from_doc_date'] = cls.get_default_from_date()
+        settings['to_doc_date'] = cls.get_default_to_date()
         return form_class(**{'form_settings': settings})
 
     def get_form_settings(self):
@@ -596,6 +597,11 @@ class ReportView(UserPassesTestMixin, FormView):
     @classmethod
     def get_default_from_date(cls, **kwargs):
         return app_settings.DEFAULT_FROM_DATE_TIME
+
+
+    @classmethod
+    def get_default_to_date(cls, **kwargs):
+        return app_settings.RA_DEFAULT_TO_DATETIME
 
 
 

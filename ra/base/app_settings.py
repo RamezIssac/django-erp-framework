@@ -10,6 +10,10 @@ def get_first_of_this_year():
     return datetime.datetime(d.year, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
 
 
+def get_end_of_this_year():
+    d = datetime.datetime.today()
+    return datetime.datetime(d.year + 1, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
+
 import datetime
 
 """
@@ -36,7 +40,7 @@ RA_DATETIME_DISPLAY_FORMAT = getattr(settings, 'RA_DATETIME_DISPLAY_FORMAT', '%Y
 RA_DATETIME_SAVE_FORMAT = getattr(settings, 'RA_DATETIME_SAVE_FORMAT', '%Y-%m-%d %H:%M:%S %z')
 
 DEFAULT_FROM_DATE_TIME = lazy(get_first_of_this_year, datetime.datetime)()
-
+RA_DEFAULT_TO_DATETIME = lazy(get_end_of_this_year, datetime.datetime)()
 # models
 
 RA_BASEINFO_MODEL = getattr(settings, 'RA_BASEINFO_MODEL', 'ra.base.models.BaseInfo')

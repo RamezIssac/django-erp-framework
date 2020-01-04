@@ -286,7 +286,7 @@ class BaseReportForm(object):
                             data['from_doc_date_1'] = _date.time().strftime('%H:%M')
 
                     elif field in ['to_doc_date']:
-                        _date = now()  # .strftime('%Y-%m-%d %H:%M:%S')
+                        _date = saved_report_meta[field]
                         if 'to_doc_date_0' not in data:
                             data['to_doc_date_0'] = _date.date() + + datetime.timedelta(days=1)
 
@@ -324,7 +324,6 @@ class BaseReportForm(object):
 
         if data:
             kwargs['data'] = data
-
         if data['matrix']:
             from ra.admin.admin import ra_admin_site
             matrix_field = self.foreign_keys[data['matrix'] + '_id']
@@ -767,7 +766,8 @@ def report_form_factory(model, base_model=None,
                                                   input_time_formats=['%H:%M', '%H:%M:%S'])
 
     to_date_initial = datetime.datetime.combine(now().date() + datetime.timedelta(days=1), datetime.time.min)
-    fields['to_doc_date'] = RaDateDateTimeField(required=False, initial=to_date_initial,
+    fields['to_doc_date'] = RaDateDateTimeField(required=False,
+                                                initial=app_settings.RA_DEFAULT_TO_DATETIME,
                                                 label=capfirst(ugettext_lazy('to date')), widget=RaBootstrapDateTime(),
                                                 input_date_formats=['%Y-%m-%d', '%Y-%m-%d'],
                                                 input_time_formats=['%H:%M', '%H:%M:%S'])
