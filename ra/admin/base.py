@@ -49,20 +49,16 @@ def get_report_view(request, base_model, report_slug):
 
 
 class RaAdminSiteBase(AdminSite):
-    site_title = app_settings.RA_SITE_TITLE
-    site_header = _('Ra Administration')  # todo move to settings
-    index_title = _('Statistics and Dashboard')
+    site_title = app_settings.RA_ADMIN_SITE_TITLE
+    site_header = app_settings.RA_ADMIN_SITE_HEADER
+    index_title = app_settings.RA_ADMIN_INDEX_TITLE
 
-    login_form = None
-    index_template = app_settings.RA_ADMIN_INDEX_PAGE
-    app_index_template = f'{app_settings.RA_THEME}/app_index.html'
-    login_template = f'{app_settings.RA_THEME}/login.html'
+    index_template = app_settings.RA_ADMIN_INDEX_TEMPLATE
+    app_index_template = app_settings.RA_ADMIN_APP_INDEX_TEMPLATE
+    login_template = app_settings.RA_ADMIN_LOGIN_TEMPLATE
 
-    logout_template = f'{app_settings.RA_THEME}/logged_out.html'
-    # password_change_template = app_settings.RA_ADMIN_PASSWORD_PAGE
-    password_change_done_template = None
+    logout_template = app_settings.RA_ADMIN_LOGGED_OUT_TEMPLATE
 
-    reports_menu_template = None
 
     def get_urls(self):
         from ra.utils.views import access_denied

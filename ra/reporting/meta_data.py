@@ -239,7 +239,7 @@ class ReportMetaData(object):
 
         doc_date = form_settings.get('doc_date', False)
         if not doc_date:
-            from_date = form_settings.get('from_doc_date', app_settings.DEFAULT_FROM_DATE_TIME).strftime('%Y-%m-%d')
+            from_date = form_settings.get('from_doc_date', app_settings.RA_DEFAULT_FROM_DATETIME).strftime('%Y-%m-%d')
             to_date = form_settings.get('to_doc_date', now()).strftime('%Y-%m-%d')
             from_date_verbose = ugettext('from')
             to_date_verbose = ugettext('to')

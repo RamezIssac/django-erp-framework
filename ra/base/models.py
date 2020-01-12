@@ -88,7 +88,7 @@ class BaseInfo(RAModel):
     title = models.CharField(_('name'), max_length=255, unique=True, db_index=True)
     notes = models.TextField(_('notes'), null=True, blank=True)
     fb = models.DecimalField(_('beginning balance'), help_text=_('Opening Balance or initial balance '), max_digits=19,
-                             decimal_places=3, default=0)
+                             decimal_places=2, default=0)
 
     class Meta:
         abstract = True
@@ -325,7 +325,7 @@ class BaseMovementInfo(DiffingMixin, models.Model):
     doc_date = models.DateTimeField(_('date'), db_index=True)
     doc_type = models.CharField(max_length=30, db_index=True)
     notes = models.TextField(_('notes'), null=True, blank=True)
-    value = models.DecimalField(_('value'), max_digits=19, decimal_places=3, default=0)
+    value = models.DecimalField(_('value'), max_digits=19, decimal_places=2, default=0)
 
     owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
                               on_delete=models.CASCADE)
@@ -477,9 +477,9 @@ class BaseMovementItemInfo(BaseMovementInfo):
 
 
 class QuanValueMovementItem(BaseMovementItemInfo):
-    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=3, default=0)
-    price = models.DecimalField(_('price'), max_digits=19, decimal_places=3, default=0)
-    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=3, default=0)
+    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
+    price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
+    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.value = self.quantity * self.price
@@ -496,7 +496,7 @@ class BaseReportModel(DiffingMixin, models.Model):
     doc_date = models.DateTimeField(_('date'), db_index=True)
     doc_type = models.CharField(max_length=30, db_index=True)
     notes = models.TextField(_('notes'), null=True, blank=True)
-    value = models.DecimalField(_('value'), max_digits=19, decimal_places=3, default=0)
+    value = models.DecimalField(_('value'), max_digits=19, decimal_places=2, default=0)
 
     owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
                               on_delete=models.DO_NOTHING)
@@ -550,9 +550,9 @@ class BaseReportModel(DiffingMixin, models.Model):
 
 
 class QuanValueReport(BaseReportModel):
-    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=3, default=0)
-    price = models.DecimalField(_('price'), max_digits=19, decimal_places=3, default=0)
-    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=3, default=0)
+    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
+    price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
+    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
 
     @classmethod
     def get_doc_type_plus_list(cls):

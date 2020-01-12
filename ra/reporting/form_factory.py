@@ -355,7 +355,7 @@ class BaseReportForm(object):
                         fields[field] = self.cleaned_data[field].strftime("%Y-%m-%d %H:%M:%S")
                     else:
                         if field == 'from_doc_date':
-                            fields[field] = app_settings.DEFAULT_FROM_DATE_TIME.strftime("%Y-%m-%d %H:%M:%S")
+                            fields[field] = app_settings.RA_DEFAULT_FROM_DATETIME.strftime("%Y-%m-%d %H:%M:%S")
                         else:
                             fields[field] = now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -382,7 +382,7 @@ class BaseReportForm(object):
             self.cleaned_data['from_doc_date'] = date_1
             self.cleaned_data['to_doc_date'] = date_2
         return self.cleaned_data['from_doc_date'] if self.cleaned_data[
-            'from_doc_date'] else app_settings.DEFAULT_FROM_DATE_TIME
+            'from_doc_date'] else app_settings.RA_DEFAULT_FROM_DATETIME
 
     def get_to_doc_date(self):
         return self.cleaned_data['to_doc_date'] if self.cleaned_data['to_doc_date'] else now()
@@ -760,7 +760,7 @@ def report_form_factory(model, base_model=None,
                                                                 label=_('Custom details column names'))
 
     fields['from_doc_date'] = RaDateDateTimeField(required=False, label=capfirst(ugettext_lazy('from date')),
-                                                  initial=app_settings.DEFAULT_FROM_DATE_TIME,
+                                                  initial=app_settings.RA_DEFAULT_FROM_DATETIME,
                                                   widget=RaBootstrapDateTime(),
                                                   input_date_formats=['%Y-%m-%d', '%Y-%m-%d'],
                                                   input_time_formats=['%H:%M', '%H:%M:%S'])

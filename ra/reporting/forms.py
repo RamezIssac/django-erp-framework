@@ -3,7 +3,7 @@ import datetime
 from django import forms
 from django.utils.timezone import now
 import pytz
-from ra.base.app_settings import DEFAULT_FROM_DATE_TIME
+from ra.base.app_settings import RA_DEFAULT_FROM_DATETIME
 from ra.reporting.form_fields import RaDateDateTimeField
 from ra.base.widgets import RaBootstrapDateTime
 from django.utils.translation import ugettext_lazy as _
@@ -45,7 +45,7 @@ class SimpleReportForm(forms.Form):
     doc_date = forms.DateField(input_formats=["%Y-%m-%d"], required=False, label=_('at date'))
 
     from_doc_date = RaDateDateTimeField(required=False, label=_('from date'),
-                                        initial=DEFAULT_FROM_DATE_TIME,
+                                        initial=RA_DEFAULT_FROM_DATETIME,
                                         widget=RaBootstrapDateTime(),
                                         input_date_formats=['%Y-%m-%d', '%Y-%m-%d'],
                                         input_time_formats=['%H:%M', '%H:%M:%S'])
@@ -96,7 +96,7 @@ class SimpleReportForm(forms.Form):
         return []
 
     def get_from_doc_date(self):
-        return self.cleaned_data.get('from_doc_date') or DEFAULT_FROM_DATE_TIME
+        return self.cleaned_data.get('from_doc_date') or RA_DEFAULT_FROM_DATETIME
 
     def get_to_doc_date(self):
         x = now()
