@@ -28,9 +28,6 @@ DECIMAL_FIELDS = ['value', '__debit__', '__credit__', '__fb__', '__balance__', '
 QUAN_DECIMAL_FIELDS = ['quan', '__debit_quan__', '__credit_quan__', '__fb_quan__', '__balance_quan__', '__total_quan__']
 INT_FIELDS = ['__doc_count__', '__line_cont__']
 DATE_FIELDS = ['doc_date', 'lastmod', 'creation_date']
-DATETIME_DISPLAY_FORMAT = app_settings.RA_DATETIME_DISPLAY_FORMAT
-DATETIME_SAVE_FORMAT = app_settings.RA_DATETIME_SAVE_FORMAT
-DEFAULT_FROM_DATE_TIME = app_settings.DEFAULT_FROM_DATE_TIME
 
 from ra.base import loading
 

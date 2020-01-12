@@ -208,8 +208,6 @@ def get_next_serial(model):
         return max_slug
     except Exception as e:
         raise e
-        logger.error(e)
-        return repr(time.time()).replace('.', '')
 
 
 def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **kwargs):
@@ -218,7 +216,8 @@ def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **
     :param model_admin: the ModelAdmin instance
     :param db_field: db_field
     :param form_field: the default form_field
-    :param request: the request
-    :return: form_field used
+    :param request: the current request
+
+    :return: form_field to be used
     """
     return form_field

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import copy
 import datetime
 import hashlib
@@ -21,7 +19,7 @@ from django.views.generic import FormView, TemplateView
 
 from ra.base import app_settings, registry
 from ra.base.app_settings import RA_ADMIN_SITE_NAME
-from ra.base.helpers import admin_get_app_list, dictsort
+from ra.base.helpers import dictsort
 from ra.reporting.form_factory import report_form_factory
 from ra.reporting.forms import OrderByForm
 from ra.reporting.printing import regroup_data, HTMLPrintingClass, ExportToCSV
@@ -323,6 +321,7 @@ class ReportView(UserPassesTestMixin, FormView):
             settings = {}
         settings.update(cls.form_settings or {})
         settings['from_doc_date'] = cls.get_default_from_date()
+        settings['to_doc_date'] = cls.get_default_to_date()
         return form_class(**{'form_settings': settings})
 
     def get_form_settings(self):
@@ -449,7 +448,7 @@ class ReportView(UserPassesTestMixin, FormView):
         url = ''.join(url_parts)
         m = hashlib.md5()
         if app_settings.RA_CACHE_REPORTS_PER_USER:
-            m.update(str(request.user.pk))
+            m.update(f'{request.user.pk}'.encode('utf-8'))
         m.update(url.encode('utf-8'))
         cache_key = m.hexdigest()
         return not no_cache_request, cache_key
@@ -595,7 +594,12 @@ class ReportView(UserPassesTestMixin, FormView):
 
     @classmethod
     def get_default_from_date(cls, **kwargs):
-        return app_settings.DEFAULT_FROM_DATE_TIME
+        return app_settings.RA_DEFAULT_FROM_DATETIME
+
+
+    @classmethod
+    def get_default_to_date(cls, **kwargs):
+        return app_settings.RA_DEFAULT_TO_DATETIME
 
 
 

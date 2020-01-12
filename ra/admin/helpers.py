@@ -16,6 +16,5 @@ def get_each_context(request, admin_site):
         cache_val = admin_get_app_list(request, admin_site)
         cache.set(cache_key, cache_val)
     context['app_list'] = cache_val
-    context['reports_menu'] = admin_site.reports_menu_template
     context['admin_site'] = admin_site
     return context

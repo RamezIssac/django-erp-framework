@@ -7,8 +7,6 @@ from django.core.cache import cache
 from django.db.models import Model
 from django.utils.encoding import force_text
 
-from ra.base.app_settings import RA_AUTOCOMPLETE_ALIASES
-
 get_model = apps.get_model
 
 logger = logging.getLogger(__name__)
@@ -70,8 +68,6 @@ def update_slug_title_cache(model_name, instance_id, all=True, model_klass=None)
 
         if model_name in MODELS:
             _model = MODELS[model_name]['model']
-        elif model_name in RA_AUTOCOMPLETE_ALIASES:
-            _model = get_model(*RA_AUTOCOMPLETE_ALIASES[model_name].split('.'))
     else:
         _model = model_klass
 
