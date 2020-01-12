@@ -4,6 +4,14 @@ All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
 
+
+## [v0.1.1] - 2020-01-12
+### Added
+- Documentation for Ra Settings
+- Removal of unneeded css styles, correcting GitHub linguist
+- Added setting `RA_DEFAULT_TO_DATETIME` which defaults to start of current year + 1
+
+
 ## [0.0.9] - 2019-12-25
 ### Added
 - Added changelog, docs/faq
