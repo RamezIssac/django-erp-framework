@@ -54,9 +54,22 @@ class ReportRegistry(object):
             except AttributeError:
                 raise ImproperlyConfigured("Can not access base_model, is it set on class %s?" % report_class)
             try:
-                title = report_class.report_title
+                if not report_class.report_title:
+                    raise AttributeError
             except AttributeError:
                 raise ImproperlyConfigured('Report %s is missing a `report_title`' % report_class)
+            try:
+                assert type(report_class.form_settings) is dict
+            except (AttributeError, AssertionError):
+                raise ImproperlyConfigured(
+                    'Report %s is missing a `form_settings` or form_settings is not a dict' % report_class)
+            if not report_class.get_report_model():
+                raise ImproperlyConfigured(
+                    'Report %s is missing a `report_model`' % report_class)
+            if report_class.must_exist_filter and not report_class.header_report:
+                raise ImproperlyConfigured('%s: Must specify a view class or function in `header_report` '
+                                           'if `must_exist_filter` is set' % report_class)
+
             self._register_report(report_class, namespace)
 
     def _register_report(self, report, namespace):
@@ -126,7 +139,9 @@ class ReportRegistry(object):
         try:
             return self._store[slug_id.lower()]
         except KeyError:
-            raise NotRegistered("Report '%s' base model '%s' not found, Did you register it? If yes, then maybe it's has different base model ?" % (report_slug, namespace))
+            raise NotRegistered(
+                "Report '%s' base model '%s' not found, Did you register it? If yes, then maybe it's has different base model ?" % (
+                    report_slug, namespace))
 
     def get_base_models(self):
         return self._base_models

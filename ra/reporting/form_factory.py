@@ -694,7 +694,7 @@ def report_form_factory(model, base_model=None,
                                                label=_('group by'))
         _grp_display = ['slug', 'title'] + magic_fields
 
-        default_for_group_display = ['slug', 'title', '__fb__', '__debit__', '__credit__', '__balance__']
+        default_for_group_display = []
         fields['group_columns'] = forms.MultipleChoiceField(required=False, widget=forms.SelectMultiple(),
                                                             choices=choices_from_list(_grp_display, False) +
                                                                     choices_from_list(_movmenet_fields, False,

@@ -260,19 +260,6 @@ class ReportView(UserPassesTestMixin, FormView):
         # else:
         return HttpResponseRedirect(reverse('ra_admin:login'))
 
-    def __init__(self, **kwargs):
-        super(ReportView, self).__init__(**kwargs)
-        report_slug = self.get_report_slug()
-        if not report_slug:
-            raise ImproperlyConfigured(
-                'method `get_report_slug` return %s, it should return a string. Class %s' % (
-                    report_slug, self.__class__))
-        if not type(self.form_settings) is dict:
-            raise ImproperlyConfigured('%s: Every Report Have to have form_settings dictionary set up' % self.__class__)
-        if self.must_exist_filter and not self.header_report:
-            raise ImproperlyConfigured('%s: Must specify a view class or function in `header_report` '
-                                       'if `must_exist_filter` is set' % self.__class__)
-
     @classmethod
     def get_absolute_url(cls):
         href = reverse('admin:report_list', args=(cls.get_base_model_name(),))
@@ -468,7 +455,6 @@ class ReportView(UserPassesTestMixin, FormView):
         self.form = self.get_form(form_class)
         enable_print = self.is_print_request()
         export_csv = request.GET.get('csv', False)
-        # print(export_csv)
 
         if request.is_ajax() or enable_print or export_csv or (request.GET.get('ajax') == 'true' and settings.DEBUG):
             if self.form.is_valid():
@@ -495,7 +481,7 @@ class ReportView(UserPassesTestMixin, FormView):
                 return self.form_invalid(self.form)
         else:
             # Accessing the report page directly is not allowed
-            return HttpResponseRedirect(reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name())))
+            return HttpResponseRedirect(reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
 
     @classmethod
     def get_report_title(cls):

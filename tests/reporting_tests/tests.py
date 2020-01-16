@@ -74,7 +74,7 @@ class BaseTestData:
             product=cls.product1, quantity=30, price=10, lastmod_user=user)
 
 
-@override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=True, USE_TZ=False)
+@override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=False, USE_TZ=False)
 class ReportTest(BaseTestData, TestCase):
 
     def test_client_balance(self):
@@ -148,7 +148,6 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
-
     def test_report_movement_redirect(self):
         """
         When showing a report, if it contains transactions the slug of the transaction is transformed into an
@@ -168,7 +167,6 @@ class ReportTest(BaseTestData, TestCase):
         instance = response.context['original']
         self.assertEqual(instance.slug, a_elem.text())
         self.assertEqual(instance.doc_type, doc_type)
-
 
     def test_report_list(self):
         url = Client.get_report_list_url()
@@ -240,6 +238,26 @@ class ReportTest(BaseTestData, TestCase):
                 previous_balance = line['__balance__']
             else:
                 self.assertTrue(line['__balance__'] < previous_balance)
+
+
+@override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=False, USE_TZ=False)
+class ReportTest2(BaseTestData, TestCase):
+    """
+    This is in a class on it's own as for some off reason, while executed as part the other class, it's picked up
+    as ajax and redirect is not picked up
+    """
+
+    def test_redirect_report_list_when_access_a_report(self):
+        """
+        Test that accessing a report url directly without ajax return to the report list
+        :return:
+        """
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
+                                   data={},
+                                   HTTP_X_REQUESTED_WITH='--',
+                                   follow=False)
+        self.assertEqual(response.status_code, 302)
 
 
 @override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=True, USE_TZ=False)

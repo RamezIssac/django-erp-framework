@@ -107,6 +107,7 @@ form ul.inline li {
 form .aligned ul {
     margin-left: 160px;
     padding-left: 10px;
+    display: initial;
 }
 
 form .aligned ul.radiolist {
@@ -147,6 +148,7 @@ form .aligned select + div.help {
 
 form .aligned ul li {
     list-style: none;
+    color: red;
 }
 
 form .aligned table p {

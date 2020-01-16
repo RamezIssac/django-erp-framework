@@ -221,7 +221,7 @@
 
                         {% block content_title %}{% if title %}
                             <div class="col-sm-6">
-                                <h1>{{ title }}</h1>
+                                <h1>{{ title|capfirst }}</h1>
                             </div>
                         {% endif %}{% endblock %}
 
@@ -246,9 +246,21 @@
             <section class="content">
                 {% block messages %}
                     {% if messages %}
-                        <ul class="messagelist">{% for message in messages %}
-                            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
-                        {% endfor %}</ul>
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                                {% if message.tags == 'success' %}
+                                    <i class="icon fas fa-check"></i>
+                                {% elif message.tags == 'warning' %}
+                                    <i class="icon fas fa-exclamation-triangle"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="icon fas fa-ban"></i>
+                                {% else %}
+                                    <i class="icon fas fa-info"></i>
+                                {% endif %}
+                                {{ message|capfirst }}
+                            </div>
+                        {% endfor %}
                     {% endif %}
                 {% endblock messages %}
 

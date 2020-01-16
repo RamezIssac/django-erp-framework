@@ -203,7 +203,7 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
 
 @register_report_view
 class ClientDetailedStatement(ReportView):
-    report_title = _('client statment')
+    report_title = _('client statement')
     base_model = Client
     report_model = SimpleSales
 
