@@ -40,16 +40,8 @@ class ReportMetaData(object):
 
     def get_datatable_options(self):
 
-        # if False:
-        # report = SavedReport.objects.get(slug=self.kwargs['slug'])
-        #     options = report.report_dict  #satellite_view.get_datatable_options()
-        #     options = ast.literal_eval(options)
-        # else:
-        is_group = True  # self.request.GET.get('get_group', False)  # self.form.has_group()
-        # if self.is_ajax and not self.get_datatable_structure:
+        is_group = True
         appened_fkeys = True
-        # else:
-        #     appened_fkeys = False
         if self.form.is_time_series(is_group):
             original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wTimeSeries=False)
             time_series_colums = self.form.get_time_series_columns(is_group)
@@ -78,7 +70,6 @@ class ReportMetaData(object):
                 'time_series_pattern'])
         if self.form.is_matrix_support(is_group):
             series = self.form.get_matrix_core_columns()
-            # series = [dt.strftime('%Y%m%d') for dt in series]
             options['matrix_core_columns'] = series
 
         return options

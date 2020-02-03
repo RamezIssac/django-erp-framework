@@ -46,26 +46,10 @@ class BaseReportForm(object):
             return _values
 
     def get_date_filters(self):
-        _values = {}
-        date_1 = date_2 = None
-        doc_date = self.cleaned_data['doc_date']
-        try:
-            doc_date = doc_date.strftime('%Y-%m-%d')
-        except:
-            doc_date = None
-
-        if doc_date:
-            date_1 = pytz.utc.localize(
-                datetime.datetime.combine(self.cleaned_data['doc_date'], datetime.datetime.min.time()))
-
-            date_2 = date_1 + datetime.timedelta(days=1)
-            # _values['doc_date__gt'] = date_1
-            # self.cleaned_data['from_doc_date'] = date_1
-            # # _values['doc_date__lte'] = date_2
-            # self.cleaned_data['to_doc_date'] = date_2
-        _values['doc_date__gt'] = date_1 if date_1 else self.cleaned_data['from_doc_date']
-        _values['doc_date__lte'] = date_2 if date_2 else self.cleaned_data['to_doc_date']
-        return _values
+        return {
+            'doc_date__gt': self.cleaned_data['from_doc_date'],
+            'doc_date__lte': self.cleaned_data['to_doc_date']
+        }
 
     def get_doc_types_filters(self):
         _values = {}
@@ -84,7 +68,6 @@ class BaseReportForm(object):
     def get_queryset_filters(self, w_date=False, w_doc_types=True):
         filters = {}
         if self.is_valid():
-            # print(self.cleaned_data)
             filters = self.get_fk_filters()
             if w_date:
                 filters.update(self.get_date_filters())
@@ -96,151 +79,24 @@ class BaseReportForm(object):
 
     def get_datatable_columns(self, get_group=False, appened_fkeys=False, wTimeSeries=True, wMatrix=True):
         _values = []
-
-        group_by = ''
         if self.is_valid():
-            annotate = self.get_aggregate_on(get_group)
-
-            # group_by
-
             if get_group:
                 _values = self.get_group_by_display()
-
-            else:
-                data = {}
-                aggregates = self.get_aggregate_on(get_group, data)
-                if 'report_fields' in data:  # aggregate_on
-                    # if len(data['report_fields']) == 2:
-                    if aggregates == 'slug':
-                        _values.append(aggregates)
-                    else:
-                        _values.append(aggregates + '_id')
-                    if aggregates not in self.document_report_fields:
-                        # _values.append(aggregates + '_id')
-                        _values.append(aggregates + '__slug')
-                        _values.append(aggregates + '__title')
-                    elif aggregates == 'doc_type':
-                        _values.append('doc_type')
-                    elif aggregates == 'doc_date':
-                        _values = ['doc_date']
-                        selected_fields = self.cleaned_data['details_columns']
-                        allowed_magic = [e for allowed in self.allowed_document_magic_fields for e in selected_fields if
-                                         e in allowed]
-                        if allowed_magic:
-                            _values += allowed_magic
-                        return _values
-                    elif aggregates == 'slug':
-                        if 'doc_date' in self.cleaned_data['details_columns']:
-                            _values.append('doc_date')
-                        if 'doc_type' in self.cleaned_data['details_columns']:
-                            _values.append('doc_type')
-
-                    # elif aggregates == 'slug':
-                    # _values.append(aggregates)
-                    # else:
-                    # _values.append(aggregates + '_id')
-
-                    # We extract magic fields of the selected fields
-                    for x in self.cleaned_data['details_columns']:
-                        if x.startswith('__') and x.endswith('__'):
-                            _values.append(x)
-                            # _values.append('aggregate')
-
-                else:
-                    _values = self.cleaned_data['details_columns']
-                    # if '__fb__' in _values: _values.remove('__fb__')
-                    # if '__debit__' in _values: _values.remove('__debit__')
-                    # if '__credit__' in _values: _values.remove('__credit__')
-                    # if '__balance__' in _values: _values.remove('__balance__')
-
-                # pop columns of the group By filter
-                # try:
-                # logger.debug(_values)
-
-                x = u'%s%s' % (self.get_group_by_filters(), '_id')
-                if x in _values:
-                    _values.remove(x)
-
-                x = u'%s%s' % (self.get_group_by_filters(), '__slug')
-                if x in _values:
-                    _values.remove(x)
-
-                x = u'%s%s' % (self.get_group_by_filters(), '__title')
-                if x in _values:
-                    _values.remove(x)
-
-                    # _values.remove(x+'__slug')
-                    # _values.remove(u'%s%s' % (self.get_group_by_filters(), '__title'))
-                    # except:
-                    # pass
 
             if self.is_time_series(get_group) and wTimeSeries:
                 time_series_columns = self.get_time_series_columns(get_group)
                 _values += time_series_columns
-                # if get_group:
-                # return _values
 
             if self.is_matrix_support(get_group) and wMatrix:
                 matrix_columns = self.get_matrix_fields()
-                # logger.debug('matix cols %s'  % matrix_columns)
                 _values += matrix_columns
-
-            if get_group:
-                return _values
-
-            # if annotate and not get_group: #aggregates wanted
-            # _values.append('aggregate')
-            if appened_fkeys:
-                for key, field in self.foreign_keys:
-                    if key not in _values:
-                        if key != 'doc_type':
-                            _values.append(key)
-
-        else:
-            print('reporting//helpers:654 Report form is not valid %s' % self._errors)
+            return _values
 
         return _values
-
-    def has_group(self):
-        if self.is_valid():
-            return bool(self.cleaned_data['group_by'])
 
     def get_group_by_filters(self):
         if self.is_valid():
             return self.cleaned_data['group_by']
-        return None
-
-    def get_aggregate_on(self, grouping, data=None):
-        if self.is_valid():
-            if data is None: data = {}
-            group_by_filter = self.get_group_by_filters()
-
-            if group_by_filter and grouping:
-                group_by_filter_id = group_by_filter
-                if group_by_filter not in self.document_report_fields:
-                    group_by_filter_id += '_id'
-                data['fk2_field'] = group_by_filter_id
-                data['report_fields'] = [group_by_filter_id.encode()]
-                return group_by_filter
-
-            val = self.cleaned_data['aggregate_on']
-            if val:
-                # f_name = f_name.split('aggregate_on')[1]
-                # logger.debug('hathour.helpers.get_aggregate_on.f_name = %s' % (val ))
-                data['fk2_field'] = val
-                if val not in ['doc_type', 'doc_date', 'slug']:
-                    data['fk2_field'] = val + '_id'
-
-                data['report_fields'] = [data['fk2_field']]
-
-                if group_by_filter: data['report_fields'].append(group_by_filter)
-                return val
-
-                # for f_name in self.cleaned_data:
-                # if 'aggregate_on' in  f_name:
-                #
-                #
-                # # _values.append(f_name.split(GROUP_BY_PREFIX)[1])
         return None
 
     def __init__(self, *args, **kwargs):
@@ -345,29 +201,6 @@ class BaseReportForm(object):
 
         self.helper.layout = get_user_formLayout(self._fkeys, saved_report_meta, self)
 
-    def get_form_settings(self):
-        _exclude_fields = ['saved_report']
-        fields = {}
-        for field in self.cleaned_data:
-            if field not in _exclude_fields:
-                if field in ['from_doc_date', 'to_doc_date']:
-                    if self.cleaned_data[field]:
-                        fields[field] = self.cleaned_data[field].strftime("%Y-%m-%d %H:%M:%S")
-                    else:
-                        if field == 'from_doc_date':
-                            fields[field] = app_settings.RA_DEFAULT_FROM_DATETIME.strftime("%Y-%m-%d %H:%M:%S")
-                        else:
-                            fields[field] = now().strftime("%Y-%m-%d %H:%M:%S")
-
-                elif field == 'doc_date':
-                    if self.cleaned_data[field]:
-                        fields[field] = self.cleaned_data[field].strftime("%Y-%m-%d")
-                elif field == 'ignore_value':
-                    fields[field] = str(self.cleaned_data[field])
-                else:
-                    fields[field] = self.cleaned_data[field]
-        return fields
-
     def get_from_doc_date(self):
         doc_date = self.cleaned_data['doc_date']
         try:
@@ -386,23 +219,6 @@ class BaseReportForm(object):
 
     def get_to_doc_date(self):
         return self.cleaned_data['to_doc_date'] if self.cleaned_data['to_doc_date'] else now()
-
-    def get_fields_for_aggregation(self, get_group):
-        # todo Check if i should be deleted
-        _values = []
-        if self.is_valid():
-            group_by_filter_id = ''
-            group_by_filter = self.get_group_by_filters()
-            if group_by_filter not in self.document_report_fields:
-                group_by_filter_id = group_by_filter + '_id'
-            if group_by_filter and get_group:
-                _values.append(group_by_filter_id)
-
-            val = self.cleaned_data['aggregate_on']
-            if val and val not in self.document_report_fields:
-                _values.append(val + '_id')
-
-        return _values
 
     def is_time_series(self, get_group):
         # check if the report support time series
@@ -453,9 +269,6 @@ class BaseReportForm(object):
                     if dt > self.get_to_doc_date():
                         done = True
         return _values
-
-    def get_movement_or_balance(self):
-        return self.cleaned_data['movement_or_balance'] if 'movement_or_balance' in self.cleaned_data else None
 
     def get_group_by_display(self):
         _values = []
@@ -594,51 +407,38 @@ class BaseReportForm(object):
                        for col in list(cols)]
         return _values
 
-    def get_matrix_columns(self, get_group=True, plain=False):
-        check = self.is_matrix_support(get_group)
+    def get_matrix_columns(self):
+        check = self.is_matrix_support(True)
         if not check:
             return []
 
         report_columns = self.cleaned_data['matrix_columns']
-        if plain:
-            return list(report_columns)
-        else:
-            series = self.cleaned_data['matrix_entities'].split(',')
-            if self.cleaned_data['matrix_show_other'] == True and series:
-                series.append('----')
-            entity_name = self.cleaned_data['matrix']
-            series = [entity_name + '-' + id for id in series if id != '']
 
-            report_columns = [col[:-1] + 'MX' for col in report_columns]
-
-            _values = []
-            if series:
-                _values = [col + dt for dt in series for col in report_columns]
-            return _values
+        return list(report_columns)
 
 
-def analyze_report_model(report_model, base_model, doc_types_filter_func, magic_fields_filer_func=None, **kwargs):
-    doc_types_filter_func = doc_types_filter_func or (lambda x: x)
-    magic_fields_filer_func = magic_fields_filer_func or (lambda x: x)
-
-    magic_fields = field_registry.get_all_report_fields_names()
-    magic_fields = magic_fields_filer_func(magic_fields)
-
-    fkeys_map = get_foreign_keys(report_model)
-
-    doc_types_raw = base_model.get_doc_types()
-    doc_types_magical_field = doc_types_filter_func(doc_types_raw)
-    magic_fields += doc_types_magical_field
-
-    _movmenet_fields = get_model_fields2(report_model, None, all_fields=True, no_recurse=False,
-                                         recurse_name_slug_only=True, exclude_movement=True)
-
-    return {
-        'fk_map': fkeys_map,
-        'fields': _movmenet_fields,
-        'doc_types_magical_fields': doc_types_magical_field,
-        'doc_types': doc_types_raw,
-    }
+# def analyze_report_model(report_model, base_model, doc_types_filter_func, magic_fields_filer_func=None, **kwargs):
+#     doc_types_filter_func = doc_types_filter_func or (lambda x: x)
+#     magic_fields_filer_func = magic_fields_filer_func or (lambda x: x)
+#
+#     magic_fields = field_registry.get_all_report_fields_names()
+#     magic_fields = magic_fields_filer_func(magic_fields)
+#
+#     fkeys_map = get_foreign_keys(report_model)
+#
+#     doc_types_raw = base_model.get_doc_types()
+#     doc_types_magical_field = doc_types_filter_func(doc_types_raw)
+#     magic_fields += doc_types_magical_field
+#
+#     _movmenet_fields = get_model_fields2(report_model, None, all_fields=True, no_recurse=False,
+#                                          recurse_name_slug_only=True, exclude_movement=True)
+#
+#     return {
+#         'fk_map': fkeys_map,
+#         'fields': _movmenet_fields,
+#         'doc_types_magical_fields': doc_types_magical_field,
+#         'doc_types': doc_types_raw,
+#     }
 
 
 def report_form_factory(model, base_model=None,

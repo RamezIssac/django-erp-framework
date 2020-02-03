@@ -160,7 +160,7 @@ class ReportGenerator(object):
         series_fields = self.form.get_time_series_columns(self.get_group, True)
         series_fields = [x for x in series_fields if x.startswith('__')]
         series_fields_number = (0, len(series_fields))
-        matrix_fields = self.form.get_matrix_columns(self.get_group, True)
+        matrix_fields = self.form.get_matrix_columns()
         matrix_fields = [x for x in matrix_fields if x.startswith('__')]
         matrix_fields_number = (len(series_fields), len(matrix_fields))
         normal_fields = self.form.get_datatable_columns(self.get_group, False, False, False)
@@ -242,7 +242,7 @@ class ReportGenerator(object):
         else:
             column_container.append(self.form.get_datatable_columns(self.get_group, False, False, False))
 
-        movement_total = 'movement'  # self.form.get_movement_or_balance()
+        movement_total = 'movement'
         self.movement_computation = True
 
         i = 0

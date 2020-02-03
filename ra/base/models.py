@@ -285,30 +285,6 @@ class BaseInfo(RAModel):
         return reverse('%s:%s_%s_changelist' % (
             app_settings.RA_ADMIN_SITE_NAME, cls._meta.app_label, cls.get_class_name().lower()))
 
-    # auto complete
-    def get_autocomplete_fields(self, para2, para3, is_exact=False):
-        """
-        This is sent a model instance and return requested fields and do any calculation
-        :param para2:
-        :param para3:
-        :param is_exact:
-        :return:
-        """
-        return {'pk': self.pk,
-                'slug': self.slug,
-                'title': self.title,
-                'url': self.get_absolute_url()}
-
-    @classmethod
-    def get_autocomplete_filters(cls, filters, para2, para3, is_exact=False):
-        return filters
-
-    @classmethod
-    def get_autocomplete_field_names(cls, para2, para3):
-        columns = ['slug', 'title']
-        column_names = [force_text(_('slug')), force_text(_('title'))]
-        return columns, column_names
-
 
 class BasePersonInfo(BaseInfo):
     address = models.CharField(_('address'), max_length=260, null=True, blank=True)
@@ -504,10 +480,6 @@ class BaseReportModel(DiffingMixin, models.Model):
     lastmod = models.DateTimeField(_('last modification'), db_index=True)
     lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
                                      verbose_name=_('last modification by'), on_delete=models.DO_NOTHING)
-
-    def __init__(self, *args, **kwargs):
-        super(BaseReportModel, self).__init__(*args, **kwargs)
-
     @classmethod
     def get_doc_type_plus_list(cls):
         '''
@@ -529,21 +501,6 @@ class BaseReportModel(DiffingMixin, models.Model):
         @return:
         """
         return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
-
-    @classmethod
-    def get_report_model_options(cls):
-        # get foreign keys for Group by
-        # get magic fields +  all fields on this model
-        # get aggregates On
-        #
-        from ra.reporting.helpers import get_foreign_keys
-        from ra.reporting.registry import field_registry
-        magic_fields = field_registry.get_all_report_fields_names()
-        return {
-            'foreign_keys': get_foreign_keys(cls),
-            'magic_fields': magic_fields,
-
-        }
 
     class Meta:
         abstract = True
