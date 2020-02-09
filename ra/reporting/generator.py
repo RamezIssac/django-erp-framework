@@ -3,7 +3,6 @@ import logging
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import F
 
-
 from django.utils.translation import ugettext_lazy
 
 from ra.base.cache import get_cached_name, get_cached_slug
@@ -62,7 +61,6 @@ class ReportGenerator(object):
         self.doc_type_plus_list = list(doc_type_plus_list) if doc_type_plus_list else doc_types[0]
         self.doc_type_minus_list = list(doc_type_minus_list) if doc_type_minus_list else doc_types[1]
 
-        self.need_running_total = False
         self.swap_sign = swap_sign
         self.limit_records = limit_records
         #
@@ -379,12 +377,8 @@ class ReportGenerator(object):
 
         print_flag = self.print_flag
         fk2_field = None
-        column_data = u''
         if has_attr_fk2_field and self._fk2_field:
             column_data = obj[self._fk2_field]
-            # if six.PY2 and isinstance(column_data, str):  # not unicode
-            #     column_data = column_data.decode('utf-8')
-
             fk2_field = str(column_data)
 
         _decimal_fields = self._decimal_fields
@@ -397,7 +391,6 @@ class ReportGenerator(object):
                 if is_time_field:
                     extra_key = is_time_field[0]
                     magic_field_name = name.replace(is_time_field[0], '')
-                    # magic_field_name += '_'
                     dep_key = 'series'
                 else:
                     magic_field_name = name
@@ -409,17 +402,9 @@ class ReportGenerator(object):
                     dep_key = 'matrix'
 
                 if magic_field_name == '__doc_typeid__':
-                    # column_data = self.get_column_data(i, 'doc_type', obj)[0]
-                    # data[name] = six.text_type(column_data)
                     data[name] = obj['doc_type']
                     continue
 
-                # if is_time_field:
-                #         cache_key = main_key + is_time_field[0]
-                #     elif matrix_check:
-                #         cache_key = name
-                #     else:
-                #         cache_key = main_key + '_'
                 computation_class = self.get_field_computation_class(magic_field_name)
                 dep_results = self.get_dependencies_results(magic_field_name, extra_key, dep_key)
                 value = computation_class.resolve(self._prepared_results[name],
@@ -428,10 +413,8 @@ class ReportGenerator(object):
                 data[name] = value
 
             else:
-                # ie: not a magic Field
                 if '__slug' in name:
                     model_name = name.split('__slug')[0]
-                    # model_pk = obj.__getattribute__(model_name + '_id')
                     model_pk = obj[model_name + '_id']
                     if model_pk:
                         data[name] = get_cached_slug(model_name, model_pk)
@@ -442,133 +425,36 @@ class ReportGenerator(object):
 
                 elif '__title' in name:
                     model_name = name.split('__title')[0]
-                    # model_pk = obj.__getattribute__(model_name + '_id')
                     model_pk = obj[model_name + '_id']
                     if model_pk:
-                        # slug = get_cached_slug(model_name, model_pk)
                         title = get_cached_name(model_name, model_pk)
                         if not print_flag:
                             data[name] = get_linkable_slug_title(model_name, model_pk, title)
                         else:
                             data[name] = title
-
                     else:
                         data[name] = ''
-
                 else:
-                    # self._cache = None
-                    # column_data = self.get_column_data(i, name, obj)[0]
                     column_data = obj.get(name, '')
 
-                    # if name in obj:
-                    #     if obj[name]:
-                    #         column_data = obj[name]
-
-                    # if name in DATE_FIELDS:
-                    #     if not self.group_by == 'doc_date' and self.get_group:
-                    #         column_data = column_data.strftime('%Y/%m/%d %H:%M')
-                    #     else:
-                    #         column_data = column_data.strftime('%Y-%m-%d')
                     if name in DATE_FIELDS:
                         data[name] = column_data
                     else:
-                        # if six.PY2 and isinstance(column_data, str):  # not unicode
-                        #     column_data = column_data.decode('utf-8')
-
                         data[name] = str(column_data)
 
                 '''Apply redirect link'''
                 if (name == 'slug') and not print_flag:
                     data[name] = get_decorated_slug(name, data[name], obj, True)
 
-        if self.need_running_total:
-            self.apply_running_total(obj, data, columns)
         if 'doc_type' in data:
             data['doc_type_raw'] = data['doc_type']
             data['doc_type'] = ugettext_lazy(data['doc_type'])
-
-        # data = self.manipulate_data_line(data, obj)
 
         if data and has_attr_fk2_field and self._fk2_field:
 
             if data[self._fk2_field] == '' or data[self._fk2_field] == 'None':
                 # short Circuit when it's an empty record due to annotation (most propably)
                 return None
-        # data = self.pre_json_response(data, obj)
-        return data
-
-    def apply_running_total(self, obj, data, columns):
-        PRINT_FLAG = False
-        if self.DOCUMENT_FLAG:
-            value = self._get_value_for_running_total(obj)
-        else:
-            value = obj['value']
-        quan = 0
-        if self.group_by in ['doc_type', 'doc_date', 'slug']:
-            group_by = self.group_by
-        else:
-            group_by = self.group_by + '_id'
-
-        doc_type = obj['doc_type']
-        if doc_type in self.doc_type_plus_list:
-            adj_value = value
-            if self.support_quan and 'quantity' in obj: quan = obj['quantity']
-        else:
-            adj_value = -value
-            if self.support_quan and 'quantity' in obj: quan = -obj['quantity']
-
-        if '__fb__' in columns:
-            if self._previous_balance is None and obj['doc_type'] != 'fb':
-                self._previous_balance = self.get_fb({}, group_by)
-            data['__fb__'] = self._previous_balance
-
-        if '__debit__' in columns:
-            if doc_type in self.doc_type_plus_list:
-                data['__debit__'] = value
-            else:
-                data['__debit__'] = '-' if not PRINT_FLAG else 0
-
-        if '__credit__' in columns:
-            if doc_type in self.doc_type_minus_list:
-
-                data['__credit__'] = value
-            else:
-                data['__credit__'] = '-' if not PRINT_FLAG else 0
-
-        if '__balance__' in columns:
-            if self._previous_balance is not None:
-                new_balance = self._previous_balance + (adj_value or 0)
-            else:
-                new_balance = adj_value
-            data['__balance__'] = new_balance
-            self._previous_balance = new_balance
-
-        if '__fb_quan__' in columns:
-            if self._previous_quan is None:
-                self._previous_quan = self.get_fb({}, self.group_by + '_id', quan=True)
-            data['__fb_quan__'] = self._previous_quan
-
-        if '__debit_quan__' in columns:
-            if doc_type in self.doc_type_plus_list:
-                data['__debit_quan__'] = quan
-            else:
-                data['__debit_quan__'] = '-' if not PRINT_FLAG else 0
-
-        if '__credit_quan__' in columns:
-            if doc_type in self.doc_type_minus_list:
-
-                data['__credit_quan__'] = quan
-            else:
-                data['__credit_quan__'] = '-' if not PRINT_FLAG else 0
-
-        if '__balance_quan__' in columns:
-            if self._previous_quan is not None:
-                new_balance = self._previous_quan + quan
-            else:
-                new_balance = quan
-            data['__balance_quan__'] = new_balance
-            self._previous_quan = new_balance
-
         return data
 
     def get_report_data(self):

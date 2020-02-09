@@ -129,19 +129,6 @@ class BaseInfo(RAModel):
         """
         return cls._meta.verbose_name_plural
 
-    @classmethod
-    def simple_query(cls, **kwargs):
-        # todo propably enhance to filter (**kwargs)
-        slug = kwargs.get('slug')
-        if slug:
-            check = cls.objects.filter(slug=slug)
-            if check:
-                return True, check
-            else:
-                return False, None
-
-        return None, None
-
     def get_absolute_url(self):
         model_name = self._meta.model_name.lower()
         try:
@@ -213,9 +200,6 @@ class BaseInfo(RAModel):
         """
         return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list() + cls.get_doc_type_neuter_list()
 
-    def get_reporting_model(self):
-        return self.reporting_model
-
     def get_pk_name(self):
         """
         This is used to get the full name of the primary key,
@@ -227,38 +211,6 @@ class BaseInfo(RAModel):
         else:
             # return self._meta.pk.column #not now
             return '%s_id' % self.__class__.__name__.lower()
-
-    def get_last_transaction(self, on_date=None, extra_filters=None, exclude=None):
-        from ra.reporting.base import BalanceAPI
-
-        ReportModel = self.get_reporting_model()
-        if ReportModel:
-            cls = self.__class__
-            balance = BalanceAPI(ReportModel, self.get_pk_name(), cls.get_doc_type_plus_list(),
-                                 cls.get_doc_type_minus_list())
-            balance = balance.get_last_transaction(on_date, self.pk, extra_filters, exclude)
-
-            return balance
-        else:
-            if settings.DEBUG:
-                raise ImproperlyConfigured("Operation requiring reporting model to be set on model, however, it isn't."
-                                           " Hint: Please set self.reporting_model for %s in its __init__" % self.__class__.name)
-            else:
-                logger.error("%s class doesn't have a reporting model" % self.__class__.__name__)
-
-    def get_balance(self, on_date=None, extra_filters=None, exclude=None):
-        from ra.reporting.base import BalanceAPI
-        on_date = on_date or now()
-        ReportModel = self.get_reporting_model()
-        if ReportModel:
-            cls = self.__class__
-            balance = BalanceAPI(ReportModel, self.get_pk_name(), cls.get_doc_type_plus_list(),
-                                 cls.get_doc_type_minus_list())
-            balance = balance.get_balance(on_date, self.pk, extra_filters, exclude)
-            return balance
-        else:
-            if settings.DEBUG:
-                logger.warning("%s class doesn't have a reporting model" % self.__class__.__name__)
 
     def get_title(self):
         """
@@ -310,20 +262,14 @@ class BaseMovementInfo(DiffingMixin, models.Model):
     lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
                                      verbose_name=_('last modification by'), on_delete=models.CASCADE)
 
-
-    def get_value(self):
-        return floatformat(self.value, app_settings.RA_FLOATFORMAT_ARG)
-
-    get_value.short_description = _('value')
-    get_value.admin_order_field = 'value'
-
     @classmethod
     def get_doc_type(cls):
         """
         Return the doc_type
         :return:
         """
-        raise NotImplementedError(f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
+        raise NotImplementedError(
+            f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
 
     @classmethod
     def get_class_name(cls):
@@ -334,19 +280,6 @@ class BaseMovementInfo(DiffingMixin, models.Model):
         This method is made to avoid to repeat registered doc_type to make adjustments
         """
         return cls.__name__
-
-    @classmethod
-    def simple_query(cls, **kwargs):
-        # date = kwargs.get('date')
-        slug = kwargs.get('slug')
-        if slug:
-            check = cls.objects.filter(slug=slug)
-            if check:
-                return True, check
-            else:
-                return False, None
-
-        return None, None
 
     def __init__(self, *args, **kwargs):
         super(BaseMovementInfo, self).__init__(*args, **kwargs)
@@ -365,15 +298,6 @@ class BaseMovementInfo(DiffingMixin, models.Model):
             return self.pk_name
         else:
             return '%s_id' % self.__class__.__name__.lower()
-
-    def get_reporting_models(self):
-        doc_types_map = registry.get_doc_type_settings()
-        if self.doc_type in doc_types_map:
-            doc_type_setting = doc_types_map[self.doc_type]
-            return doc_type_setting['report_models']
-        else:
-            logger.warning('RA: doc_type not found in doc_types_map , Did you register %s' % self.doc_type)
-            return []
 
     class Meta:
         abstract = True
@@ -398,25 +322,18 @@ class BaseMovementInfo(DiffingMixin, models.Model):
 
         self.slug = slugify(self.slug)
         self.method = None
-        if self.pk is None:
+        if not self.pk:
             if not self.lastmod_user_id:
                 self.lastmod_user_id = request.user.pk
             if not self.owner_id:
-                try:
-                    self.owner_id = self.lastmod_user_id
-                except:
-                    self.owner_id = self.lastmod_user_id
-            self.method = 'new'
-        else:
-            if self.is_dirty():
-                self.method = 'update'
-
+                self.owner_id = self.lastmod_user_id
         self.lastmod = now()
-        if self.doc_date:
-            if self.doc_date.tzinfo is None:
-                self.doc_date = pytz.utc.localize(self.doc_date)
+        # if self.doc_date:
+        #     if self.doc_date.tzinfo is None:
+        #         self.doc_date = pytz.utc.localize(self.doc_date)
 
         super(BaseMovementInfo, self).save(force_insert, force_update, using, update_fields)
+
     #
     # @classmethod
     # def get_doc_type_verbose_name(cls, doc_type):
@@ -480,6 +397,7 @@ class BaseReportModel(DiffingMixin, models.Model):
     lastmod = models.DateTimeField(_('last modification'), db_index=True)
     lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
                                      verbose_name=_('last modification by'), on_delete=models.DO_NOTHING)
+
     @classmethod
     def get_doc_type_plus_list(cls):
         '''

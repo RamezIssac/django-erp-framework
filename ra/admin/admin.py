@@ -380,7 +380,8 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         return my_urls + reversion_urls + urlpatterns
 
     def get_by_slug(self, request, **kwargs):
-        result, query = self.model.simple_query(**kwargs)
+        query = self.model.objects.filter(**kwargs)
+        result = query.exists()
         if result:
             query = query[0]
             admin_url = reverse('%s:%s_%s_change' % (
