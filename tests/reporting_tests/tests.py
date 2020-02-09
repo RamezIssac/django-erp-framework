@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.timezone import now
 from pyquery import PyQuery as pq
 
-from .models import Client, Product, SimpleSales
+from .models import Client, Product, SimpleSales, InvoiceLine, Invoice, Journal, JournalItem
 
 User = get_user_model()
 SUPER_LOGIN = dict(username='superlogin', password='password')
@@ -423,7 +423,111 @@ class TestAdmin(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 302, response)
         self.assertEqual(response.url, reverse('ra_admin:login'))
 
+    def test_save_formset(self):
+        self.client.login(username='super', password='secret')
+        cash_expense_formsetname = 'invoiceline_set'
+
+        on_date = now()
+
+        response = self.client.post(reverse('ra_admin:reporting_tests_invoice_add'), data={
+            'slug':'999',
+            'client': self.client1.pk,
+            'doc_date': now(),
+            'doc_date_1':on_date.strftime('%H:%M'),
+            'doc_date_0': on_date.strftime('%Y-%m-%d'),
+            '%s-0-product' % cash_expense_formsetname: self.product1.pk,
+            '%s-0-quantity' % cash_expense_formsetname: 10,
+            '%s-0-price' % cash_expense_formsetname: 10,
+            '%s-0-discount' % cash_expense_formsetname: 10,
+            '%s-0-value' % cash_expense_formsetname: 10,
+            '%s-TOTAL_FORMS' % (
+                cash_expense_formsetname,): 1,
+            '%s-INITIAL_FORMS' % (
+                cash_expense_formsetname,): 0
+        })
+        # import pdb; pdb.set_trace()
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(InvoiceLine.objects.filter(slug=999).exists())
+
     # def test_helpcenter_access(self):
     #     self.assertTrue(self.client.login(username='limited', password='password'))
     #     response = self.client.get(reverse('ra_admin:help-center'))
     #     self.assertEqual(response.status_code, 200, response)
+@override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=True, USE_TZ=False)
+class TestPrePolutaedAdmin(TestAdmin):
+
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.journal = Journal.objects.create(data='journal 1', lastmod_user=cls.user, doc_date=now())
+
+    # def setUp(self):
+    #     # user = User.objects.create(is_superuser=True, is_staff=True, **SUPER_LOGIN)
+    #     # self.user = user
+    #     self.client1 = Client.objects.create(title='Client 1', lastmod_user=self.user)
+    #     self.client2 = Client.objects.create(title='Client 2', lastmod_user=user)
+    #     self.client3 = Client.objects.create(title='Client 3', lastmod_user=user)
+    #     self.client11 = Client.objects.create(title='Client special 1', lastmod_user=user, criteria='1')
+    #     self.client12 = Client.objects.create(title='Client special 2', lastmod_user=user, criteria='1')
+    #     self.client13 = Client.objects.create(title='Client special 3', lastmod_user=user, criteria='1')
+    #     self.journal = Journal.objects.create(data='journal 1', lastmod_user=user, doc_date=now())
+    #     JournalItem.objects.create(client_id=self.client1.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
+    #     JournalItem.objects.create(client_id=self.client2.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
+    #     JournalItem.objects.create(client_id=self.client3.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
+
+
+    # @classmethod
+    # def setUpTestData(cls):
+    #     # pdb.set_trace()
+
+    # def test_new_entry_in_prepopulated(self):
+    #     Client.objects.create(title='New Client', lastmod_user=self.user)
+    #     # pdb.set_trace()
+    #     response = self.client.get(reverse('admin:admin_views_journal_add'))
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertContains(response, 'Client 1')
+    #     self.assertContains(response, 'Client 2')
+    #     self.assertContains(response, 'Client 3')
+    #     self.assertContains(response, 'New Client')
+
+    def test_prepopulated_formset_initial(self):
+        self.client.login(username='super', password='secret')
+
+        response = self.client.get(reverse('ra_admin:reporting_tests_journal_add'))
+        # import pdb; pdb.set_trace()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Client 1')
+        self.assertContains(response, 'Client 2')
+        self.assertContains(response, 'Client 3')
+
+
+    def test_new_addition_in_change(self):
+        '''
+        Test if a new entry in client would be visible in
+        an already saved prepopulated formset
+        '''
+        self.client.login(username='super', password='secret')
+
+        Client.objects.create(title='New Client Here', lastmod_user=self.user)
+
+        response = self.client.get(reverse('ra_admin:reporting_tests_journal_change', args=(self.journal.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Client 1')
+        self.assertContains(response, 'Client 2')
+        self.assertContains(response, 'Client 3')
+        self.assertContains(response, 'New Client Here')
+
+    def _test_saving_data(self):
+        change_dict = {
+            'id': 1,
+            'data': 'My State Name 2',
+            'journalitem_set-0-name': 'My City name 2',
+            'journalitem_set-0-id': 1,
+            'journalitem_set-TOTAL_FORMS': '6',
+            'journalitem_set-INITIAL_FORMS': '0',
+            'journalitem_set-MAX_NUM_FORMS': '0',
+        }
+        response = self.client.post(reverse('admin:admin_views_journal_change', args=(self.journal.pk,)), change_dict)
+        self.assertEqual(response.status_code, 200)
+

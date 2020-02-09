@@ -323,7 +323,7 @@ class BaseMovementInfo(DiffingMixin, models.Model):
         Return the doc_type
         :return:
         """
-        raise NotImplementedError('Each Transaction should define a *doc_type*')
+        raise NotImplementedError(f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
 
     @classmethod
     def get_class_name(cls):

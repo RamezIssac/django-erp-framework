@@ -96,29 +96,29 @@ class RaChangeList(ChangeList):
 
         self.no_records_message = model_admin.no_records_message
 
-    def url_for_result(self, result):
-        """
-        Override parent to handle correct url mapping
-        :param result:
-        :return:
-        """
-        if self.model_admin.has_view_permission(self.request):
-            pk = getattr(result, self.pk_attname)
-            return reverse('%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
-                                              self.opts.model_name),
-                           args=(quote(pk),),
-                           current_app=self.model_admin.admin_site.name)
-        elif self.model_admin.has_change_permission(self.request):
-            pk = getattr(result, self.pk_attname)
-            return reverse('%s:%s_%s_change' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
-                                                self.opts.model_name),
-                           args=(quote(pk),),
-                           current_app=self.model_admin.admin_site.name)
-        elif self.model_admin.has_add_permission(self.request):
-            return reverse('%s:%s_%s_add' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
-                                             self.opts.model_name),
-                           current_app=self.model_admin.admin_site.name)
-        return False
+    # def url_for_result(self, result):
+    #     """
+    #     Override parent to handle correct url mapping
+    #     :param result:
+    #     :return:
+    #     """
+    #     if self.model_admin.has_view_permission(self.request):
+    #         pk = getattr(result, self.pk_attname)
+    #         return reverse('%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
+    #                                           self.opts.model_name),
+    #                        args=(quote(pk),),
+    #                        current_app=self.model_admin.admin_site.name)
+    #     elif self.model_admin.has_change_permission(self.request):
+    #         pk = getattr(result, self.pk_attname)
+    #         return reverse('%s:%s_%s_change' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
+    #                                             self.opts.model_name),
+    #                        args=(quote(pk),),
+    #                        current_app=self.model_admin.admin_site.name)
+    #     elif self.model_admin.has_add_permission(self.request):
+    #         return reverse('%s:%s_%s_add' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
+    #                                          self.opts.model_name),
+    #                        current_app=self.model_admin.admin_site.name)
+    #     return False
 
 
 class RaAdminSite(RaAdminSiteBase):
@@ -204,8 +204,8 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
             links = "<span class='go-to-change-form'>%s</span>" % ''.join(links) + ''
             obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.title)
             return mark_safe('%s %s' % (obj_link_title, links))
-        else:
-            return obj.title
+
+        return obj.title
 
     def get_history_link(self, obj):
         info = self.model._meta.app_label, self.model._meta.model_name
@@ -641,11 +641,6 @@ class RaMovementAdmin(RaAdmin):
                 formset_form.instance.save()
         formset.save()
 
-    def get_list_display(self, request):
-        list_display = super(RaMovementAdmin, self).get_list_display(request)
-        return list_display
-
-
 class RaMovementInlineAdmin(admin.TabularInline):
     template = f'{app_settings.RA_THEME}/edit_inline/tabular.html'
     extra = 2
@@ -924,8 +919,9 @@ class PrepopulatedAdmin(object):
 
 
 class RaPrePopulatedAdmin(PrepopulatedAdmin, RaAdmin):
-    change_form_template = 'ra/admin/change_form_prepopulated.html'
-    add_form_template = 'ra/admin/change_form_prepopulated.html'
+    pass
+    # change_form_template = 'ra/admin/change_form_prepopulated.html'
+    # add_form_template = 'ra/admin/change_form_prepopulated.html'
 
 
 class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
