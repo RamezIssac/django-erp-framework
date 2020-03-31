@@ -30,7 +30,7 @@ In our sales app, let's create a `reports.py` file *it can be any name, this is 
 
 
     @register_report_view
-    class clientTotalBalance(ReportView):
+    class ClientTotalBalance(ReportView):
         report_title = _('Clients Balances')
 
         base_model = Client
@@ -82,6 +82,7 @@ How much each product was sold?
 
 .. code-block:: python
 
+    from .models import Product
 
     @register_report_view
     class ProductTotalSales(ReportView):

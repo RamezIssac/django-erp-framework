@@ -642,6 +642,7 @@ class RaMovementAdmin(RaAdmin):
                 formset_form.instance.save()
         formset.save()
 
+
 class RaMovementInlineAdmin(admin.TabularInline):
     template = f'{app_settings.RA_THEME}/edit_inline/tabular.html'
     extra = 2

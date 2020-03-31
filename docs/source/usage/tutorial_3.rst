@@ -140,7 +140,7 @@ Add ``'__balance_quan__'`` to the ``time_series_fields`` list,
 .. code-block::python
 
     @register_report_view
-    class ProductSalesMonthlySeries(ProductReportMixin, ReportView):
+    class ProductSalesMonthly(ReportView):
         ...
         form_settings = {
             ...
@@ -150,6 +150,8 @@ Add ``'__balance_quan__'`` to the ``time_series_fields`` list,
         }
 
         swap_sign = True
+
+
 * swap_sign will do as the name suggest. Why results are negative in the first place ? Remember `sales` doc_type is registered to "minus" Product and this is *modeling* from accounting.
 
 Reload your app and check the results. You should see that for each month, we have 2 fields "Balance QTY" and "Balance"
@@ -161,7 +163,7 @@ Now let's add some charts, shall we ?
 
     # Add chart settings to your ProductSalesMonthlySeries
     @register_report_view
-    class ProductSalesMonthlySeries(ReportView):
+    class ProductSalesMonthly(ReportView):
         ...
         chart_settings = [
             {
@@ -228,7 +230,7 @@ It would look like something like this
 .. code-block:: python
 
     @register_report_view
-    class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
+    class ClientSalesMonthlySeries(ReportView):
         report_title = _('Client Sales Monthly')
 
         base_model = Client

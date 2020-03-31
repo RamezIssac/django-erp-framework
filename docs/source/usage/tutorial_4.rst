@@ -128,7 +128,7 @@ To add apply this information, we only need to add ``data-extra-params`` to the 
 
 .. code-block:: javascript
 
-    {% extends 'ra/admin/base' %}
+    {% extends 'ra/admin/base.html' %}
     {% load ra_admin_tags %}
 
     {% block content %}
