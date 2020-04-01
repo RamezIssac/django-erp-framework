@@ -1,5 +1,5 @@
 pytz
-django==2.2.9
+django==2.2.12
 psycopg2-binary
 simplejson
 django-crequest==2018.5.11
