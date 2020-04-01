@@ -33,6 +33,15 @@ Features
 - Django 2.2, 3.0 Compatible
 
 
+Demo
+----
+
+Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials are admin/adminpassword
+
+The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
+can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
+
+
 Dependencies
 ------------
 * `Python 3 <https://www.python.org/downloads/>`_
