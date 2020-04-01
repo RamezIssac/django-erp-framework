@@ -1,5 +1,5 @@
 """
-WSGI config for ra_erp_cash_proj project.
+WSGI config for {{ project_name }} project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ra_erp_cash_proj.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', '{{ project_name }}.settings')
 
 application = get_wsgi_application()
