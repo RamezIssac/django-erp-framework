@@ -6,8 +6,8 @@ python:
   - "3.8"
 
 env:
-  - DJANGO=django==2.2.9
-  - DJANGO=django==3.0.1
+  - DJANGO=django==2.2.12
+  - DJANGO=django==3.0.5
 
 services:
   - postgresql
