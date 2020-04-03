@@ -63,6 +63,7 @@ Quick start
 
     .. code-block:: console
 
+        $ mkvirtualenv ra-env (or `virtualenv` if you dont have mkvirtualenv)
         $ pip install django-ra
 
 2. Once Ra installed, it provides a command to generate a new project.

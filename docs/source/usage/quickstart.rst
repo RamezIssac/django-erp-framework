@@ -26,6 +26,7 @@ Create your first Ra project
 
 .. code-block:: console
 
+    $ mkvirtualenv ra-env (or use `virtualenv ra-env` if you don't have mkvirtualenv)
     $ pip install django-ra
 
 2. Once Ra installed, it provides a command to generate a new project.
