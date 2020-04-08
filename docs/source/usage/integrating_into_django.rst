@@ -57,24 +57,28 @@ Add ``MEDIA_ROOT`` and ``MEDIA_URL`` settings, if your project does not have the
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
     MEDIA_URL = '/media/'
 
-Add a ``RA_SITE_TITLE`` - this will be displayed on the main dashboard of the Ra admin backend:
+
+Ra uses django-crispy-forms bootstrap 4 for the reporting forms. So we need to add this:
+
+.. code-block:: python
+
+    CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+
+
+Finally, you can add a ``RA_SITE_TITLE`` - which will be displayed on the main dashboard of the Ra dashboard:
 
 .. code-block:: python
 
     RA_SITE_TITLE = 'My Example Site'
 
-Finally, as Ra use Crispy-forms on bootstrap 3, Add
-
-.. code-block:: python
-
-    CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 Various other settings are available to configure Ra's behaviour - see :doc:`/advanced_topics/settings`.
 
 URL configuration
 -----------------
 
-Now make the following additions to your ``urls.py`` file:
+We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
 
 .. code-block:: python
 
@@ -93,7 +97,9 @@ Now make the following additions to your ``urls.py`` file:
 
 The URL paths here can be altered as necessary to fit your project's URL scheme.
 
-``ra_admin_site.urls`` provides the admin interface for Ra. This is separate from the Django admin interface (``django.contrib.admin``); Ra-only projects typically host the Ra admin at ``/admin/``, but if this would clash with your project's existing admin backend then an alternative path can be used, such as ``/erp/`` here.
+``ra_admin_site.urls`` provides the admin interface for Ra. This is a separate site from the Django admin interface (``django.contrib.admin``);
+
+Ra-only projects typically host the Ra admin at ``/admin/``, but if this would clash with your project's existing admin backend then an alternative path can be used, such as ``/erp/`` here.
 
 With this configuration in place, you are ready to run ``./manage.py migrate`` to create the database tables used by Ra.
 
