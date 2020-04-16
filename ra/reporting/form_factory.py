@@ -28,6 +28,8 @@ class BaseReportForm(object):
     '''
     Holds basic function
     '''
+    date_field_name = 'doc_date'
+    support_doc_type = True
 
     def get_fk_filters(self):
         """
@@ -47,8 +49,8 @@ class BaseReportForm(object):
 
     def get_date_filters(self):
         return {
-            'doc_date__gt': self.cleaned_data['from_doc_date'],
-            'doc_date__lte': self.cleaned_data['to_doc_date']
+            f'{self.date_field_name}__gt': self.cleaned_data['from_doc_date'],
+            f'{self.date_field_name}__lte': self.cleaned_data['to_doc_date']
         }
 
     def get_doc_types_filters(self):
@@ -61,7 +63,9 @@ class BaseReportForm(object):
         return _values
 
     def get_doc_type_plus_minus_lists(self):
-        return self.base_model.get_doc_type_plus_list(), self.base_model.get_doc_type_minus_list()
+        if self.support_doc_type:
+            return self.base_model.get_doc_type_plus_list(), self.base_model.get_doc_type_minus_list()
+        return [], []
 
     # End of new methods Ra 2
 
