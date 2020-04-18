@@ -77,6 +77,11 @@ class RAModel(DiffingMixin, models.Model):
     class Meta:
         abstract = True
 
+class RaModelMixin(object):
+    """
+    This is a sample interface for integrating with teh framework
+    """
+
 
 class BaseInfo(RAModel):
     """

@@ -22,14 +22,16 @@ from ra.reporting.helpers import choices_from_list, get_model_fields2, apply_ord
     get_user_formLayout
 from ra.reporting.registry import field_registry
 from ra.utils.translation import ugettext as _
+from ra.admin.admin import ra_admin_site
 
 
 class BaseReportForm(object):
     '''
     Holds basic function
     '''
-    date_field_name = 'doc_date'
-    support_doc_type = True
+    # date_field_name = 'doc_date'
+    date_field_name = 'order__date_placed'
+    support_doc_type = False
 
     def get_fk_filters(self):
         """
@@ -103,7 +105,8 @@ class BaseReportForm(object):
             return self.cleaned_data['group_by']
         return None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, support_doc_type=False, **kwargs):
+        self.support_doc_type = support_doc_type
         saved_report_meta = kwargs.pop('form_settings', {})
         imposed_form_settings = kwargs.pop('imposed_form_settings', False)
         if imposed_form_settings and saved_report_meta:
@@ -280,16 +283,17 @@ class BaseReportForm(object):
         if self.cleaned_data.get('add_details_control', False):
             _values.append('_control_')
         if group_by != 'doc_type':
-            _values.append(group_by + '_id')
+            # _values.append(group_by + '_id')
+            _values.append('id')
             ordered_cols = apply_order_to_list(self.cleaned_data['group_columns'],
                                                self.cleaned_data['group_col_order'].split(','))
             for item in ordered_cols:
-                if item == 'slug' and group_by:
-                    _values.append(group_by + '__slug')
-                elif item == 'title' and group_by:
-                    _values.append(group_by + '__title')
-                else:
-                    _values.append(item)
+                # if item == 'slug' and group_by:
+                #     _values.append(group_by + '__slug')
+                # elif item == 'title' and group_by:
+                #     _values.append(group_by + '__title')
+                # else:
+                _values.append(item)
         else:
             # allowed_document_magic_fields = self.allowed_document_magic_fields
             selected_fields = self.cleaned_data['group_columns']
@@ -444,18 +448,27 @@ class BaseReportForm(object):
 #         'doc_types': doc_types_raw,
 #     }
 
+def _default_foreign_key_widget(f_field):
+    return {'form_class': forms.ModelMultipleChoiceField,
+            'required': False,
+            'widget': RaAutocompleteSelectMultiple(f_field.remote_field, ra_admin_site,
+                                                   attrs={'class': 'select2bs4'})}
+
 
 def report_form_factory(model, base_model=None,
                         admin=True, magic_fields_filer_func=None,
-                        fkeys_filter_func=None, doc_types_filter_func=None,
+                        fkeys_filter_func=None, doc_types_filter_func=None, foreign_key_widget_func=None,
                         **kwargs):
     '''
-
+    fkeys_filter_func： a functin to filter out foreign keys detected by function,
+    it gets a dictionary with foreignkey field name as key and the value the ForeignKey istance
+    foreign_key_widget_func: a function to
     '''
 
     fkeys_filter_func = fkeys_filter_func or (lambda x: x)
     magic_fields_filer_func = magic_fields_filer_func or (lambda x: x)
     doc_types_filter_func = doc_types_filter_func or (lambda x: x)
+    foreign_key_widget_func = foreign_key_widget_func or _default_foreign_key_widget
 
     magic_fields = field_registry.get_all_report_fields_names()
     magic_fields = magic_fields_filer_func(magic_fields)
@@ -473,7 +486,13 @@ def report_form_factory(model, base_model=None,
 
     time_series_options = ['daily', 'weekly', 'semimonthly', 'monthly', 'quarterly', 'semiannually', 'annually']
 
-    doc_types_raw = base_model.get_doc_types()
+    try:
+        doc_types_raw = base_model.get_doc_types()
+    except AttributeError:
+        # The base model does not follow the assumption of get_doc_types
+        doc_types_raw = []
+        pass
+
     doc_types_raw = doc_types_filter_func(doc_types_raw)
     doc_types_magical_field = ['__doc_type_%s__' % doc for doc in list(doc_types_raw)]
 
@@ -604,13 +623,8 @@ def report_form_factory(model, base_model=None,
     for name, f_field in fkeys_map.items():
         fkeys_list.append(name)
 
-        from ra.admin.admin import ra_admin_site
-
         fields[name] = f_field.formfield(
-            **{'form_class': forms.ModelMultipleChoiceField,
-               'required': False,
-               'widget': RaAutocompleteSelectMultiple(f_field.remote_field, ra_admin_site,
-                                                      attrs={'class': 'select2bs4'})})
+            **foreign_key_widget_func(f_field))
 
     fields['doc_date'] = forms.DateField(input_formats=["%Y-%m-%d"], required=False, label=ugettext_lazy('at date'))
 

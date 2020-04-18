@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy
 
 from ra.base.cache import get_cached_name, get_cached_slug
 from ra.reporting.helpers import DECIMAL_FIELDS, DATE_FIELDS, apply_order_to_list
-from ra.utils.views import get_decorated_slug, get_linkable_slug_title, re_time_series
+from ra.utils.views import get_decorated_slug, get_linkable_slug_title, re_time_series, make_linkable_field
 from .registry import field_registry
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,13 @@ class ReportGenerator(object):
     Class to generate a Json Object containing report data based on
     report form , main_queryset and teh report model
     """
+    date_field = 'doc_date'
+    print_flag = None
+    list_display_links = []
 
     def __init__(self, report_model, form, main_queryset, no_distinct=False, base_model=None, print_flag=False,
-                 doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, swap_sign=False):
+                 doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, swap_sign=False,
+                 date_field=None):
         super(ReportGenerator, self).__init__()
         if no_distinct and not base_model:
             raise ImproperlyConfigured('If no_distinct is True then have to supply as base_model ')
@@ -40,9 +44,8 @@ class ReportGenerator(object):
         self.report_fields_classes = {}
         self.report_fields_dependencies = {'series': {}, 'matrix': {}, 'normal': {}}
         self.existing_dependencies = {'series': [], 'matrix': [], 'normal': []}
-        self._imposed_start_date = False
 
-        self.print_flag = print_flag
+        self.print_flag = print_flag or self.print_flag
         #
         self.group_by = form.get_group_by_filters()
 
@@ -55,7 +58,7 @@ class ReportGenerator(object):
             self.focus_field_as_key = None
             self.focus_field_id = None
 
-        self._fk2_field = self.focus_field_id
+        self.group_by_field_attname = self.focus_field_id
 
         doc_types = form.get_doc_type_plus_minus_lists()
         self.doc_type_plus_list = list(doc_type_plus_list) if doc_type_plus_list else doc_types[0]
@@ -63,8 +66,26 @@ class ReportGenerator(object):
 
         self.swap_sign = swap_sign
         self.limit_records = limit_records
-        #
-        self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct)
+
+        # passed to the report fields
+        # self.date_field = date_field or self.date_field
+
+        # in case of a group by, do we show a grouped by model data regardless of their appearance in the results
+        # a client who didnt make a transaction during the date period.
+        self.show_empty_records = True
+
+        # Preparing actions
+
+        # import pdb; pdb.set_trace()
+        if self.group_by and self.show_empty_records:
+            self.group_by_field = [x for x in self.report_model._meta.fields if x.name == self.group_by][0]
+            # import pdb; pdb.set_trace()
+            self.main_queryset = self.group_by_field.related_model.objects.values()
+        else:
+            self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct)
+            ids = main_queryset.values_list(self.group_by_field.attname)
+            self.main_queryset = self.group_by_field.related_model.objects.filter(pk__in=ids).values()
+
         self._prepare_decimal_fields()
         self._prepare_report_fields()
         self.prepare_calculation()
@@ -75,21 +96,23 @@ class ReportGenerator(object):
         :param query: 
         :return:
         """
+        # import pdb; pdb.set_trace()
         if no_distinct:
             return self._get_no_distinct_queryset()
         distinct_filter = self.form.get_group_by_filters()
         self.group_by = distinct_filter
+
         if self.get_group and distinct_filter:
+            # make sure the ordering
+            query = query.order_by(self.focus_field_id)
+
             query = query.distinct(distinct_filter)
             f = self.form_get_queryset_filters(w_doc_types=False, w_date=False)
         else:
             f = self.form_get_queryset_filters(w_date=True)
-            if self._imposed_start_date:
-                user_date = f['doc_date__gt']
-                if user_date < self._imposed_start_date:
-                    f['doc_date__gt'] = self._imposed_start_date
         if f:
             query = query.filter(**f)
+        # import pdb; pdb.set_trace()
         return query.values()
 
     def form_get_queryset_filters(self, w_date=True, w_doc_types=True):
@@ -142,9 +165,6 @@ class ReportGenerator(object):
 
     def get_field_computation_class(self, field_name):
         return self.report_fields_classes[field_name]
-
-        # from .fields import BaseReportField
-        # return BaseReportField(self.doc_type_plus_list, self.doc_type_minus_list, self.report_model)
 
     def _prepare_report_fields(self):
         """
@@ -204,7 +224,7 @@ class ReportGenerator(object):
                 'existing_on_report': existing_dependency
             }
             self.report_fields_classes[col] = klass(self.doc_type_plus_list, self.doc_type_minus_list,
-                                                    self.report_model)
+                                                    self.report_model, date_field=self.date_field)
 
     def prepare_calculation(self):
         group_by_field = self.focus_field_as_key
@@ -289,13 +309,8 @@ class ReportGenerator(object):
                             doc_date_filter = {}
                             col_key = col
 
-                        doc_date_filter['doc_date__gt'] = previous_date
-                        doc_date_filter['doc_date__lte'] = _time
-
-                        if self._imposed_start_date:
-                            user_date = doc_date_filter['doc_date__gt']
-                            if user_date < self._imposed_start_date:
-                                doc_date_filter['doc_date__gt'] = self._imposed_start_date
+                        doc_date_filter[f'{self.date_field}__gt'] = previous_date
+                        doc_date_filter[f'{self.date_field}__lte'] = _time
 
                         if col.startswith('__doc_type_'):
                             quan_flag = False
@@ -369,17 +384,18 @@ class ReportGenerator(object):
 
         options = self.get_datatable_options()
         columns = options['columns']
+        display_link = self.list_display_links or columns[0]
 
         data = {}
         extract_time_series = self.extract_time_series
         _decrypt_matrix_col = self._decrypt_matrix_col
-        has_attr_fk2_field = hasattr(self, '_fk2_field')
-
+        has_attr_fk2_field = hasattr(self, 'group_by_field_attname')
+        # import pdb; pdb.set_trace()
         print_flag = self.print_flag
-        fk2_field = None
-        if has_attr_fk2_field and self._fk2_field:
-            column_data = obj[self._fk2_field]
-            fk2_field = str(column_data)
+        group_by_val = None
+        if has_attr_fk2_field and self.group_by_field_attname:
+            column_data = obj.get(self.group_by_field_attname, obj.get('id'))
+            group_by_val = str(column_data)
 
         _decimal_fields = self._decimal_fields
 
@@ -408,57 +424,24 @@ class ReportGenerator(object):
                 computation_class = self.get_field_computation_class(magic_field_name)
                 dep_results = self.get_dependencies_results(magic_field_name, extra_key, dep_key)
                 value = computation_class.resolve(self._prepared_results[name],
-                                                  self.focus_field_as_key, fk2_field, dep_results)
+                                                  self.focus_field_as_key, group_by_val, dep_results)
                 if self.swap_sign: value = -value
                 data[name] = value
 
             else:
-                if '__slug' in name:
-                    model_name = name.split('__slug')[0]
-                    model_pk = obj[model_name + '_id']
-                    if model_pk:
-                        data[name] = get_cached_slug(model_name, model_pk)
-                        if not print_flag:
-                            data[name] = get_linkable_slug_title(model_name, model_pk, data[name])
-                    else:
-                        data[name] = ''
-
-                elif '__title' in name:
-                    model_name = name.split('__title')[0]
-                    model_pk = obj[model_name + '_id']
-                    if model_pk:
-                        title = get_cached_name(model_name, model_pk)
-                        if not print_flag:
-                            data[name] = get_linkable_slug_title(model_name, model_pk, title)
-                        else:
-                            data[name] = title
-                    else:
-                        data[name] = ''
-                else:
-                    column_data = obj.get(name, '')
-
-                    if name in DATE_FIELDS:
-                        data[name] = column_data
-                    else:
-                        data[name] = str(column_data)
-
-                '''Apply redirect link'''
-                if (name == 'slug') and not print_flag:
-                    data[name] = get_decorated_slug(name, data[name], obj, True)
+                data[name] = obj.get(name, '')
+            if self.get_group and name in display_link:
+                data[name] = make_linkable_field(self.group_by_field.related_model, group_by_val, data[name])
 
         if 'doc_type' in data:
             data['doc_type_raw'] = data['doc_type']
             data['doc_type'] = ugettext_lazy(data['doc_type'])
-
-        if data and has_attr_fk2_field and self._fk2_field:
-
-            if data[self._fk2_field] == '' or data[self._fk2_field] == 'None':
-                # short Circuit when it's an empty record due to annotation (most propably)
-                return None
         return data
+
 
     def get_report_data(self):
         main_queryset = self.main_queryset
+        # import pdb; pdb.set_trace()
         if self.limit_records:
             main_queryset = main_queryset[:self.limit_records]
         get_record_data = self.get_record_data

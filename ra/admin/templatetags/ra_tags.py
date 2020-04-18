@@ -4,7 +4,8 @@ from django.utils.encoding import force_text
 from django.utils.functional import Promise
 from django.utils.safestring import mark_safe
 
-from ra.base.app_settings import RA_APP_ICONS
+from ra.base.app_settings import RA_APP_ICONS, RA_ADMIN_SITE_NAME
+
 
 register = template.Library()
 
@@ -21,7 +22,7 @@ def get_typed_report_url_param(widget_instance, obj_instance, pk_name=None, appe
     default_param = '?&ajax=true'  # &from_doc_date=2014-01-01%2000:00:00
     namespace = widget_instance['namespace'] if type(widget_instance) is dict else widget_instance.get_base_model_name()
     report_slug = widget_instance['report_slug'] if type(widget_instance) is dict else widget_instance.get_report_slug()
-    url = reverse('admin:report_list', args=(namespace,))
+    url = reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(namespace,))
     url += '%s/' % report_slug
 
     report_settings = widget_instance['form_settings'] if type(

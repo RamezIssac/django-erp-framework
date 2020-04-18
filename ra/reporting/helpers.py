@@ -185,8 +185,10 @@ def get_foreign_keys(model):
     fields = model._meta.get_fields()
     fkeys = {}
     for f in fields:
-        if f.is_relation and f.related_model is not User_model and type(f) is not models.OneToOneRel:
+        if f.is_relation and f.related_model is not User_model and type(f) is not models.OneToOneRel \
+                and type(f) is not models.ManyToOneRel and type(f) is not models.ManyToManyRel:
             fkeys[f.attname] = f
+
     return fkeys
 
 

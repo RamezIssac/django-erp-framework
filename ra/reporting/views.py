@@ -192,7 +192,6 @@ class ReportView(UserPassesTestMixin, FormView):
     # control the chart settings, passed to front end as is.
     chart_settings = None
 
-    _imposed_start_date = False
     no_distinct = False  # a flag to the report generator telling it to get get the main queryset from base_model
 
     other_namespaces = None
@@ -242,7 +241,7 @@ class ReportView(UserPassesTestMixin, FormView):
 
     @classmethod
     def get_url(cls):
-        url = reverse('admin:report_list', args=(cls.get_base_model_name(),))
+        url = reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(cls.get_base_model_name(),))
         url += '%s/' % cls.get_report_slug()
         return url
 
@@ -309,7 +308,7 @@ class ReportView(UserPassesTestMixin, FormView):
         settings.update(cls.form_settings or {})
         settings['from_doc_date'] = cls.get_default_from_date()
         settings['to_doc_date'] = cls.get_default_to_date()
-        return form_class(**{'form_settings': settings})
+        return form_class(support_doc_type=True, **{'form_settings': settings})
 
     def get_form_settings(self):
         # todo : Review
@@ -481,7 +480,8 @@ class ReportView(UserPassesTestMixin, FormView):
                 return self.form_invalid(self.form)
         else:
             # Accessing the report page directly is not allowed
-            return HttpResponseRedirect(reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
+            return HttpResponseRedirect(
+                reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
 
     @classmethod
     def get_report_title(cls):
@@ -582,11 +582,9 @@ class ReportView(UserPassesTestMixin, FormView):
     def get_default_from_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_FROM_DATETIME
 
-
     @classmethod
     def get_default_to_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_TO_DATETIME
-
 
 
 class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
@@ -630,7 +628,11 @@ class ReportList(ReportListBase):
 
         model_admin = ra_admin_site.get_admin_by_model_name(self.kwargs['base_model'])
         if model_admin:
-            return model_admin['admin'].typed_reports_order_list or []
+            try:
+                return model_admin['admin'].typed_reports_order_list or []
+            except AttributeError:
+                # The admin class does not have an order list for teh reports
+                pass
         return []
 
     def get_permissions(self):
@@ -640,7 +642,11 @@ class ReportList(ReportListBase):
         from ra.admin.admin import get_reports_map
         from ra.base.registry import get_ra_model_by_name
         model = get_ra_model_by_name(self.kwargs['base_model'])
-        val = get_reports_map(model.get_class_name().lower(), self.request.user, self.request, self.get_order_list())
+        try:
+            model_name = model.get_class_name().lower()
+        except:
+            model_name = model._meta.model_name
+        val = get_reports_map(model_name, self.request.user, self.request, self.get_order_list())
         return val
 
     def get_meta_data(self):

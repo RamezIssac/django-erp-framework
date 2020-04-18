@@ -33,6 +33,29 @@ easter_western_map = {1776: 48,  # 0
 re_time_series = re.compile('TS\d+')
 
 
+def make_linkable_field(model, pk, field_value, target_blank=False):
+
+    try:
+        if False:
+        # if model_map['admin'].enable_view_view:
+                redirect_url = reverse(
+                    '%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, model._meta.app_label, model._meta.model_name),
+                    args=(pk,))
+        else:
+            redirect_url = reverse(
+                '%s:%s_%s_change' % (app_settings.RA_ADMIN_SITE_NAME, model._meta.app_label, model._meta.model_name),
+                args=(pk,))
+
+        if redirect_url:
+            return_val = '<a class="decoratedLink" data-pk="%s" href="%s" %s>%s</a>' % (
+                pk, redirect_url, target_blank, field_value)
+    except:
+        return_val = field_value
+
+    return return_val
+
+
+
 def get_linkable_slug_title(model_name, pk, field_value, target_blank=False):
     return_val = field_value
     # import pdb; pdb.set_trace()
@@ -147,7 +170,6 @@ def get_typed_reports_for_templates(model_name, user=None, request=None, only_re
     for report in reports:
         view = report
         if not only_report_slug or only_report_slug == view.get_report_slug():
-
             view_perm = '%s.%s_view' % (view.get_base_model_name(), view.get_report_slug())
             if view_perm in user_reports or user.is_superuser:
                 report_list.append(view)

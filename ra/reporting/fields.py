@@ -10,7 +10,7 @@ from .decorators import report_field_register
 
 
 class BaseReportField(object):
-    date_field = 'doc_date'
+    # date_field = 'doc_date'
     plus_minus_modifier_field = 'doc_type'
     calculation_field = 'value'
     calculation_method = Sum
@@ -24,14 +24,17 @@ class BaseReportField(object):
     type = 'date'
 
     def __init__(self, doc_type_plus_list, doc_type_minus_list, report_model=None,
-                 calculation_field=None, calculation_method=None):
+                 calculation_field=None, calculation_method=None, date_field='doc_date'):
         super(BaseReportField, self).__init__()
-        self.report_model = report_model if report_model else self.report_model
+        self.date_field = date_field
+        self.report_model = report_model or self.report_model
         self.calculation_field = calculation_field if calculation_field else self.calculation_field
         self.calculation_method = calculation_method if calculation_method else self.calculation_method
         self.doc_type_plus_list = doc_type_plus_list
         self.doc_type_minus_list = doc_type_minus_list
         self.component_of = self.component_of or []
+        if not self.doc_type_minus_list and not self.doc_type_plus_list:
+            self._debit_and_credit = False
 
     def get_doc_type_plus_filter(self):
         return {'doc_type__in': self.doc_type_plus_list}
@@ -59,9 +62,10 @@ class BaseReportField(object):
             queryset = queryset.filter(**extra_filters)
         if q_filters:
             queryset = queryset.filter(*q_filters)
-        debit_results = queryset.filter(**self.get_doc_type_plus_filter())
+        if self.doc_type_plus_list:
+            queryset = queryset.filter(**self.get_doc_type_plus_filter())
 
-        debit_results = self.apply_aggregation(debit_results, True, group_by, extra_filters, q_filters)
+        debit_results = self.apply_aggregation(queryset, True, group_by, extra_filters, q_filters)
 
         credit_results = None
         if self._debit_and_credit:
@@ -70,14 +74,14 @@ class BaseReportField(object):
                 queryset = queryset.filter(**extra_filters)
             if q_filters:
                 queryset = queryset.filter(*q_filters)
-
-            credit_results = queryset.filter(**self.get_doc_type_minus_filter())
+            if self.doc_type_minus_list:
+                queryset = queryset.filter(**self.get_doc_type_minus_filter())
 
             # if group_by:
             #     credit_results = credit_results.values(group_by).annotate(annotation)
             # else:
             #     credit_results = credit_results.aggregate(annotation)
-            credit_results = self.apply_aggregation(credit_results, True, group_by, extra_filters, q_filters)
+            credit_results = self.apply_aggregation(queryset, True, group_by, extra_filters, q_filters)
 
         return debit_results, credit_results, dep_values
 
@@ -195,9 +199,9 @@ class FirstBalanceField(BaseReportField):
     def prepare(self, group_by='', extra_filters=None, q_filters=None, with_dependencies=False, only_dependencies=None):
         extra_filters = extra_filters or {}
 
-        from_date_value = extra_filters.get('doc_date__gt')
-        extra_filters.pop('doc_date__gt', None)
-        extra_filters['doc_date__lte'] = from_date_value
+        from_date_value = extra_filters.get(f'{self.date_field}__gt')
+        extra_filters.pop(f'{self.date_field}__gt', None)
+        extra_filters[f'{self.date_field}__lte'] = from_date_value
         return super(FirstBalanceField, self).prepare(group_by, extra_filters, q_filters, with_dependencies,
                                                       only_dependencies)
 
