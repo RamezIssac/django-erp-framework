@@ -9,7 +9,9 @@ import pytz
 from crispy_forms.helper import FormHelper
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.forms import MultipleChoiceField
 from django.http import QueryDict
 from django.utils.text import capfirst
 from django.utils.timezone import now
@@ -131,7 +133,8 @@ class BaseReportForm(object):
             enforce = False
             for field in self.base_fields.keys():
                 if field in saved_report_meta:
-                    if type(self.base_fields[field]) == forms.MultipleChoiceField and not field == 'doc_types':
+                    if type(self.base_fields[field]) in [forms.MultipleChoiceField,
+                                                         EasyMultipleChoiceField] and not field == 'doc_types':
                         data.setlist(field, saved_report_meta[field] or [])
                     elif field in ['from_doc_date']:  # , 'to_doc_date']:
 
@@ -312,7 +315,6 @@ class BaseReportForm(object):
             allowed_magic = [e for allowed in allowed_document_magic_fields for e in selected_fields if e in allowed]
             if allowed_magic:
                 _values += allowed_magic
-
         return _values
 
     def clean(self):
@@ -447,6 +449,29 @@ class BaseReportForm(object):
 #         'doc_types_magical_fields': doc_types_magical_field,
 #         'doc_types': doc_types_raw,
 #     }
+class EasyMultipleChoiceField(forms.MultipleChoiceField):
+    def to_python(self, value):
+        if not value:
+            return []
+        elif not isinstance(value, (list, tuple)):
+            raise ValidationError(self.error_messages['invalid_list'], code='invalid_list')
+        return [str(val) for val in value]
+
+    def validate(self, value):
+        """Validate that the input is a list or tuple."""
+        if self.required and not value:
+            raise ValidationError(self.error_messages['required'], code='required')
+        # Validate that each value in the value list is in self.choices.
+        for val in value:
+            # This will be moved somewhere else
+            if '__' in val: continue
+            if not self.valid_value(val):
+                raise ValidationError(
+                    self.error_messages['invalid_choice'],
+                    code='invalid_choice',
+                    params={'value': val},
+                )
+
 
 def _default_foreign_key_widget(f_field):
     return {'form_class': forms.ModelMultipleChoiceField,
@@ -518,12 +543,12 @@ def report_form_factory(model, base_model=None,
         _grp_display = ['slug', 'title'] + magic_fields
 
         default_for_group_display = []
-        fields['group_columns'] = forms.MultipleChoiceField(required=False, widget=forms.SelectMultiple(),
-                                                            choices=choices_from_list(_grp_display, False) +
-                                                                    choices_from_list(_movmenet_fields, False,
-                                                                                      extra_list=magic_fields_ordered),
-                                                            initial=default_for_group_display,
-                                                            label=ugettext_lazy('group_columns'))
+        fields['group_columns'] = EasyMultipleChoiceField(required=False, widget=forms.SelectMultiple(),
+                                                          choices=choices_from_list(_grp_display, False) +
+                                                                  choices_from_list(_movmenet_fields, False,
+                                                                                    extra_list=magic_fields_ordered),
+                                                          initial=default_for_group_display,
+                                                          label=ugettext_lazy('group_columns'))
 
         fields['aggregate_on'] = forms.ChoiceField(required=False, widget=forms.Select(),
                                                    choices=[('', '----'), ] + fk_choices,

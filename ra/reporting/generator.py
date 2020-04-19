@@ -25,7 +25,7 @@ class ReportGenerator(object):
 
     def __init__(self, report_model, form, main_queryset, no_distinct=False, base_model=None, print_flag=False,
                  doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, swap_sign=False,
-                 date_field=None):
+                 date_field=None, database_columns=None):
         super(ReportGenerator, self).__init__()
         if no_distinct and not base_model:
             raise ImproperlyConfigured('If no_distinct is True then have to supply as base_model ')
@@ -39,6 +39,7 @@ class ReportGenerator(object):
         self.columns = []
         self.time_series_columns = []
         self.matrix_columns = []
+        self.database_columns = database_columns
 
         self._prepared_results = {}
         self.report_fields_classes = {}
@@ -81,16 +82,18 @@ class ReportGenerator(object):
             self.group_by_field = [x for x in self.report_model._meta.fields if x.name == self.group_by][0]
             # import pdb; pdb.set_trace()
             self.main_queryset = self.group_by_field.related_model.objects.values()
-        else:
+        elif self.group_by:
             self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct)
             ids = main_queryset.values_list(self.group_by_field.attname)
             self.main_queryset = self.group_by_field.related_model.objects.filter(pk__in=ids).values()
+        else:
+            self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct, self.database_columns)
 
         self._prepare_decimal_fields()
         self._prepare_report_fields()
         self.prepare_calculation()
 
-    def apply_queryset_options(self, query, no_distinct):
+    def apply_queryset_options(self, query, no_distinct, fields=None):
         """
         Apply the filters to the main queryset which will computed results be mapped to
         :param query: 
@@ -113,6 +116,8 @@ class ReportGenerator(object):
         if f:
             query = query.filter(**f)
         # import pdb; pdb.set_trace()
+        if fields:
+            return query.values(*fields)
         return query.values()
 
     def form_get_queryset_filters(self, w_date=True, w_doc_types=True):
@@ -385,7 +390,6 @@ class ReportGenerator(object):
         options = self.get_datatable_options()
         columns = options['columns']
         display_link = self.list_display_links or columns[0]
-
         data = {}
         extract_time_series = self.extract_time_series
         _decrypt_matrix_col = self._decrypt_matrix_col
@@ -430,7 +434,7 @@ class ReportGenerator(object):
 
             else:
                 data[name] = obj.get(name, '')
-            if self.get_group and name in display_link:
+            if self.group_by and name in display_link:
                 data[name] = make_linkable_field(self.group_by_field.related_model, group_by_val, data[name])
 
         if 'doc_type' in data:
