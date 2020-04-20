@@ -31,8 +31,8 @@ class BaseReportForm(object):
     '''
     Holds basic function
     '''
-    # date_field_name = 'doc_date'
-    date_field_name = 'order__date_placed'
+    date_field_name = 'doc_date'
+    # date_field_name = 'order__date_placed'
     support_doc_type = False
 
     def get_fk_filters(self):
@@ -85,7 +85,7 @@ class BaseReportForm(object):
 
         return filters
 
-    def get_datatable_columns(self, get_group=False, appened_fkeys=False, wTimeSeries=True, wMatrix=True):
+    def get_datatable_columns(self, get_group=False, wTimeSeries=True, wMatrix=True):
         _values = []
         if self.is_valid():
             if get_group:

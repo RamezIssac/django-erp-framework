@@ -1,10 +1,16 @@
 from __future__ import unicode_literals
+
+import datetime
 import logging
+
+from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import F
+from django.utils.timezone import now
 
 from django.utils.translation import ugettext_lazy
 
+from ra.base.app_settings import RA_DEFAULT_FROM_DATETIME, RA_DEFAULT_TO_DATETIME
 from ra.base.cache import get_cached_name, get_cached_slug
 from ra.reporting.helpers import DECIMAL_FIELDS, DATE_FIELDS, apply_order_to_list
 from ra.utils.views import get_decorated_slug, get_linkable_slug_title, re_time_series, make_linkable_field
@@ -23,23 +29,48 @@ class ReportGenerator(object):
     print_flag = None
     list_display_links = []
 
-    def __init__(self, report_model, form, main_queryset, no_distinct=False, base_model=None, print_flag=False,
-                 doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, swap_sign=False,
-                 date_field=None, database_columns=None):
+    # V2
+    group_by = None
+    columns = None
+
+    time_series_pattern = ''
+    time_series_fields = None
+
+    def __init__(self, report_model, form=None, start_date=None, end_date=None, date_field=None,
+                 q_filters=None, kwargs_filters=None,
+                 group_by=None, columns=None, time_series_pattern=None, time_series_fields=None,
+                 crosstab_model=None, crosstab_fields=None,
+                 swap_sign=False,
+                 main_queryset=None,
+                 no_distinct=False, base_model=None, print_flag=False,
+                 doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, ):
+
         super(ReportGenerator, self).__init__()
         if no_distinct and not base_model:
             raise ImproperlyConfigured('If no_distinct is True then have to supply as base_model ')
 
         self.report_model = report_model
+        self.start_date = start_date or RA_DEFAULT_FROM_DATETIME
+
+        self.end_date = end_date or RA_DEFAULT_TO_DATETIME
+        self.date_field = date_field or 'doc_date'
+
+        self.q_filters = q_filters or []
+        self.kwargs_filters = kwargs_filters or {}
+
+        self.crosstab_model = crosstab_model
+        self.crosstab_columns = crosstab_fields if crosstab_model and crosstab_fields else []
+
         self.form = form
+        main_queryset = main_queryset or report_model.objects
+
         self.base_model = base_model
-        self.fk_filters = form.get_fk_filters()
-        self.date_filters = form.get_date_filters()
-        self.doc_type_filters = form.get_doc_types_filters()
-        self.columns = []
-        self.time_series_columns = []
-        self.matrix_columns = []
-        self.database_columns = database_columns
+        # self.fk_filters = form.get_fk_filters()
+
+        self.columns = columns or []
+        self.group_by = group_by or ''
+        self.time_series_pattern = time_series_pattern
+        self.time_series_fields = time_series_fields
 
         self._prepared_results = {}
         self.report_fields_classes = {}
@@ -48,20 +79,22 @@ class ReportGenerator(object):
 
         self.print_flag = print_flag or self.print_flag
         #
-        self.group_by = form.get_group_by_filters()
 
-        self.get_group = True  # bool(self.group_by)
         if self.group_by:
+            try:
+                self.group_by_field = [x for x in self.report_model._meta.fields if x.name == self.group_by][0]
+            except IndexError:
+                raise ImproperlyConfigured(
+                    f'Can not find group_by field:{self.group_by} in report_model {self.report_model} ')
+
             self.focus_field_as_key = self.group_by
-            self.focus_field_id = self.group_by + '_id' if self.group_by not in ['doc_type', 'doc_date',
-                                                                                 'slug'] else self.group_by
+            self.group_by_field_attname = self.group_by_field.attname
         else:
             self.focus_field_as_key = None
-            self.focus_field_id = None
+            self.group_by_field_attname = None
 
-        self.group_by_field_attname = self.focus_field_id
-
-        doc_types = form.get_doc_type_plus_minus_lists()
+        # doc_types = form.get_doc_type_plus_minus_lists()
+        doc_types = [], []
         self.doc_type_plus_list = list(doc_type_plus_list) if doc_type_plus_list else doc_types[0]
         self.doc_type_minus_list = list(doc_type_minus_list) if doc_type_minus_list else doc_types[1]
 
@@ -75,19 +108,21 @@ class ReportGenerator(object):
         # a client who didnt make a transaction during the date period.
         self.show_empty_records = True
 
-        # Preparing actions
+        self.time_series_fields = time_series_fields or []
+        self.time_series_pattern = time_series_pattern
 
+        # Preparing actions
+        self.parse()
         # import pdb; pdb.set_trace()
-        if self.group_by and self.show_empty_records:
-            self.group_by_field = [x for x in self.report_model._meta.fields if x.name == self.group_by][0]
-            # import pdb; pdb.set_trace()
-            self.main_queryset = self.group_by_field.related_model.objects.values()
-        elif self.group_by:
-            self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct)
-            ids = main_queryset.values_list(self.group_by_field.attname)
-            self.main_queryset = self.group_by_field.related_model.objects.filter(pk__in=ids).values()
+        if self.group_by:
+            if self.show_empty_records:
+                self.main_queryset = self.group_by_field.related_model.objects.values()
+            elif self.group_by:
+                self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct)
+                ids = main_queryset.values_list(self.group_by_field.attname)
+                self.main_queryset = self.group_by_field.related_model.objects.filter(pk__in=ids).values()
         else:
-            self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct, self.database_columns)
+            self.main_queryset = self.apply_queryset_options(main_queryset, no_distinct, self.get_database_columns())
 
         self._prepare_decimal_fields()
         self._prepare_report_fields()
@@ -102,17 +137,17 @@ class ReportGenerator(object):
         # import pdb; pdb.set_trace()
         if no_distinct:
             return self._get_no_distinct_queryset()
-        distinct_filter = self.form.get_group_by_filters()
-        self.group_by = distinct_filter
+        # distinct_filter = self.form.get_group_by_filters()
+        # self.group_by = distinct_filter
 
-        if self.get_group and distinct_filter:
-            # make sure the ordering
-            query = query.order_by(self.focus_field_id)
-
-            query = query.distinct(distinct_filter)
-            f = self.form_get_queryset_filters(w_doc_types=False, w_date=False)
-        else:
-            f = self.form_get_queryset_filters(w_date=True)
+        # if self.group_by:
+        #     # make sure the ordering
+        #     query = query.order_by(self.group_by_field_attname)
+        #
+        #     query = query.distinct(self.group_by)
+        #     f = self.form_get_queryset_filters(w_doc_types=False, w_date=False)
+        # else:
+        f = self.form_get_queryset_filters(w_date=True)
         if f:
             query = query.filter(**f)
         # import pdb; pdb.set_trace()
@@ -127,7 +162,12 @@ class ReportGenerator(object):
         :param w_doc_types:
         :return:
         """
-        return self.form.get_queryset_filters(w_date, w_doc_types)
+        if w_date:
+            date_filters = self._get_date_filter()
+            date_filters.update(self.kwargs_filters)
+            return date_filters
+        return self.kwargs_filters
+        # return self.search_args_filters, self.search_kwargs_filters
 
     def _crypt_key(self, col, _time):
         """
@@ -165,7 +205,7 @@ class ReportGenerator(object):
         :return: set {}
         """
         append = {'value', 'price', 'quantity', 'discount'}
-        decimal_fields = list(DECIMAL_FIELDS) + self.form.get_form_doc_types()
+        decimal_fields = list(DECIMAL_FIELDS) + []
         self._decimal_fields = set([d[:-1] for d in decimal_fields]) | append
 
     def get_field_computation_class(self, field_name):
@@ -180,13 +220,13 @@ class ReportGenerator(object):
         """
         registry = self.field_registry_class
 
-        series_fields = self.form.get_time_series_columns(self.get_group, True)
+        series_fields = self.time_series_fields
         series_fields = [x for x in series_fields if x.startswith('__')]
         series_fields_number = (0, len(series_fields))
-        matrix_fields = self.form.get_matrix_columns()
+        matrix_fields = self.crosstab_columns
         matrix_fields = [x for x in matrix_fields if x.startswith('__')]
         matrix_fields_number = (len(series_fields), len(matrix_fields))
-        normal_fields = self.form.get_datatable_columns(self.get_group, False, False, False)
+        normal_fields = self.columns
         normal_fields = [x for x in normal_fields if x.startswith('__')]
         normal_fields_number = (
             len(series_fields) + len(matrix_fields), len(series_fields) + len(matrix_fields) + len(normal_fields))
@@ -242,28 +282,26 @@ class ReportGenerator(object):
         timeseries_index = None
         column_container = []  # holds two lists , time series fields if any & "normal" fields
         matrix_cols = []
-        if self.form.is_time_series(self.get_group):
-            times = self.form.get_time_series()
-            repeat_columns = self.form.get_time_series_columns(self.get_group, plain=True)
+        if self.time_series_pattern:
+            times = self._get_time_series_dates()
+            repeat_columns = self.time_series_fields
             timeseries_index = len(column_container)
             column_container.append(repeat_columns)
 
         else:
-            times = [self.form.get_to_doc_date()]
+            times = [(self.start_date, self.end_date)]
 
-        if self.form.is_matrix_support(self.get_group):
+        if self.crosstab_model:
             matrix_cols = self.form.get_matrix_fields()
             matrix_index = len(column_container)
-            # matrix_entity = self.form.get_matrix_entity()
             column_container.append(matrix_cols)
 
         #
         # Appened other fields that are not part of the series
         # in order to get prepared too
-        if self.get_group:
-            column_container.append(self.form.get_group_by_display())
-        else:
-            column_container.append(self.form.get_datatable_columns(self.get_group, False, False, False))
+
+        # column_container.append(self.form.get_group_by_display())
+        column_container.append(self.columns)
 
         movement_total = 'movement'
         self.movement_computation = True
@@ -282,12 +320,12 @@ class ReportGenerator(object):
                 current_iteration = 'normal'
                 matrix_fields = False
                 crypt_key = False
-                times = [self.form.get_to_doc_date()]  # added to prevent un-needed time iteration
+                times = [(self.start_date, self.end_date)]  # added to prevent un-needed time iteration
 
             i += 1
             processed_col = []
             for col in container:
-                previous_date = self.form.get_from_doc_date()
+                previous_date = self.start_date
 
                 # prevent duplication of matrix fiuelds computation which would lead to errors if happened
                 if not matrix_fields and col in matrix_cols:
@@ -300,7 +338,7 @@ class ReportGenerator(object):
                         q_filters = None
                         doc_date_filter = {}
                         if crypt_key:
-                            col_key = self._crypt_key(col, _time)  # f.extract_time_series(col):
+                            col_key = self._crypt_key(col, _time[0])  # f.extract_time_series(col):
 
                         elif matrix_fields:
                             col_key = col
@@ -314,8 +352,8 @@ class ReportGenerator(object):
                             doc_date_filter = {}
                             col_key = col
 
-                        doc_date_filter[f'{self.date_field}__gt'] = previous_date
-                        doc_date_filter[f'{self.date_field}__lte'] = _time
+                        doc_date_filter[f'{self.date_field}__gt'] = _time[0]
+                        doc_date_filter[f'{self.date_field}__lte'] = _time[1]
 
                         if col.startswith('__doc_type_'):
                             quan_flag = False
@@ -329,7 +367,7 @@ class ReportGenerator(object):
                         elif True:
 
                             filters = doc_date_filter.copy()
-                            filters.update(self.fk_filters)
+                            filters.update(self.kwargs_filters)
                             computation_class = self.get_field_computation_class(col)
                             # if i == timeseries_index:
                             dep_fields = self.report_fields_dependencies[current_iteration][col].get(
@@ -337,12 +375,10 @@ class ReportGenerator(object):
                             cache_list = computation_class.prepare(group_by_field, filters, q_filters,
                                                                    bool(dep_fields), dep_fields)
                             if crypt_key:
-                                col_key = self._crypt_key(col, _time)
+                                col_key = self._crypt_key(col, _time[0])
                             elif not matrix_fields:
                                 col_key = col
 
-                        if movement_total == 'movement' and crypt_key:
-                            previous_date = _time
                         self._prepared_results[col_key] = cache_list
 
     def get_dependencies_results(self, field, extra_key=None, dep_key=None):
@@ -356,29 +392,27 @@ class ReportGenerator(object):
             }
         return dep_results
 
-    def get_datatable_options(self):
-        # todo Revise and maybe delete
-
-        is_group = self.get_group
-        appened_fkeys = True
-
-        if self.form.is_time_series(is_group):
-            original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wTimeSeries=False)
-            time_series_colums = self.form.get_time_series_columns(is_group)
-            options = original_columns + time_series_colums
-
-        elif self.form.is_matrix_support(is_group):
-            original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wMatrix=False)
-            time_series_colums = self.form.get_matrix_fields()
-            options = original_columns + time_series_colums
-
-        else:
-            options = self.form.get_datatable_columns(is_group, appened_fkeys)
-
-        self.datatable_structure = options
-        options = {'columns': options}
-
-        return options
+    # def get_datatable_options(self):
+    #     # todo Revise and maybe delete
+    #
+    #     is_group = True
+    #
+    #     if self.time_series_pattern:
+    #         original_columns = self.form.get_datatable_columns(is_group, wTimeSeries=False)
+    #         time_series_colums = self.form.get_time_series_columns(is_group)
+    #         options = original_columns + time_series_colums
+    #
+    #     elif self.form.is_matrix_support(is_group):
+    #         original_columns = self.form.get_datatable_columns(is_group, wMatrix=False)
+    #         time_series_colums = self.form.get_matrix_fields()
+    #         options = original_columns + time_series_colums
+    #
+    #     else:
+    #         options = self.form.get_datatable_columns(is_group)
+    #
+    #     options = {'columns': options}
+    #
+    #     return options
 
     def get_record_data(self, obj):
         """
@@ -387,8 +421,10 @@ class ReportGenerator(object):
         :return:
         """
 
-        options = self.get_datatable_options()
-        columns = options['columns']
+        # options = self.get_datatable_options()
+        # columns = options['columns']
+        # todo bring back time series and
+        columns = self.columns
         display_link = self.list_display_links or columns[0]
         data = {}
         extract_time_series = self.extract_time_series
@@ -442,7 +478,6 @@ class ReportGenerator(object):
             data['doc_type'] = ugettext_lazy(data['doc_type'])
         return data
 
-
     def get_report_data(self):
         main_queryset = self.main_queryset
         # import pdb; pdb.set_trace()
@@ -481,3 +516,143 @@ class ReportGenerator(object):
     def _get_no_distinct_queryset(self):
         pk_name = self.base_model().get_pk_name()
         return self.base_model.objects.annotate(**{pk_name: F('id')}).values(pk_name)
+
+    ####################################################
+
+    def parse(self):
+        from .registry import field_registry
+
+        if self.group_by:
+            self.group_by_field = [x for x in self.report_model._meta.fields if x.name == self.group_by][0]
+            self.group_by_model = self.group_by_field.related_model
+
+        self.parsed_columns = []
+        for col in self.columns:
+            attr = getattr(self, col, None)
+            if attr:
+                col_data = {'name': col,
+                            'verbose_name': getattr(attr, 'verbose_name', col),
+                            'type': 'method',
+                            'ref': attr,
+                            }
+            elif col.startswith('__'):
+                # a magic field
+                if col in ['__time_series__', '__cross_tab__']:
+                    #     These are placeholder not real computation field
+                    continue
+                magic_field_class = field_registry.get_field_by_name(col)
+                col_data = {'name': col,
+                            # 'verbose_name': getattr(attr, 'verbose_name', col),
+                            'type': 'magic_field',
+                            'ref': magic_field_class}
+            else:
+                # should be a database field
+                if '__' in col:
+                    # a traversing field
+                    # todo look uo the field
+                    pass
+                try:
+                    field = self.report_model._meta.get_field(col)
+                    verbose_name = field.verbose_name
+                except:
+                    field = col
+                    verbose_name = col
+                col_data = {'name': col,
+                            'verbose_name': verbose_name,
+                            'type': 'database',
+                            'ref': field}
+            self.parsed_columns.append(col_data)
+
+    def get_database_columns(self):
+        return [col['name'] for col in self.parsed_columns if col['type'] == 'database']
+
+    def get_method_columns(self):
+        return [col['name'] for col in self.parsed_columns if col['type'] == 'method']
+
+    def get_list_display_columns(self):
+        columns = self.parsed_columns
+        if self.time_series_pattern:
+            time_series_columns = self._get_time_series_columns()
+            # import pdb; pdb.set_trace()
+            try:
+                index = self.columns.index('__time_series__')
+                columns[index] = time_series_columns
+            except:
+                columns += time_series_columns
+
+        return columns
+
+    def _get_time_series_columns(self):
+        """
+        Return time series columns
+        :param plain: if True it returns '__total__' instead of '__total_TS011212'
+        :return: List if columns
+        """
+        _values = []
+
+        cols = self.time_series_fields or []
+        series = self._get_time_series_dates()
+
+        for dt in series:
+            for col in cols:
+                try:
+                    magic_field_class = field_registry.get_field_by_name(col)
+                except:
+                    magic_field_class = None
+
+                _values.append({
+                    'name': col + 'TS' + dt[1].strftime('%Y%m%d'),
+                    'verbose_name': self.get_time_series_field_verbose_name(col, dt),
+                    'ref': magic_field_class
+                })
+        return _values
+
+    def get_time_series_field_verbose_name(self, column_name, date_period):
+        return column_name + date_period[1].strftime('%Y%m%d')
+
+    def get_custom_time_series_dates(self):
+        """
+        Hook to get custom , maybe separated date periods
+        :return: [ (date1,date2) , (date3,date4), .... ]
+        """
+        return []
+
+    def _get_time_series_dates(self):
+        _values = []
+        series = self.time_series_pattern
+        if series:
+            if series == 'daily':
+                time_delta = datetime.timedelta(days=1)
+            elif series == 'weekly':
+                time_delta = relativedelta(weeks=1)
+            elif series == 'semimonthly':
+                time_delta = relativedelta(weeks=2)
+            elif series == 'monthly':
+                time_delta = relativedelta(months=1)
+            elif series == 'quarterly':
+                time_delta = relativedelta(months=3)
+            elif series == 'semiannually':
+                time_delta = relativedelta(months=6)
+            elif series == 'annually':
+                time_delta = relativedelta(year=1)
+            elif series == 'custom':
+                return self.get_custom_time_series_dates()
+            else:
+                raise NotImplementedError()
+
+            done = False
+            start_date = self.start_date
+            # import pdb; pdb.set_trace()
+            while not done:
+                to_date = start_date + time_delta
+                _values.append((start_date, to_date))
+                start_date = to_date
+                if to_date > self.end_date:
+                    done = True
+        return _values
+
+    def _get_date_filter(self):
+        return {
+            f'{self.date_field}__gt': self.start_date,
+            f'{self.date_field}__lte': self.end_date,
+        }

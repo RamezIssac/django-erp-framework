@@ -41,23 +41,21 @@ class ReportMetaData(object):
     def get_datatable_options(self):
 
         is_group = True
-        appened_fkeys = True
         if self.form.is_time_series(is_group):
-            original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wTimeSeries=False)
+            original_columns = self.form.get_datatable_columns(is_group, wTimeSeries=False)
             time_series_colums = self.form.get_time_series_columns(is_group)
             options = self.get_ordered_columns(original_columns, [], is_group, True, time_series_colums)
 
         elif self.form.is_matrix_support(is_group):
-            original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wMatrix=False)
+            original_columns = self.form.get_datatable_columns(is_group, wMatrix=False)
             time_series_colums = self.form.get_matrix_fields()
             options = self.get_ordered_columns(original_columns, [], is_group, True, time_series_colums)
 
 
         else:
-            options = self.form.get_datatable_columns(is_group, appened_fkeys)
+            options = self.form.get_datatable_columns(is_group)
             options = self.get_ordered_columns(options, [], is_group)
 
-        self.datatable_structure = options
         options = {'columns': options}
 
         column_names = self.get_column_names(options['columns'], is_group)

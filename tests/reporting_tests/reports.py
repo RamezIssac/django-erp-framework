@@ -26,6 +26,9 @@ class ClientTotalBalance(ReportView):
     form_settings = {'group_by': 'client',
                      'group_columns': ['slug', 'title', '__balance__'],
                      }
+
+    group_by = 'client'
+    columns = ['slug', 'title', '__balance__']
     chart_settings = [
         {
             'id': 'pie',
@@ -74,6 +77,8 @@ class ProductTotalSales(ReportView):
     form_settings = {'group_by': 'product',
                      'group_columns': ['slug', 'title', '__balance__', '__balance_quan__'],
                      }
+    group_by = 'product'
+    columns = ['slug', 'title', '__balance__', '__balance_quan__']
 
 
 @register_report_view
@@ -91,6 +96,8 @@ class ClientList(ReportView):
         'group_columns': ['slug', 'title'],
         'add_details_control': True,
     }
+    group_by = 'client'
+    columns = ['slug', 'title']
 
 
 @register_report_view
@@ -108,6 +115,9 @@ class ProductClientSales(ReportView):
         'group_by': 'product',
         'group_columns': ['slug', 'title', '__balance_quan__', '__balance__'],
     }
+    group_by = 'product'
+    columns = ['slug', 'title', '__balance_quan__', '__balance__']
+
     chart_settings = [
         {
             'id': 'total_pie',
@@ -149,8 +159,12 @@ class ProductSalesMonthlySeries(ReportView):
 
         'time_series_pattern': 'monthly',
         'time_series_fields': ['__balance_quan__', '__balance__'],
-
     }
+
+    group_by = 'product'
+    columns = ['slug', 'title']
+    time_series_pattern = 'monthly',
+    time_series_fields = ['__balance_quan__', '__balance__']
 
     chart_settings = [
         {
@@ -200,6 +214,10 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
         'time_series_fields': ['__debit__', '__credit__', '__balance__', '__total__'],
     }
 
+    group_by = 'client'
+    columns = ['slug', 'title']
+    time_series_pattern = 'monthly',
+    time_series_fields = ['__debit__', '__credit__', '__balance__', '__total__']
 
 @register_report_view
 class ClientDetailedStatement(ReportView):
@@ -214,6 +232,8 @@ class ClientDetailedStatement(ReportView):
         'group_by': '',
         'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
     }
+
+    columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
 
 
 @register_report_view
@@ -235,3 +255,7 @@ class ProductClientSalesMatrix(ReportView):
         },
     }
     swap_sign = True
+
+    group_by = 'client'
+
+    columns = ['slug', 'title']

@@ -4,6 +4,7 @@ import hashlib
 import logging
 
 import simplejson as json
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth.mixins import AccessMixin, UserPassesTestMixin
 from django.core.cache import cache
@@ -14,11 +15,12 @@ from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_text
 from django.utils.functional import Promise
+from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy, get_language_bidi, ugettext
 from django.views.generic import FormView, TemplateView
 
 from ra.base import app_settings, registry
-from ra.base.app_settings import RA_ADMIN_SITE_NAME
+from ra.base.app_settings import RA_ADMIN_SITE_NAME, RA_DEFAULT_FROM_DATETIME
 from ra.base.helpers import dictsort
 from ra.reporting.form_factory import report_form_factory
 from ra.reporting.forms import OrderByForm
@@ -231,6 +233,9 @@ class ReportView(UserPassesTestMixin, FormView):
     group_by = None
     columns = None
 
+    time_series_pattern = ''
+    time_series_fields = None
+
     @classmethod
     def get_report_slug(cls):
         return cls.report_slug or cls.__name__.lower()
@@ -358,10 +363,10 @@ class ReportView(UserPassesTestMixin, FormView):
         return kwargs
 
     def get_report_generator(self, queryset, for_print):
-        return self.report_generator_class(self.get_report_model(), self.form, queryset, no_distinct=self.no_distinct,
+        return self.report_generator_class(self.get_report_model(), form=self.form,  kwargs_filters=self.form.get_fk_filters(), main_queryset=queryset, no_distinct=self.no_distinct,
                                            base_model=self.base_model, print_flag=for_print,
                                            limit_records=self.limit_records, swap_sign=self.swap_sign,
-                                           database_columns=self.get_database_columns())
+                                           columns=self.columns, group_by=self.group_by)
         # return self.report_generator_class
 
     def return_header_report_or_none(self):
@@ -456,7 +461,7 @@ class ReportView(UserPassesTestMixin, FormView):
             if cache_val:
                 return cache_val
 
-        self.parse()
+        # self.parse()
 
         form_class = self.get_form_class()
         self.form = self.get_form(form_class)
@@ -594,56 +599,6 @@ class ReportView(UserPassesTestMixin, FormView):
     def get_default_to_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_TO_DATETIME
 
-    # V2
-    def parse(self):
-        from .registry import field_registry
-
-        self.columns = self.columns or self.form_settings['group_columns']
-        self.group_by = self.group_by or self.form_settings['group_by']
-        if self.group_by:
-            self.group_by_field = [x for x in self.report_model._meta.fields if x.name == self.group_by][0]
-            self.group_by_model = self.group_by_field.related_model
-
-        self.parsed_columns = []
-        model = ''
-        for col in self.columns:
-            attr = getattr(self, col, None)
-            if attr:
-                col_data = {'name': col,
-                            'verbose_name': getattr(attr, 'verbose_name', col),
-                            'type': 'method',
-                            'ref': attr,
-                            }
-            elif col.startswith('__'):
-                # a magic field
-                magic_field_class = field_registry.get_field_by_name(col)
-                col_data = {'name': col,
-                            # 'verbose_name': getattr(attr, 'verbose_name', col),
-                            'type': 'magic_field',
-                            'ref': magic_field_class}
-            else:
-                # should be a database field
-                if '__' in col:
-                    # a traversing field
-                    # todo look uo the field
-                    pass
-                try:
-                    field = self.report_model._meta.get_field(col)
-                    verbose_name = field.verbose_name
-                except:
-                    field = col
-                    verbose_name = col
-                col_data = {'name': col,
-                            'verbose_name': verbose_name,
-                            'type': 'database',
-                            'ref': field}
-            self.parsed_columns.append(col_data)
-
-    def get_database_columns(self):
-        return [col['name'] for col in self.parsed_columns if col['type'] == 'database']
-
-    def get_method_columns(self):
-        return [col['name'] for col in self.parsed_columns if col['type'] == 'method']
 
 
 class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
