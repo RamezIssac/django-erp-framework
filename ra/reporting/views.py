@@ -363,7 +363,7 @@ class ReportView(UserPassesTestMixin, FormView):
         return kwargs
 
     def get_report_generator(self, queryset, for_print):
-        return self.report_generator_class(self.get_report_model(), form=self.form,
+        return self.report_generator_class(self.get_report_model(),
                                            kwargs_filters=self.form.get_fk_filters(),
                                            main_queryset=queryset, no_distinct=self.no_distinct,
                                            base_model=self.base_model, print_flag=for_print,

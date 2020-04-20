@@ -363,23 +363,6 @@ class BaseReportForm(object):
             _values = [col + dt for dt in series for col in report_columns]
         return _values
 
-    def get_matrix_ids(self):
-        return [str(x.pk) for x in self.cleaned_data['matrix_entities']]
-
-    def get_filter_from_matrix_field(self, field):
-        entity = field.split('_MX')[1]
-        entity = entity.split('-')
-        _id = entity[1]
-        entity = entity[0] + '_id'
-        if _id == '' or _id == u'':
-            selected_entities = self.get_matrix_ids()
-            # selected_entities = [e.encode('ascii', 'ignore') for e in selected_entities if e != '']
-            entity += '__in'
-            q = Q(**{entity: selected_entities})
-            q = ~q
-            return (q,)
-
-        return {entity: _id}
 
     def get_form_doc_types(self):
         if self.is_valid():

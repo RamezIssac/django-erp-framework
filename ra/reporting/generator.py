@@ -5,7 +5,7 @@ import logging
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils.timezone import now
 
 from django.utils.translation import ugettext_lazy
@@ -36,10 +36,10 @@ class ReportGenerator(object):
     time_series_pattern = ''
     time_series_columns = None
 
-    def __init__(self, report_model, form=None, start_date=None, end_date=None, date_field=None,
+    def __init__(self, report_model, start_date=None, end_date=None, date_field=None,
                  q_filters=None, kwargs_filters=None,
                  group_by=None, columns=None, time_series_pattern=None, time_series_columns=None,
-                 crosstab_model=None, crosstab_fields=None,
+                 crosstab_model=None, crosstab_fields=None, crosstab_ids=None, crosstab_compute_reminder=True,
                  swap_sign=False,
                  main_queryset=None,
                  no_distinct=False, base_model=None, print_flag=False,
@@ -62,12 +62,12 @@ class ReportGenerator(object):
 
         self.crosstab_model = crosstab_model
         self.crosstab_columns = crosstab_fields if crosstab_model and crosstab_fields else []
+        self.crosstab_ids = crosstab_ids or []
+        self.crosstab_compute_reminder = crosstab_compute_reminder
 
-        self.form = form
         main_queryset = main_queryset or report_model.objects
 
         self.base_model = base_model
-        # self.fk_filters = form.get_fk_filters()
 
         self.columns = columns or []
         self.group_by = group_by or ''
@@ -139,7 +139,7 @@ class ReportGenerator(object):
         # import pdb; pdb.set_trace()
         if no_distinct:
             return self._get_no_distinct_queryset()
-        # distinct_filter = self.form.get_group_by_filters()
+
         # self.group_by = distinct_filter
 
         # if self.group_by:
@@ -188,7 +188,7 @@ class ReportGenerator(object):
         if len(col_key) == 1:
             return False, None, None
 
-        filter = self.form.get_filter_from_matrix_field(col)  # {field[0] + '_id': field[1]}
+        filter = self.get_filter_from_matrix_field(col)
         col = col_key[0] + '__'
         field = col_key[1].split('-')
 
@@ -294,7 +294,7 @@ class ReportGenerator(object):
             times = [(self.start_date, self.end_date)]
 
         if self.crosstab_model:
-            matrix_cols = self.form.get_matrix_fields()
+            matrix_cols = self.get_matrix_fields()
             matrix_index = len(column_container)
             column_container.append(matrix_cols)
 
@@ -302,11 +302,7 @@ class ReportGenerator(object):
         # Appened other fields that are not part of the series
         # in order to get prepared too
 
-        # column_container.append(self.form.get_group_by_display())
         column_container.append(self.columns)
-
-        movement_total = 'movement'
-        self.movement_computation = True
 
         i = 0
         matrix_fields = False
@@ -401,7 +397,7 @@ class ReportGenerator(object):
         :param: columns： The columns we iterate on
         :return: a dict object containing all needed data
         """
-        print(columns)
+        # print(columns)
         # options = self.get_datatable_options()
         # columns = options['columns']
         # todo bring back time series and
@@ -640,3 +636,36 @@ class ReportGenerator(object):
             f'{self.date_field}__gt': self.start_date,
             f'{self.date_field}__lte': self.end_date,
         }
+
+    def get_filter_from_matrix_field(self, field):
+        entity = field.split('_MX')[1]
+        entity = entity.split('-')
+        _id = entity[1]
+        entity = entity[0] + '_id'
+        if _id == '' or _id == u'':
+            selected_entities = self.get_matrix_ids()
+            # selected_entities = [e.encode('ascii', 'ignore') for e in selected_entities if e != '']
+            entity += '__in'
+            q = Q(**{entity: selected_entities})
+            q = ~q
+            return (q,)
+
+        return {entity: _id}
+
+    def get_matrix_ids(self):
+        return [str(x.pk) for x in self.crosstab_ids]
+
+    def get_matrix_fields(self):
+        report_columns = self.crosstab_columns
+        series = self.get_matrix_ids()
+        if self.crosstab_compute_reminder:
+            series.append('----')
+        entity_name = self.crosstab_model
+        series = [entity_name + '-' + id for id in series if id != '']
+
+        report_columns = [col[:-1] + 'MX' for col in report_columns]
+
+        _values = []
+        if series:
+            _values = [col + dt for dt in series for col in report_columns]
+        return _values
