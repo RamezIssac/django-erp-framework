@@ -102,13 +102,13 @@ class ReportTest(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         # import pdb; pdb.set_trace()
-        # self.assertEqual(data['data'][0]['__balance__TS%s0331' % year], 300)
-        self.assertEqual(data['data'][0]['__balance__TS%s0229' % year], 200)
-        self.assertEqual(data['data'][0]['__balance__TS%s0131' % year], 100)
+        # print(data['data'][0])
+        self.assertEqual(data['data'][0]['__balance__TS%s0301' % year], 200)
+        self.assertEqual(data['data'][0]['__balance__TS%s0201' % year], 100)
 
-        self.assertEqual(data['data'][0]['__total__TS%s0331' % year], 100)
-        self.assertEqual(data['data'][0]['__total__TS%s0229' % year], 100)
-        self.assertEqual(data['data'][0]['__total__TS%s0131' % year], 100)
+        self.assertEqual(data['data'][0]['__total__TS%s0401' % year], 100)
+        self.assertEqual(data['data'][0]['__total__TS%s0301' % year], 100)
+        self.assertEqual(data['data'][0]['__total__TS%s0201' % year], 100)
 
         # todo add __fb__ to time series and check the balance
 

@@ -158,13 +158,13 @@ class ProductSalesMonthlySeries(ReportView):
         'group_columns': ['slug', 'title'],
 
         'time_series_pattern': 'monthly',
-        'time_series_fields': ['__balance_quan__', '__balance__'],
+        'time_series_columns': ['__balance_quan__', '__balance__'],
     }
 
     group_by = 'product'
     columns = ['slug', 'title']
     time_series_pattern = 'monthly',
-    time_series_fields = ['__balance_quan__', '__balance__']
+    time_series_columns = ['__balance_quan__', '__balance__']
 
     chart_settings = [
         {
@@ -211,13 +211,14 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
         'group_columns': ['slug', 'title'],
 
         'time_series_pattern': 'monthly',
-        'time_series_fields': ['__debit__', '__credit__', '__balance__', '__total__'],
+        'time_series_columns': ['__debit__', '__credit__', '__balance__', '__total__'],
     }
 
     group_by = 'client'
     columns = ['slug', 'title']
-    time_series_pattern = 'monthly',
-    time_series_fields = ['__debit__', '__credit__', '__balance__', '__total__']
+    time_series_pattern = 'monthly'
+    # time_series_columns = ['__debit__']
+    time_series_columns = ['__debit__', '__credit__', '__balance__', '__total__']
 
 @register_report_view
 class ClientDetailedStatement(ReportView):

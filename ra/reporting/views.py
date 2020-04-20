@@ -234,7 +234,7 @@ class ReportView(UserPassesTestMixin, FormView):
     columns = None
 
     time_series_pattern = ''
-    time_series_fields = None
+    time_series_columns = None
 
     @classmethod
     def get_report_slug(cls):
@@ -363,10 +363,15 @@ class ReportView(UserPassesTestMixin, FormView):
         return kwargs
 
     def get_report_generator(self, queryset, for_print):
-        return self.report_generator_class(self.get_report_model(), form=self.form,  kwargs_filters=self.form.get_fk_filters(), main_queryset=queryset, no_distinct=self.no_distinct,
+        return self.report_generator_class(self.get_report_model(), form=self.form,
+                                           kwargs_filters=self.form.get_fk_filters(),
+                                           main_queryset=queryset, no_distinct=self.no_distinct,
                                            base_model=self.base_model, print_flag=for_print,
                                            limit_records=self.limit_records, swap_sign=self.swap_sign,
-                                           columns=self.columns, group_by=self.group_by)
+                                           columns=self.columns, group_by=self.group_by,
+                                           time_series_pattern=self.time_series_pattern,
+                                           time_series_columns=self.time_series_columns
+                                           )
         # return self.report_generator_class
 
     def return_header_report_or_none(self):
@@ -598,7 +603,6 @@ class ReportView(UserPassesTestMixin, FormView):
     @classmethod
     def get_default_to_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_TO_DATETIME
-
 
 
 class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):

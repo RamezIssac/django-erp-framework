@@ -404,7 +404,7 @@ class BaseReportForm(object):
         _values = []
         if self.is_time_series(get_group):
             if get_group:
-                cols = self.cleaned_data['time_series_fields']
+                cols = self.cleaned_data['time_series_columns']
             else:
                 cols = self.cleaned_data['time_series_display']
             if plain:
@@ -573,7 +573,7 @@ def report_form_factory(model, base_model=None,
                                                           widget=forms.Select(), required=False,
                                                           label=_('time series pattern'))
 
-        fields['time_series_fields'] = forms.MultipleChoiceField(required=False, widget=forms.SelectMultiple(),
+        fields['time_series_columns'] = forms.MultipleChoiceField(required=False, widget=forms.SelectMultiple(),
                                                                  choices=choices_from_list(magic_fields, False),
                                                                  label=_('time series fields'),
                                                                  initial=default_for_time_series)

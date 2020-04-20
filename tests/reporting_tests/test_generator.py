@@ -11,7 +11,7 @@ from .models import OrderLine
 class GeneratorReportStructureTest(TestCase):
     def test_simple_report(self):
         x = ReportGenerator(OrderLine, date_field='order__date_placed', group_by='client', columns=['title'],
-                            time_series_fields=['__total_quan__'], time_series_pattern='monthly',
+                            time_series_columns=['__total_quan__'], time_series_pattern='monthly',
                             start_date=datetime(2020, 1, 1, tzinfo=pytz.timezone('utc')),
                             end_date=datetime(2020, 12, 31, tzinfo=pytz.timezone('utc')))
         # import pdb;

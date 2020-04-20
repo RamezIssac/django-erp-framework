@@ -34,11 +34,11 @@ class ReportGenerator(object):
     columns = None
 
     time_series_pattern = ''
-    time_series_fields = None
+    time_series_columns = None
 
     def __init__(self, report_model, form=None, start_date=None, end_date=None, date_field=None,
                  q_filters=None, kwargs_filters=None,
-                 group_by=None, columns=None, time_series_pattern=None, time_series_fields=None,
+                 group_by=None, columns=None, time_series_pattern=None, time_series_columns=None,
                  crosstab_model=None, crosstab_fields=None,
                  swap_sign=False,
                  main_queryset=None,
@@ -50,9 +50,11 @@ class ReportGenerator(object):
             raise ImproperlyConfigured('If no_distinct is True then have to supply as base_model ')
 
         self.report_model = report_model
-        self.start_date = start_date or RA_DEFAULT_FROM_DATETIME
+        self.start_date = start_date or datetime.datetime.combine(RA_DEFAULT_FROM_DATETIME.date(),
+                                                                  RA_DEFAULT_FROM_DATETIME.time())
 
-        self.end_date = end_date or RA_DEFAULT_TO_DATETIME
+        self.end_date = end_date or datetime.datetime.combine(RA_DEFAULT_TO_DATETIME.date(),
+                                                              RA_DEFAULT_TO_DATETIME.time())
         self.date_field = date_field or 'doc_date'
 
         self.q_filters = q_filters or []
@@ -70,7 +72,7 @@ class ReportGenerator(object):
         self.columns = columns or []
         self.group_by = group_by or ''
         self.time_series_pattern = time_series_pattern
-        self.time_series_fields = time_series_fields
+        self.time_series_columns = time_series_columns
 
         self._prepared_results = {}
         self.report_fields_classes = {}
@@ -108,7 +110,7 @@ class ReportGenerator(object):
         # a client who didnt make a transaction during the date period.
         self.show_empty_records = True
 
-        self.time_series_fields = time_series_fields or []
+        self.time_series_columns = time_series_columns or []
         self.time_series_pattern = time_series_pattern
 
         # Preparing actions
@@ -220,7 +222,7 @@ class ReportGenerator(object):
         """
         registry = self.field_registry_class
 
-        series_fields = self.time_series_fields
+        series_fields = self.time_series_columns
         series_fields = [x for x in series_fields if x.startswith('__')]
         series_fields_number = (0, len(series_fields))
         matrix_fields = self.crosstab_columns
@@ -284,7 +286,7 @@ class ReportGenerator(object):
         matrix_cols = []
         if self.time_series_pattern:
             times = self._get_time_series_dates()
-            repeat_columns = self.time_series_fields
+            repeat_columns = self.time_series_columns
             timeseries_index = len(column_container)
             column_container.append(repeat_columns)
 
@@ -375,7 +377,7 @@ class ReportGenerator(object):
                             cache_list = computation_class.prepare(group_by_field, filters, q_filters,
                                                                    bool(dep_fields), dep_fields)
                             if crypt_key:
-                                col_key = self._crypt_key(col, _time[0])
+                                col_key = self._crypt_key(col, _time[1])
                             elif not matrix_fields:
                                 col_key = col
 
@@ -392,39 +394,18 @@ class ReportGenerator(object):
             }
         return dep_results
 
-    # def get_datatable_options(self):
-    #     # todo Revise and maybe delete
-    #
-    #     is_group = True
-    #
-    #     if self.time_series_pattern:
-    #         original_columns = self.form.get_datatable_columns(is_group, wTimeSeries=False)
-    #         time_series_colums = self.form.get_time_series_columns(is_group)
-    #         options = original_columns + time_series_colums
-    #
-    #     elif self.form.is_matrix_support(is_group):
-    #         original_columns = self.form.get_datatable_columns(is_group, wMatrix=False)
-    #         time_series_colums = self.form.get_matrix_fields()
-    #         options = original_columns + time_series_colums
-    #
-    #     else:
-    #         options = self.form.get_datatable_columns(is_group)
-    #
-    #     options = {'columns': options}
-    #
-    #     return options
-
-    def get_record_data(self, obj):
+    def get_record_data(self, obj, columns):
         """
         the function is run for every obj in the main_queryset
-        :param obj:
-        :return:
+        :param obj: current row
+        :param: columns： The columns we iterate on
+        :return: a dict object containing all needed data
         """
-
+        print(columns)
         # options = self.get_datatable_options()
         # columns = options['columns']
         # todo bring back time series and
-        columns = self.columns
+        # columns = self.columns
         display_link = self.list_display_links or columns[0]
         data = {}
         extract_time_series = self.extract_time_series
@@ -483,8 +464,10 @@ class ReportGenerator(object):
         # import pdb; pdb.set_trace()
         if self.limit_records:
             main_queryset = main_queryset[:self.limit_records]
+        columns = [x['name'] for x in self.get_list_display_columns()]
+
         get_record_data = self.get_record_data
-        data = [get_record_data(obj) for obj in main_queryset]
+        data = [get_record_data(obj, columns) for obj in main_queryset]
         data = [x for x in data if x]
 
         return data
@@ -590,7 +573,7 @@ class ReportGenerator(object):
         """
         _values = []
 
-        cols = self.time_series_fields or []
+        cols = self.time_series_columns or []
         series = self._get_time_series_dates()
 
         for dt in series:
@@ -642,6 +625,7 @@ class ReportGenerator(object):
 
             done = False
             start_date = self.start_date
+
             # import pdb; pdb.set_trace()
             while not done:
                 to_date = start_date + time_delta
