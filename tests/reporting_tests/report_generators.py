@@ -22,3 +22,10 @@ class GeneratorWithAttrAsColumn(GenericGenerator):
         return ''
 
     get_data.verbose_name = 'get_data_verbose_name'
+
+
+class CrosstabOnClient(GenericGenerator):
+    group_by = 'product'
+    columns = ['title', '__total_quan__']
+    crosstab_model = 'client'
+    crosstab_columns = ['__total_quan__']

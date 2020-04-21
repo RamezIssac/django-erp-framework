@@ -20,16 +20,8 @@ class ClientTotalBalance(ReportView):
 
     # Where is the data to compute
     report_model = SimpleSales
-
-    # here is the meat and potatos of the report,
-    # we group the sales per client , we display columns slug and title (of the `base_model` defied above
-    # and we add the magic field `__balance__` we compute the client balance.
-    form_settings = {'group_by': 'client',
-                     'group_columns': ['slug', 'title', '__balance__'],
-                     }
-
     group_by = 'client'
-    columns = ['slug', 'title', '__balance__']
+    columns = ['slug', 'title', '__balance__', '__total__']
     chart_settings = [
         {
             'id': 'pie',

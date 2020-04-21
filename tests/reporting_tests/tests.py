@@ -34,10 +34,11 @@ class BaseTestData:
         cls.client1 = Client.objects.create(title='Client 1', lastmod_user=user)
         cls.client2 = Client.objects.create(title='Client 2', lastmod_user=user)
         cls.client3 = Client.objects.create(title='Client 3', lastmod_user=user)
+        cls.clientIdle = Client.objects.create(title='Client Idle', lastmod_user=user)
 
-        cls.product1 = Product.objects.create(title='Client 1', lastmod_user=user)
-        cls.product2 = Product.objects.create(title='Client 2', lastmod_user=user)
-        cls.product3 = Product.objects.create(title='Client 3', lastmod_user=user)
+        cls.product1 = Product.objects.create(title='Product 1', lastmod_user=user)
+        cls.product2 = Product.objects.create(title='Product 2', lastmod_user=user)
+        cls.product3 = Product.objects.create(title='Product 3', lastmod_user=user)
 
         SimpleSales.objects.create(
             slug=1, doc_date=datetime.datetime(year, 1, 2), client=cls.client1,
@@ -84,7 +85,9 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data['data'][0]['__balance__'], 300)
+        import pdb; pdb.set_trace()
+
+        self.assertEqual(data['data'][0].get('__balance__'), 300, data['data'][0])
 
     def test_product_total_sales(self):
         self.client.login(username='super', password='secret')

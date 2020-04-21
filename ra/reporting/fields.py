@@ -24,7 +24,7 @@ class BaseReportField(object):
     type = 'date'
 
     def __init__(self, doc_type_plus_list, doc_type_minus_list, report_model=None,
-                 calculation_field=None, calculation_method=None, date_field='doc_date'):
+                 calculation_field=None, calculation_method=None, date_field=''):
         super(BaseReportField, self).__init__()
         self.date_field = date_field
         self.report_model = report_model or self.report_model
@@ -97,7 +97,8 @@ class BaseReportField(object):
 
         for dep_class in self.component_of:
             if not limit_to or dep_class.name in limit_to:
-                dep = dep_class(self.doc_type_plus_list, self.doc_type_minus_list, self.report_model)
+                dep = dep_class(self.doc_type_plus_list, self.doc_type_minus_list, self.report_model,
+                                date_field=self.date_field)
                 values[dep.name] = {'results': dep.prepare(group_by, extra_filters, q_filters),
                                     'instance': dep}
         return values
