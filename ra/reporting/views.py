@@ -194,8 +194,6 @@ class ReportView(UserPassesTestMixin, FormView):
     # control the chart settings, passed to front end as is.
     chart_settings = None
 
-    no_distinct = False  # a flag to the report generator telling it to get get the main queryset from base_model
-
     other_namespaces = None
 
     report_slug = ''
@@ -235,6 +233,8 @@ class ReportView(UserPassesTestMixin, FormView):
 
     time_series_pattern = ''
     time_series_columns = None
+
+    date_field = None
 
     @classmethod
     def get_report_slug(cls):
@@ -291,7 +291,7 @@ class ReportView(UserPassesTestMixin, FormView):
         hence this function.
         :return: form_class
         """
-        return cls.form_class or report_form_factory(cls.get_report_model(), cls.base_model)
+        return cls.form_class or report_form_factory(cls.get_report_model())
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)
@@ -317,7 +317,8 @@ class ReportView(UserPassesTestMixin, FormView):
         settings.update(cls.form_settings or {})
         settings['from_doc_date'] = cls.get_default_from_date()
         settings['to_doc_date'] = cls.get_default_to_date()
-        return form_class(support_doc_type=True, **{'form_settings': settings})
+        # return form_class(support_doc_type=True, **{'form_settings': settings})
+        return form_class()
 
     def get_form_settings(self):
         # todo : Review
@@ -349,26 +350,28 @@ class ReportView(UserPassesTestMixin, FormView):
                 'files': self.request.FILES,
             })
         elif self.request.method in ('GET',):
-            form_settings = self.get_form_settings()
-            kwargs.update({
-                # 'files': self.request.FILES,
-                'form_settings': form_settings
-            })
+            # form_settings = self.get_form_settings()
+            # kwargs.update({
+            #     # 'files': self.request.FILES,
+            #     'form_settings': form_settings
+            # })
             kwargs.update({
                 'data': self.request.GET,
                 'files': self.request.FILES,
             })
-        kwargs['admin_state'] = False
+        # kwargs['admin_state'] = False
 
         return kwargs
 
     def get_report_generator(self, queryset, for_print):
         return self.report_generator_class(self.get_report_model(),
                                            kwargs_filters=self.form.get_fk_filters(),
-                                           main_queryset=queryset, no_distinct=self.no_distinct,
+                                           date_field=self.date_field,
+                                           main_queryset=queryset,
                                            base_model=self.base_model, print_flag=for_print,
                                            limit_records=self.limit_records, swap_sign=self.swap_sign,
-                                           columns=self.columns, group_by=self.group_by,
+                                           columns=self.columns,
+                                           group_by=self.group_by,
                                            time_series_pattern=self.time_series_pattern,
                                            time_series_columns=self.time_series_columns
                                            )
@@ -514,6 +517,23 @@ class ReportView(UserPassesTestMixin, FormView):
             title = cls.page_title
         return capfirst(title)
 
+    def get_columns_data(self, columns):
+        """
+        Hook to get the columns information to front end
+        :param columns:
+        :return:
+        """
+        # columns = report_generator.get_list_display_columns()
+        data = []
+        for col in columns:
+            data.append({
+                'name': col['name'],
+                'verbose_name': col['verbose_name'],
+                'visible': col.get('visible', True),
+                'type': col.get('type', 'text')
+            })
+        return data
+
     def get_report_results(self, for_print=False):
         """
         Gets the reports Data, and, its meta data used by datatables.net and highcharts
@@ -522,19 +542,22 @@ class ReportView(UserPassesTestMixin, FormView):
 
         queryset = self.get_queryset()
         report_generator = self.get_report_generator(queryset, for_print)
-        report_meta_data = self.report_meta_data_class(self.form, self.form_settings, self.chart_settings,
-                                                       self.request.GET, self.get_report_title())
+        report_meta_data = {}  # self.report_meta_data_class(self.form, self.form_settings, self.chart_settings,
+        # self.request.GET, self.get_report_title())
         data = report_generator.get_report_data()
         data = self.order_results(data)
         data = self.filter_results(data, for_print)
+        # import pdb;
+        # pdb.set_trace()
         data = {
             'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
             'form_settings': self.form_settings,
             'data': data,
-            'verbose_data': report_meta_data.get_verbose_data(),
+            'columns': self.get_columns_data(report_generator.get_list_display_columns())
+            # 'verbose_data': report_meta_data.get_verbose_data(),
         }
-        meta_data = report_meta_data.get_meta_data()
-        data.update(meta_data)
+        # meta_data = report_meta_data.get_meta_data()
+        # data.update(meta_data)
         data['chart_settings'] = self.get_chart_settings()
         return data
 

@@ -58,11 +58,11 @@ class ReportRegistry(object):
                     raise AttributeError
             except AttributeError:
                 raise ImproperlyConfigured('Report %s is missing a `report_title`' % report_class)
-            try:
-                assert type(report_class.form_settings) is dict
-            except (AttributeError, AssertionError):
-                raise ImproperlyConfigured(
-                    'Report %s is missing a `form_settings` or form_settings is not a dict' % report_class)
+            # try:
+            #     assert type(report_class.form_settings) is dict
+            # except (AttributeError, AssertionError):
+            #     raise ImproperlyConfigured(
+            #         'Report %s is missing a `form_settings` or form_settings is not a dict' % report_class)
             if not report_class.get_report_model():
                 raise ImproperlyConfigured(
                     'Report %s is missing a `report_model`' % report_class)

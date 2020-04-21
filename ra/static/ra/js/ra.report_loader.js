@@ -67,7 +67,7 @@
         if (url === '#') return; // there is no actual url, probably not enough permissions
         else url = url +'?';
         let extraParams = $elem.attr('data-extra-params') || '';
-        blockDiv($elem);
+        // blockDiv($elem);
         // get the date if present
 
         if (no_cache) url = url + '&no-cache' + _getDateFormParams($elem.parents('.panel'));

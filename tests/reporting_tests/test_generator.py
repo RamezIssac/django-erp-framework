@@ -26,3 +26,7 @@ class GeneratorReportStructureTest(TestCase):
 
     def test_time_series_and_cros_tab(self):
         pass
+
+
+
+# test that columns are a straight forward list

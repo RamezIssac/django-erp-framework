@@ -151,7 +151,7 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
-    @skip('Feature Halted')
+    @skip('Feature Halted: No redirect url now')
     def test_report_movement_redirect(self):
         """
         When showing a report, if it contains transactions the slug of the transaction is transformed into an
@@ -178,12 +178,11 @@ class ReportTest(BaseTestData, TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    @skip('Cross tab')
     def test_productclientsalesmatrix(self):
         self.client.login(username='super', password='secret')
         response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')),
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, response.content)
 
         response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')),
                                    data={
@@ -436,10 +435,10 @@ class TestAdmin(BaseTestData, TestCase):
         on_date = now()
 
         response = self.client.post(reverse('ra_admin:reporting_tests_invoice_add'), data={
-            'slug':'999',
+            'slug': '999',
             'client': self.client1.pk,
             'doc_date': now(),
-            'doc_date_1':on_date.strftime('%H:%M'),
+            'doc_date_1': on_date.strftime('%H:%M'),
             'doc_date_0': on_date.strftime('%Y-%m-%d'),
             '%s-0-product' % cash_expense_formsetname: self.product1.pk,
             '%s-0-quantity' % cash_expense_formsetname: 10,
@@ -459,9 +458,10 @@ class TestAdmin(BaseTestData, TestCase):
     #     self.assertTrue(self.client.login(username='limited', password='password'))
     #     response = self.client.get(reverse('ra_admin:help-center'))
     #     self.assertEqual(response.status_code, 200, response)
+
+
 @override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=True, USE_TZ=False)
 class TestPrePolutaedAdmin(TestAdmin):
-
 
     @classmethod
     def setUpTestData(cls):
@@ -481,7 +481,6 @@ class TestPrePolutaedAdmin(TestAdmin):
     #     JournalItem.objects.create(client_id=self.client1.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
     #     JournalItem.objects.create(client_id=self.client2.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
     #     JournalItem.objects.create(client_id=self.client3.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
-
 
     # @classmethod
     # def setUpTestData(cls):
@@ -506,7 +505,6 @@ class TestPrePolutaedAdmin(TestAdmin):
         self.assertContains(response, 'Client 1')
         self.assertContains(response, 'Client 2')
         self.assertContains(response, 'Client 3')
-
 
     def test_new_addition_in_change(self):
         '''
@@ -536,4 +534,3 @@ class TestPrePolutaedAdmin(TestAdmin):
         }
         response = self.client.post(reverse('admin:admin_views_journal_change', args=(self.journal.pk,)), change_dict)
         self.assertEqual(response.status_code, 200)
-

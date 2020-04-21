@@ -32,8 +32,8 @@ def get_typed_report_url_param(widget_instance, obj_instance, pk_name=None, appe
     report_matrix_show_other = report_settings.get('matrix_show_other', True)
     report_group_by = report_settings.get('group_by', '')
 
-    if report_group_by != pk_name[:-3] or not (obj_instance and pk_name):
-        default_param += '&get_group=true'
+    # if report_group_by != pk_name[:-3] or not (obj_instance and pk_name):
+    #     default_param += '&get_group=true'
     if obj_instance and pk_name:  # False in case of Home Page
         if report_matrix == '-' or report_matrix == '' or not report_matrix:
             default_param += '&%s=%s' % (pk_name, str(obj_instance.pk))

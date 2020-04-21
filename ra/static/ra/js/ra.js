@@ -223,6 +223,7 @@ function capfirst(s) {
 }
 
 function isTotalField(field_name, total_fields) {
+    return false ; //todo
     total_fields = total_fields || [];
     if (total_fields.indexOf(field_name) != -1) {
         return true;

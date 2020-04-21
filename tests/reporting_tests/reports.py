@@ -109,7 +109,7 @@ class ProductClientSales(ReportView):
     report_title = _('Client net sales for each product')
     must_exist_filter = 'client_id'
     header_report = ClientList
-    form_class = report_form_factory(report_model, base_model)
+    form_class = report_form_factory(report_model)
 
     form_settings = {
         'group_by': 'product',
@@ -225,6 +225,23 @@ class ClientDetailedStatement(ReportView):
     report_title = _('client statement')
     base_model = Client
     report_model = SimpleSales
+    #
+    # header_report = ClientList
+    # must_exist_filter = 'client_id'
+
+    form_settings = {
+        'group_by': '',
+        'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
+    }
+    group_by = None
+    columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
+
+
+@register_report_view
+class ClientDetailedStatement2(ReportView):
+    report_title = _('client statement')
+    base_model = Client
+    report_model = SimpleSales
 
     header_report = ClientList
     must_exist_filter = 'client_id'
@@ -233,9 +250,8 @@ class ClientDetailedStatement(ReportView):
         'group_by': '',
         'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
     }
-
+    group_by = None
     columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
-
 
 @register_report_view
 class ProductClientSalesMatrix(ReportView):
