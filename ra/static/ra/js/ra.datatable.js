@@ -208,9 +208,6 @@
             if (!(group_by == 'slug' || group_by == 'doc_date' || group_by == 'doc_type')) {
                 group_by = group_by + '_id'; //todo: Show be edited to _id
             }
-            if (group_by == 'doc_type') {
-                group_by = '__doc_typeid__'
-            }
             var current_id = row.data()[group_by];
             executeFunctionByName(opts.createChildTableFunctionName, window, row, current_id, group_by, opts);
 

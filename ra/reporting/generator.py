@@ -4,7 +4,7 @@ import datetime
 import logging
 
 from dateutil.relativedelta import relativedelta
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, FieldDoesNotExist
 from django.db.models import F, Q
 from django.utils.timezone import now
 
@@ -25,7 +25,7 @@ class ReportGenerator(object):
     Class to generate a Json Object containing report data based on
     report form , main_queryset and teh report model
     """
-    date_field = 'doc_date'
+    date_field = None
     print_flag = None
     list_display_links = []
 
@@ -35,25 +35,32 @@ class ReportGenerator(object):
 
     time_series_pattern = ''
     time_series_columns = None
+    show_empty_records = None
+    report_model = None
 
-    def __init__(self, report_model, start_date=None, end_date=None, date_field=None,
+    def __init__(self, report_model=None, start_date=None, end_date=None, date_field=None,
                  q_filters=None, kwargs_filters=None,
                  group_by=None, columns=None, time_series_pattern=None, time_series_columns=None,
                  crosstab_model=None, crosstab_fields=None, crosstab_ids=None, crosstab_compute_reminder=True,
-                 swap_sign=False,
+                 swap_sign=False, show_empty_records=True,
                  main_queryset=None,
                  base_model=None, print_flag=False,
                  doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, ):
 
         super(ReportGenerator, self).__init__()
 
-        self.report_model = report_model
+        self.report_model = self.report_model or report_model
+        if not self.report_model:
+            raise ImproperlyConfigured('report_model must be set on a class level or via init')
+
         self.start_date = start_date or datetime.datetime.combine(RA_DEFAULT_FROM_DATETIME.date(),
                                                                   RA_DEFAULT_FROM_DATETIME.time())
 
         self.end_date = end_date or datetime.datetime.combine(RA_DEFAULT_TO_DATETIME.date(),
                                                               RA_DEFAULT_TO_DATETIME.time())
-        self.date_field = date_field or 'doc_date'
+        self.date_field = self.date_field or date_field
+        if not self.date_field:
+            raise ImproperlyConfigured('date_field must be set on a class level or via init')
 
         self.q_filters = q_filters or []
         self.kwargs_filters = kwargs_filters or {}
@@ -63,13 +70,14 @@ class ReportGenerator(object):
         self.crosstab_ids = crosstab_ids or []
         self.crosstab_compute_reminder = crosstab_compute_reminder
 
-        main_queryset = main_queryset or report_model.objects
+        main_queryset = main_queryset or self.report_model.objects
 
         self.base_model = base_model
 
-        self.columns = columns or []
+        self.columns = self.columns or columns
         # import pdb ; pdb.set_trace()
-        self.group_by = group_by or ''
+        self.group_by = self.group_by or group_by
+
         self.time_series_pattern = time_series_pattern
         self.time_series_columns = time_series_columns
 
@@ -107,7 +115,7 @@ class ReportGenerator(object):
 
         # in case of a group by, do we show a grouped by model data regardless of their appearance in the results
         # a client who didnt make a transaction during the date period.
-        self.show_empty_records = True
+        self.show_empty_records = self.show_empty_records or show_empty_records
 
         self.time_series_columns = time_series_columns or []
         self.time_series_pattern = time_series_pattern
@@ -220,8 +228,6 @@ class ReportGenerator(object):
             len(series_fields) + len(matrix_fields), len(series_fields) + len(matrix_fields) + len(normal_fields))
         all_fields = series_fields + matrix_fields + normal_fields
         for i, col in enumerate(all_fields):
-            # todo: enhance the check, feels very weak
-            if col == '__doc_typeid__': continue
             # store dependency map in the appropriate key
             if i >= series_fields_number[0] and i < series_fields_number[1]:
                 key = 'series'
@@ -261,9 +267,6 @@ class ReportGenerator(object):
 
     def prepare_calculation(self):
         group_by_field = self.focus_field_as_key
-        # time_series = [('startof_year', 'now')]
-        # for period in time_series:
-        #     pass
 
         crypt_key = False
         matrix_index = None
@@ -315,7 +318,7 @@ class ReportGenerator(object):
                 if not matrix_fields and col in matrix_cols:
                     processed_col.append(col)
 
-                if col.startswith('__') and col not in processed_col and col != '__doc_typeid__':
+                if col.startswith('__') and col not in processed_col:
                     for _time in times:
 
                         cache_list = None
@@ -339,29 +342,17 @@ class ReportGenerator(object):
                         doc_date_filter[f'{self.date_field}__gt'] = _time[0]
                         doc_date_filter[f'{self.date_field}__lte'] = _time[1]
 
-                        if col.startswith('__doc_type_'):
-                            quan_flag = False
-                            x = col.split('__doc_type_')[1]
-                            if 'quan' in x:
-                                quan_flag = True
-                                x = x.split('quan_')[1]
-                            doc_type = x.split('__')[0]
-                            cache_list = self._prepare_doc_types(doc_type, extra_filters=doc_date_filter,
-                                                                 quan=quan_flag, q_filter=q_filters)
-                        elif True:
-
-                            filters = doc_date_filter.copy()
-                            filters.update(self.kwargs_filters)
-                            computation_class = self.get_field_computation_class(col)
-                            # if i == timeseries_index:
-                            dep_fields = self.report_fields_dependencies[current_iteration][col].get(
-                                'computed_by_field', False)
-                            cache_list = computation_class.prepare(group_by_field, filters, q_filters,
-                                                                   bool(dep_fields), dep_fields)
-                            if crypt_key:
-                                col_key = self._crypt_key(col, _time[1])
-                            elif not matrix_fields:
-                                col_key = col
+                        filters = doc_date_filter.copy()
+                        filters.update(self.kwargs_filters)
+                        computation_class = self.get_field_computation_class(col)
+                        dep_fields = self.report_fields_dependencies[current_iteration][col].get(
+                            'computed_by_field', False)
+                        cache_list = computation_class.prepare(group_by_field, filters, q_filters,
+                                                               bool(dep_fields), dep_fields)
+                        if crypt_key:
+                            col_key = self._crypt_key(col, _time[1])
+                        elif not matrix_fields:
+                            col_key = col
 
                         self._prepared_results[col_key] = cache_list
 
@@ -417,10 +408,6 @@ class ReportGenerator(object):
                     magic_field_name = _magic_field_name
                     dep_key = 'matrix'
 
-                if magic_field_name == '__doc_typeid__':
-                    data[name] = obj['doc_type']
-                    continue
-
                 computation_class = self.get_field_computation_class(magic_field_name)
                 dep_results = self.get_dependencies_results(magic_field_name, extra_key, dep_key)
                 value = computation_class.resolve(self._prepared_results[name],
@@ -450,32 +437,6 @@ class ReportGenerator(object):
         data = [x for x in data if x]
 
         return data
-
-    def get_ordered_columns(self, columns, order_list=None, is_group=None, is_time_series=False,
-                            time_series_columns=None, **kwargs):
-
-        if not order_list:
-            order_list = self.form_settings.get('group_column_order', []) if is_group else self.form_settings.get(
-                'details_column_order', [])
-
-            put_back_control = False
-            if columns[0] == '_control_':
-                columns = columns[1:]
-                put_back_control = True
-
-            if is_time_series:
-                columns = self.apply_order_time_series(columns, time_series_columns, order_list)
-            else:
-                columns = apply_order_to_list(columns, order_list)
-
-            if put_back_control:
-                columns = ['_control_'] + columns
-
-            return columns
-
-        return apply_order_to_list(columns, order_list)
-
-    ####################################################
 
     def parse(self):
         from .registry import field_registry
@@ -508,22 +469,21 @@ class ReportGenerator(object):
                             'ref': magic_field_class,
                             'type': magic_field_class.type}
             else:
-                # should be a database field
+                # A database field
                 model_to_use = self.group_by_model if self.group_by else self.report_model
-                if '__' in col:
-                    # A traversing link order__client__email
-                    field = get_field_from_query_text(col, model_to_use)
-                else:
-                    field = model_to_use._meta.get_field(col)
-
                 try:
-                    verbose_name = field.verbose_name
-                    type = field.get_internal_type()
-                    # field_type = field.type
-                except:
-                    field = col
-                    verbose_name = col
-                    type = 'text'
+                    if '__' in col:
+                        # A traversing link order__client__email
+                        field = get_field_from_query_text(col, model_to_use)
+                    else:
+                        field = model_to_use._meta.get_field(col)
+                except FieldDoesNotExist:
+                    raise FieldDoesNotExist(
+                        f'Field {col} not found as an attribute to the generator class, nor as computation field, nor as a database column for the model {model_to_use._meta.model_name}')
+
+                verbose_name = field.verbose_name
+                type = field.get_internal_type()
+                # field_type = field.type
 
                 col_data = {'name': col,
                             'verbose_name': verbose_name,

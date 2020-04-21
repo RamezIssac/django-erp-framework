@@ -205,7 +205,7 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
-    @skip('matirx ')
+    @skip('export to csv ')
     def test_export_to_csv(self):
         self.client.login(username='super', password='secret')
 

@@ -234,7 +234,7 @@ class ReportView(UserPassesTestMixin, FormView):
     time_series_pattern = ''
     time_series_columns = None
 
-    date_field = None
+    date_field = 'doc_date'
 
     @classmethod
     def get_report_slug(cls):
@@ -373,7 +373,7 @@ class ReportView(UserPassesTestMixin, FormView):
                                            columns=self.columns,
                                            group_by=self.group_by,
                                            time_series_pattern=self.time_series_pattern,
-                                           time_series_columns=self.time_series_columns
+                                           time_series_columns=self.time_series_columns,
                                            )
         # return self.report_generator_class
 

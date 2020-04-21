@@ -2,6 +2,7 @@ from django.utils.translation import ugettext_lazy as _
 from ra.reporting.decorators import register_report_view
 from ra.reporting.form_factory import report_form_factory
 from ra.reporting.views import ReportView
+from ra.reporting.generator import ReportGenerator
 from .models import Client, SimpleSales, Product
 
 
@@ -220,6 +221,7 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
     # time_series_columns = ['__debit__']
     time_series_columns = ['__debit__', '__credit__', '__balance__', '__total__']
 
+
 @register_report_view
 class ClientDetailedStatement(ReportView):
     report_title = _('client statement')
@@ -253,6 +255,7 @@ class ClientDetailedStatement2(ReportView):
     group_by = None
     columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
 
+
 @register_report_view
 class ProductClientSalesMatrix(ReportView):
     base_model = Product
@@ -274,5 +277,18 @@ class ProductClientSalesMatrix(ReportView):
     swap_sign = True
 
     group_by = 'client'
-
     columns = ['slug', 'title']
+
+    crosstab_model = 'client'
+    crosstab_columns = ['__total__']
+
+
+class GeneratorClassWithAttrsAs(ReportGenerator):
+    columns = ['get_icon', 'slug', 'title']
+
+
+@register_report_view
+class ClientTotalBalancesWithShowEmptyFalse(ClientTotalBalance):
+    report_slug = None
+    default_order_by = '-__balance__'
+    show_empty_records = False
