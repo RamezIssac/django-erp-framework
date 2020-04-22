@@ -49,6 +49,8 @@ class SimpleReportView(FormView):
 
     queryset = None
 
+    template_name = 'reporting/simple_report.html'
+
     def get(self, request, *args, **kwargs):
         form_class = self.get_form_class()
         self.form = self.get_form(form_class)

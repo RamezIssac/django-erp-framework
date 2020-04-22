@@ -68,11 +68,21 @@ class RaReportBaseForm(object):
         return layout
 
 
-def _default_foreign_key_widget(f_field):
+def _autocompelte_foreign_key_widget(f_field):
     return {'form_class': forms.ModelMultipleChoiceField,
             'required': False,
+
             'widget': RaAutocompleteSelectMultiple(f_field.remote_field, ra_admin_site,
                                                    attrs={'class': 'select2bs4'})}
+
+
+def _default_foreign_key_widget(f_field):
+    # import pdb; pdb.set_trace()
+    return {'form_class': forms.ModelMultipleChoiceField,
+            'required': False,
+            # 'widget': RaAutocompleteSelectMultiple(f_field.remote_field, ra_admin_site,
+            #                                        attrs={'class': 'select2bs4'})
+            }
 
 
 def report_form_factory(model, fkeys_filter_func=None, foreign_key_widget_func=None, **kwargs):
