@@ -4,7 +4,6 @@ import hashlib
 import logging
 
 import simplejson as json
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth.mixins import AccessMixin, UserPassesTestMixin
 from django.core.cache import cache
@@ -15,12 +14,11 @@ from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_text
 from django.utils.functional import Promise
-from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy, get_language_bidi, ugettext
+from django.utils.translation import get_language_bidi, ugettext
 from django.views.generic import FormView, TemplateView
 
 from ra.base import app_settings, registry
-from ra.base.app_settings import RA_ADMIN_SITE_NAME, RA_DEFAULT_FROM_DATETIME
+from ra.base.app_settings import RA_ADMIN_SITE_NAME
 from ra.base.helpers import dictsort
 from ra.reporting.form_factory import report_form_factory
 from ra.reporting.forms import OrderByForm

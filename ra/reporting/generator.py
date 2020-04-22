@@ -6,15 +6,11 @@ from inspect import isclass
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ImproperlyConfigured, FieldDoesNotExist
-from django.db.models import F, Q
-from django.utils.timezone import now
-
-from django.utils.translation import ugettext_lazy
+from django.db.models import Q
 
 from ra.base.app_settings import RA_DEFAULT_FROM_DATETIME, RA_DEFAULT_TO_DATETIME
-from ra.base.cache import get_cached_name, get_cached_slug
-from ra.reporting.helpers import DECIMAL_FIELDS, DATE_FIELDS, apply_order_to_list, get_field_from_query_text
-from ra.utils.views import get_decorated_slug, get_linkable_slug_title, re_time_series, make_linkable_field
+from ra.reporting.helpers import get_field_from_query_text
+from ra.utils.views import make_linkable_field
 from .registry import field_registry
 
 logger = logging.getLogger(__name__)
@@ -41,14 +37,38 @@ class ReportGenerator(object):
     crosstab_model = None
     crosstab_columns = None
 
-    def __init__(self, report_model=None, start_date=None, end_date=None, date_field=None,
+    def __init__(self, report_model=None, main_queryset=None, start_date=None, end_date=None, date_field=None,
                  q_filters=None, kwargs_filters=None,
                  group_by=None, columns=None, time_series_pattern=None, time_series_columns=None,
                  crosstab_model=None, crosstab_columns=None, crosstab_ids=None, crosstab_compute_reminder=True,
                  swap_sign=False, show_empty_records=True,
-                 main_queryset=None,
                  base_model=None, print_flag=False,
                  doc_type_plus_list=None, doc_type_minus_list=None, limit_records=False, ):
+        """
+
+        :param report_model: Main model containing the data
+        :param main_queryset: Default to report_model.objects
+        :param start_date:
+        :param end_date:
+        :param date_field:
+        :param q_filters:
+        :param kwargs_filters:
+        :param group_by:
+        :param columns:
+        :param time_series_pattern:
+        :param time_series_columns:
+        :param crosstab_model:
+        :param crosstab_columns:
+        :param crosstab_ids:
+        :param crosstab_compute_reminder:
+        :param swap_sign:
+        :param show_empty_records:
+        :param base_model:
+        :param print_flag:
+        :param doc_type_plus_list:
+        :param doc_type_minus_list:
+        :param limit_records:
+        """
 
         super(ReportGenerator, self).__init__()
 
@@ -78,7 +98,6 @@ class ReportGenerator(object):
         self.base_model = base_model
 
         self.columns = self.columns or columns
-        # import pdb ; pdb.set_trace()
         self.group_by = self.group_by or group_by
 
         self.time_series_pattern = time_series_pattern
@@ -130,16 +149,16 @@ class ReportGenerator(object):
             if self.show_empty_records:
                 self.main_queryset = self.group_by_field.related_model.objects.values()
             else:
-                self.main_queryset = self.apply_queryset_options(main_queryset)
+                self.main_queryset = self._apply_queryset_options(main_queryset)
                 ids = main_queryset.values_list(self.group_by_field.attname)
                 self.main_queryset = self.group_by_field.related_model.objects.filter(pk__in=ids).values()
         else:
-            self.main_queryset = self.apply_queryset_options(main_queryset, self.get_database_columns())
+            self.main_queryset = self._apply_queryset_options(main_queryset, self.get_database_columns())
 
         self._prepare_report_dependencies()
         # self.prepare_calculation()
 
-    def apply_queryset_options(self, query, fields=None):
+    def _apply_queryset_options(self, query, fields=None):
         """
         Apply the filters to the main queryset which will computed results be mapped to
         :param query:
@@ -147,51 +166,29 @@ class ReportGenerator(object):
         :return:
         """
 
-        f = self.get_queryset_filters(w_date=True)
-        if f:
-            query = query.filter(**f)
-        # import pdb; pdb.set_trace()
+        filters = {
+            f'{self.date_field}__gt': self.start_date,
+            f'{self.date_field}__lte': self.end_date,
+        }
+        filters.update(self.kwargs_filters)
+
+        if filters:
+            query = query.filter(**filters)
         if fields:
             return query.values(*fields)
         return query.values()
 
-    def get_queryset_filters(self, w_date=True):
+    def _construct_crosstab_filter(self, col_data):
         """
-        A hook between the view and the form
-        :param w_date:
-        :param w_doc_types:
+        In charge of adding the needed crosstab filter, specific to the case of is_reminder or not
+        :param col_data:
         :return:
         """
-        if w_date:
-            date_filters = {
-                f'{self.date_field}__gt': self.start_date,
-                f'{self.date_field}__lte': self.end_date,
-            }
-            date_filters.update(self.kwargs_filters)
-            return date_filters
-        return self.kwargs_filters
-
-    def _crypt_key(self, col, _time):
-        """
-        generate key from a series column
-        :param col: 
-        :param _time: 
-        :return:
-        """
-        col_key = col.split('__')[1]
-        col_key = '__' + col_key + '__TS' + _time.strftime('%Y%m%d')
-        return col_key
-
-    def construct_crosstab_filter(self, col_data):
-        # import pdb; pdb.set_trace()
         if col_data['is_reminder']:
-            filter = [~Q(**{f"{col_data['model']}_id__in": self.crosstab_ids})]
+            filters = [~Q(**{f"{col_data['model']}_id__in": self.crosstab_ids})]
         else:
-            filter = [Q(**{f"{col_data['model']}_id": col_data['id']})]
-        return filter
-
-    def get_field_computation_class(self, field_name):
-        return self.report_fields_classes[field_name]
+            filters = [Q(**{f"{col_data['model']}_id": col_data['id']})]
+        return filters
 
     def _prepare_report_dependencies(self):
         from .fields import BaseReportField
@@ -227,8 +224,8 @@ class ReportGenerator(object):
                     continue
 
                 report_class = klass(self.doc_type_plus_list, self.doc_type_minus_list,
-                                     self.report_model, date_field=self.date_field)
-                # import pdb; pdb.set_trace()
+                                     group_by=self.group_by,
+                                     report_model=self.report_model, date_field=self.date_field)
 
                 q_filters = None
                 date_filter = {
@@ -237,13 +234,13 @@ class ReportGenerator(object):
                 }
                 date_filter.update(self.kwargs_filters)
                 if window == 'crosstab':
-                    q_filters = self.construct_crosstab_filter(col_data)
+                    q_filters = self._construct_crosstab_filter(col_data)
 
                 # print(f'preparing {report_class} for {window}')
-                report_class.prepare(self.focus_field_as_key, date_filter, q_filters)
+                report_class.prepare(q_filters, date_filter)
                 self.report_fields_classes[name] = report_class
 
-    def get_record_data(self, obj, columns):
+    def _get_record_data(self, obj, columns):
         """
         the function is run for every obj in the main_queryset
         :param obj: current row
@@ -259,7 +256,6 @@ class ReportGenerator(object):
             column_data = obj.get(self.group_by_field_attname, obj.get('id'))
             group_by_val = str(column_data)
 
-        # for i, col_data in enumerate(columns):
         for window, window_cols in columns:
             for col_data in window_cols:
 
@@ -268,18 +264,15 @@ class ReportGenerator(object):
                 if name.startswith('__') and self.group_by:
                     source = self._report_fields_dependencies[window].get(name, False)
                     if source:
-                        computation_class = self.get_field_computation_class(source)
-                        value = computation_class.get_dependency_value(self.focus_field_as_key, group_by_val,
+                        computation_class = self.report_fields_classes[source]
+                        value = computation_class.get_dependency_value(group_by_val,
                                                                        col_data['ref'].name)
                     else:
                         try:
-                            computation_class = self.get_field_computation_class(name)
+                            computation_class = self.report_fields_classes[name]
                         except KeyError:
                             continue
-                        # dep_results = self.get_dependencies_results(name, extra_key, dep_key)
-                        # print(name, group_by_val, computation_class)
-                        # import pdb; pdb.set_trace()
-                        value = computation_class.resolve(self.focus_field_as_key, group_by_val)
+                        value = computation_class.resolve(group_by_val)
                     if self.swap_sign: value = -value
                     data[name] = value
 
@@ -287,13 +280,11 @@ class ReportGenerator(object):
                     data[name] = obj.get(name, '')
                 if self.group_by and name in display_link:
                     data[name] = make_linkable_field(self.group_by_field.related_model, group_by_val, data[name])
-
         return data
 
     def get_report_data(self):
-        main_queryset = self.main_queryset
-        if self.limit_records:
-            main_queryset = main_queryset[:self.limit_records]
+
+        main_queryset = self.main_queryset[:self.limit_records] if self.limit_records else self.main_queryset
 
         all_columns = (
             ('normal', self._parsed_columns),
@@ -301,7 +292,7 @@ class ReportGenerator(object):
             ('crosstab', self._crosstab_parsed_columns),
         )
 
-        get_record_data = self.get_record_data
+        get_record_data = self._get_record_data
         data = [get_record_data(obj, all_columns) for obj in main_queryset]
         data = [x for x in data if x]
 
@@ -391,7 +382,7 @@ class ReportGenerator(object):
 
     def get_time_series_parsed_columns(self):
         """
-        Return time series columns
+        Return time series columns with all needed data attached
         :param plain: if True it returns '__total__' instead of '__total_TS011212'
         :return: List if columns
         """
@@ -417,6 +408,12 @@ class ReportGenerator(object):
         return _values
 
     def get_time_series_field_verbose_name(self, column_name, date_period):
+        """
+        Sent the column data to construct a verbose name, below is only a basic implementation
+        :param column_name:
+        :param date_period:
+        :return:
+        """
         return column_name + date_period[1].strftime('%Y%m%d')
 
     def get_custom_time_series_dates(self):

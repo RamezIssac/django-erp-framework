@@ -1,12 +1,11 @@
 from __future__ import unicode_literals
 
 from django.db.models import Sum
-from django.db.models import Q
+from django.utils.translation import ugettext_lazy as _
 
 from ra.reporting.helpers import get_calculation_annotation
-from django.utils.translation import ugettext_lazy as _
-from .registry import field_registry
 from .decorators import report_field_register
+from .registry import field_registry
 
 
 class BaseReportField(object):
@@ -15,8 +14,8 @@ class BaseReportField(object):
     calculation_field = 'value'
     calculation_method = Sum
     report_model = None
-    Q_plus_modifier = Q()
-    Q_minus_modifier = Q()
+    plus_side_q = None
+    minus_side_q = None
     _debit_and_credit = True
     component_of = None
     name = None
@@ -25,20 +24,25 @@ class BaseReportField(object):
     requires = None
     _require_classes = None
 
-    def __init__(self, doc_type_plus_list, doc_type_minus_list, report_model=None,
-                 calculation_field=None, calculation_method=None, date_field=''):
+    group_by = None
+
+    def __init__(self, plus_side_q=None, minus_side_q=None,
+                 report_model=None,
+                 qs=None,
+                 calculation_field=None, calculation_method=None, date_field='', group_by=None):
         super(BaseReportField, self).__init__()
         self.date_field = date_field
-        self.report_model = report_model or self.report_model
+        self.report_model = self.report_model or report_model
         self.calculation_field = calculation_field if calculation_field else self.calculation_field
         self.calculation_method = calculation_method if calculation_method else self.calculation_method
-        self.doc_type_plus_list = doc_type_plus_list
-        self.doc_type_minus_list = doc_type_minus_list
-        self.component_of = self.component_of or []
+        self.plus_side_q = self.plus_side_q or plus_side_q
+        self.minus_side_q = self.minus_side_q or minus_side_q
         self.requires = self.requires or []
+        self.group_by = self.group_by or group_by
+        self._cache = None, None, None
         self._require_classes = [field_registry.get_field_by_name(x) for x in self.requires]
 
-        if not self.doc_type_minus_list and not self.doc_type_plus_list:
+        if not self.plus_side_q and not self.minus_side_q:
             self._debit_and_credit = False
 
     @classmethod
@@ -46,13 +50,13 @@ class BaseReportField(object):
         requires = cls.requires or []
         return [field_registry.get_field_by_name(x) for x in requires]
 
-    def get_doc_type_plus_filter(self):
-        return {'doc_type__in': self.doc_type_plus_list}
+    def apply_q_plus_filter(self, qs):
+        return qs.filter(*self.plus_side_q)
 
-    def get_doc_type_minus_filter(self):
-        return {'doc_type__in': self.doc_type_minus_list}
+    def apply_q_minus_filter(self, qs):
+        return qs.filter(*self.minus_side_q)
 
-    def apply_aggregation(self, queryset, is_debit, group_by='', extra_filters=None, q_filters=None, **kwargs):
+    def apply_aggregation(self, queryset, group_by=''):
         annotation = self.calculation_method(self.calculation_field)
         if group_by:
             queryset = queryset.values(group_by).annotate(annotation)
@@ -60,60 +64,57 @@ class BaseReportField(object):
             queryset = queryset.aggregate(annotation)
         return queryset
 
-    def prepare(self, group_by='', extra_filters=None, q_filters=None, with_dependencies=True, only_dependencies=None):
-        dep_values = None
-        extra_filters = extra_filters or {}
+    def prepare(self, q_filters=None, kwargs_filters=None, **kwargs):
+        kwargs_filters = kwargs_filters or {}
 
-        dep_values = self._prepare_dependencies(group_by, extra_filters.copy(), q_filters)
+        dep_values = self._prepare_dependencies(q_filters, kwargs_filters.copy())
 
         queryset = self.get_queryset()
-        if extra_filters:
-            queryset = queryset.filter(**extra_filters)
         if q_filters:
             queryset = queryset.filter(*q_filters)
-        if self.doc_type_plus_list:
-            queryset = queryset.filter(**self.get_doc_type_plus_filter())
+        if kwargs_filters:
+            queryset = queryset.filter(**kwargs_filters)
 
-        debit_results = self.apply_aggregation(queryset, True, group_by, extra_filters, q_filters)
+        if self.plus_side_q:
+            queryset = self.apply_q_plus_filter(queryset)
+        debit_results = self.apply_aggregation(queryset, self.group_by)
 
         credit_results = None
         if self._debit_and_credit:
             queryset = self.get_queryset()
-            if extra_filters:
-                queryset = queryset.filter(**extra_filters)
+            if kwargs_filters:
+                queryset = queryset.filter(**kwargs_filters)
             if q_filters:
                 queryset = queryset.filter(*q_filters)
-            if self.doc_type_minus_list:
-                queryset = queryset.filter(**self.get_doc_type_minus_filter())
+            if self.minus_side_q:
+                queryset = self.apply_q_minus_filter(queryset)
 
-            # if group_by:
-            #     credit_results = credit_results.values(group_by).annotate(annotation)
-            # else:
-            #     credit_results = credit_results.aggregate(annotation)
-            credit_results = self.apply_aggregation(queryset, True, group_by, extra_filters, q_filters)
+            credit_results = self.apply_aggregation(queryset, self.group_by)
 
         self._cache = debit_results, credit_results, dep_values
         return debit_results, credit_results, dep_values
 
     def get_queryset(self):
-        return self.report_model.objects
+        queryset = self.report_model.objects
+        return queryset
 
     def get_annotation_name(self):
+        """
+        Get the annotation per the database
+        :return: string used ex:
+        """
         return get_calculation_annotation(self.calculation_field, self.calculation_method)
 
-    def _prepare_dependencies(self, group_by='', extra_filters=None, q_filters=None):
+    def _prepare_dependencies(self, q_filters=None, extra_filters=None, ):
         values = {}
-        # limit_to = limit_to or []
-
         for dep_class in self._require_classes:
-            # if not limit_to or dep_class.name in limit_to:
-            dep = dep_class(self.doc_type_plus_list, self.doc_type_minus_list, self.report_model,
-                            date_field=self.date_field)
-            values[dep.name] = {'results': dep.prepare(group_by, extra_filters, q_filters),
+            dep = dep_class(self.plus_side_q, self.minus_side_q, self.report_model,
+                            date_field=self.date_field, group_by=self.group_by)
+            values[dep.name] = {'results': dep.prepare(q_filters, extra_filters),
                                 'instance': dep}
         return values
 
-    def resolve(self, group_by, current_obj):
+    def resolve(self, current_obj):
         '''
         Reponsible for getting the exact data from the prepared value
         :param cached: the returned data from prepare
@@ -121,34 +122,29 @@ class BaseReportField(object):
         :return: a solid number or value
         '''
         cached = self._cache
-        debit_value, credit_value = self.extract_data(cached, group_by, current_obj)
-        dependencies_value = self._resolve_dependencies(group_by, current_obj) #, self._cache[2])
+        debit_value, credit_value = self.extract_data(cached, current_obj)
+        dependencies_value = self._resolve_dependencies(current_obj)
 
         return self.final_calculation(debit_value, credit_value, dependencies_value)
 
-    def get_dependency_value(self, group_by, current_obj, name=None):
-        values = self._resolve_dependencies(group_by, current_obj)
+    def get_dependency_value(self, current_obj, name=None):
+        values = self._resolve_dependencies(current_obj)
         if name:
             return values.get(name)
         return values
 
-    def _resolve_dependencies(self, group_by, current_obj):
+    def _resolve_dependencies(self, current_obj):
 
         dep_results = {}
-        # dependencies_dict = dependencies_dict or {}
         cached_debit, cached_credit, dependencies_value = self._cache
         dependencies_value = dependencies_value or {}
-        # dependencies_value.update(dependencies_dict)
         for d in dependencies_value.keys():
             d_instance = dependencies_value[d]['instance']
-            # d_results = dependencies_value[d]['results']
-            dep_results[d] = d_instance.resolve(group_by, current_obj)
+            dep_results[d] = d_instance.resolve(current_obj)
         return dep_results
 
-    def get_value(self, obj, key):
-        return obj[key]
-
-    def extract_data(self, cached, group_by, current_obj):
+    def extract_data(self, cached, current_obj):
+        group_by = self.group_by
         debit_value = 0
         credit_value = 0
         annotation = self.get_annotation_name()
@@ -163,12 +159,11 @@ class BaseReportField(object):
                     debit_value = cached_debit[x]
                 else:
                     for i, x in enumerate(cached_debit):
-                        # import pdb; pdb.set_trace()
                         if str(x[group_by]) == current_obj:
                             debit = cached_debit[i]
                             break
                     if debit:
-                        debit_value = self.get_value(debit, annotation)
+                        debit_value = debit[annotation]
 
             if cached_credit is not None:
                 credit = None
@@ -182,7 +177,7 @@ class BaseReportField(object):
                                 credit = cached_credit[i]
                                 break
                         if credit:
-                            credit_value = self.get_value(credit, annotation)
+                            credit_value = credit[annotation]
         return debit_value, credit_value
 
     def final_calculation(self, debit, credit, dep_dict):
@@ -215,14 +210,13 @@ class FirstBalanceField(BaseReportField):
     name = '__fb__'
     verbose_name = _('first balance')
 
-    def prepare(self, group_by='', extra_filters=None, q_filters=None, with_dependencies=False, only_dependencies=None):
+    def prepare(self, q_filters=None, extra_filters=None, **kwargs):
         extra_filters = extra_filters or {}
 
         from_date_value = extra_filters.get(f'{self.date_field}__gt')
         extra_filters.pop(f'{self.date_field}__gt', None)
         extra_filters[f'{self.date_field}__lte'] = from_date_value
-        return super(FirstBalanceField, self).prepare(group_by, extra_filters, q_filters, with_dependencies,
-                                                      only_dependencies)
+        return super(FirstBalanceField, self).prepare(q_filters, extra_filters)
 
 
 field_registry.register(FirstBalanceField)
@@ -240,7 +234,6 @@ field_registry.register(TotalReportField)
 class BalanceReportField(BaseReportField):
     name = '__balance__'
     verbose_name = _('balance')
-    # component_of = [FirstBalanceField]
     requires = ['__fb__']
 
     def final_calculation(self, debit, credit, dep_dict):
@@ -258,8 +251,6 @@ class CreditReportField(BaseReportField):
     name = '__credit__'
     verbose_name = _('credit')
 
-    # component_of = [TotalReportField]
-
     def final_calculation(self, debit, credit, dep_dict):
         return credit
 
@@ -270,8 +261,6 @@ field_registry.register(CreditReportField)
 class DebitReportField(BaseReportField):
     name = '__debit__'
     verbose_name = _('debit')
-
-    # component_of = [TotalReportField]
 
     def final_calculation(self, debit, credit, dep_dict):
         return debit
@@ -317,7 +306,7 @@ class BalanceQTYReportField(BaseReportField):
     name = '__balance_quan__'
     verbose_name = _('balance QTY')
     calculation_field = 'quantity'
-    component_of = [FirstBalanceQTYReportField]
+    requires = ['__fb_quan__']
 
     def final_calculation(self, debit, credit, dep_dict):
         # Use `get` so it fails loud if its not there
