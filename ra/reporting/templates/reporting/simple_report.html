@@ -1,7 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    {{ form }}
+    <form>
+        {{ form }}
+        <input type="submit" value="Submit">
+    </form>
 
-    {{ report_data }}
+    {% include 'reporting/table.html' with table=report_data %}
 {% endblock %}
