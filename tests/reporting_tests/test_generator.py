@@ -10,6 +10,7 @@ from .models import OrderLine
 from .report_generators import GeneratorWithAttrAsColumn, CrosstabOnClient
 
 from .tests import BaseTestData
+from .models import SimpleSales
 
 
 class MatrixTests(BaseTestData, TestCase):
@@ -70,4 +71,21 @@ class GeneratorReportStructureTest(TestCase):
         data = report.get_report_data()
         # self.assertEqual(len(report.get_list_display_columns()), 3)
 
+    def test_gather_dependencies_for_time_series(self):
+        report = ReportGenerator(report_model=SimpleSales, group_by='client',
+                                 columns=['slug', 'title'],
+                                 time_series_pattern='monthly',
+                                 date_field='doc_date',
+                                 time_series_columns=['__debit__', '__credit__', '__balance__', '__total__']
+                                 )
+
+        self.assertTrue(report._report_fields_dependencies)
+
+
 # test that columns are a straight forward list
+class TestReportFields(TestCase):
+
+    def test_get_full_dependency_list(self):
+        from ra.reporting.fields import BalanceReportField
+        deps = BalanceReportField.get_full_dependency_list()
+        self.assertEqual(len(deps), 1)

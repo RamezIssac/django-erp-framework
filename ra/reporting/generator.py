@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import datetime
 import logging
+from inspect import isclass
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ImproperlyConfigured, FieldDoesNotExist
@@ -67,8 +68,8 @@ class ReportGenerator(object):
         self.q_filters = q_filters or []
         self.kwargs_filters = kwargs_filters or {}
 
-        self.crosstab_model =  crosstab_model or self.crosstab_model
-        self.crosstab_columns =  crosstab_columns or self.crosstab_columns
+        self.crosstab_model = crosstab_model or self.crosstab_model
+        self.crosstab_columns = crosstab_columns or self.crosstab_columns
         self.crosstab_ids = crosstab_ids or []
         self.crosstab_compute_reminder = crosstab_compute_reminder
 
@@ -85,7 +86,8 @@ class ReportGenerator(object):
 
         self._prepared_results = {}
         self.report_fields_classes = {}
-        self.report_fields_dependencies = {'series': {}, 'matrix': {}, 'normal': {}}
+
+        self._report_fields_dependencies = {'time_series': {}, 'crosstab': {}, 'normal': {}}
         self.existing_dependencies = {'series': [], 'matrix': [], 'normal': []}
 
         self.print_flag = print_flag or self.print_flag
@@ -123,7 +125,7 @@ class ReportGenerator(object):
         self.time_series_pattern = time_series_pattern
 
         # Preparing actions
-        self.parse()
+        self._parse()
         if self.group_by:
             if self.show_empty_records:
                 self.main_queryset = self.group_by_field.related_model.objects.values()
@@ -134,14 +136,14 @@ class ReportGenerator(object):
         else:
             self.main_queryset = self.apply_queryset_options(main_queryset, self.get_database_columns())
 
-        self._prepare_decimal_fields()
-        self._prepare_report_fields()
-        self.prepare_calculation()
+        self._prepare_report_dependencies()
+        # self.prepare_calculation()
 
     def apply_queryset_options(self, query, fields=None):
         """
         Apply the filters to the main queryset which will computed results be mapped to
-        :param query: 
+        :param query:
+        :param fields:
         :return:
         """
 
@@ -161,11 +163,13 @@ class ReportGenerator(object):
         :return:
         """
         if w_date:
-            date_filters = self._get_date_filter()
+            date_filters = {
+                f'{self.date_field}__gt': self.start_date,
+                f'{self.date_field}__lte': self.end_date,
+            }
             date_filters.update(self.kwargs_filters)
             return date_filters
         return self.kwargs_filters
-        # return self.search_args_filters, self.search_kwargs_filters
 
     def _crypt_key(self, col, _time):
         """
@@ -183,206 +187,61 @@ class ReportGenerator(object):
         if col_data['is_reminder']:
             filter = [~Q(**{f"{col_data['model']}_id__in": self.crosstab_ids})]
         else:
-            filter =[Q(**{f"{col_data['model']}_id": col_data['id']})]
+            filter = [Q(**{f"{col_data['model']}_id": col_data['id']})]
         return filter
-
-    def _decrypt_matrix_col(self, col_key, w_check=False):
-
-        col = col_key[0] + '__'
-        field = col_key[1].split('-')
-
-        if w_check:
-            return True, col, field
-        return col, field, filter
-
-    def extract_time_series(self, name):
-        is_time_field = re_time_series.findall(name)
-        return is_time_field or False
-
-    def _prepare_decimal_fields(self):
-        """
-        Create a set of decimal fields names for faster search instead of
-        normal unordered list
-        :return: set {}
-        """
-        append = {'value', 'price', 'quantity', 'discount'}
-        decimal_fields = list(DECIMAL_FIELDS) + []
-        self._decimal_fields = set([d[:-1] for d in decimal_fields]) | append
 
     def get_field_computation_class(self, field_name):
         return self.report_fields_classes[field_name]
 
-    def _prepare_report_fields(self):
-        """
-        loops over the computation fields in the report, load and instantiate them
-        and store them in class variable , prepare fields dependency
-        Case: __credit__ field require __total__ , so does __debit__
-        we need to make sure that __debit__ does not recompute total and use the prepared value in credit
-        """
-        registry = self.field_registry_class
+    def _prepare_report_dependencies(self):
+        from .fields import BaseReportField
+        all_columns = (
+            ('normal', self._parsed_columns),
+            ('time_series', self._time_series_parsed_columns),
+            ('crosstab', self._crosstab_parsed_columns),
+        )
+        for window, window_cols in all_columns:
+            for col_data in window_cols:
+                klass = col_data['ref']
+                dependencies_names = []
+                # try:
 
-        series_fields = self.get_time_series_parsed_columns()
-        # series_fields = [x for x in series_fields if x.startswith('__')]
-        series_fields_number = (0, len(series_fields))
-        matrix_fields = self.get_crosstab_parsed_columns()
-        # matrix_fields = [x for x in matrix_fields if x.startswith('__')]
-        matrix_fields_number = (len(series_fields), len(matrix_fields))
-        normal_fields = self.parsed_columns
-        # normal_fields = [x for x in normal_fields if x.startswith('__')]
-        normal_fields_number = (
-            len(series_fields) + len(matrix_fields), len(series_fields) + len(matrix_fields) + len(normal_fields))
-        all_fields = series_fields + matrix_fields + normal_fields
-        # import pdb; pdb.set_trace()
-        for i, col_data in enumerate(all_fields):
-            col = col_data['name']
-            # store dependency map in the appropriate key
-            if i >= series_fields_number[0] and i < series_fields_number[1]:
-                key = 'series'
-                fields_on_report = series_fields
-            elif i >= matrix_fields_number[0] and i < matrix_fields_number[1]:
-                key = 'matrix'
-                fields_on_report = matrix_fields
-            elif i >= normal_fields_number[0] and i < normal_fields_number[1]:
-                key = 'normal'
-                fields_on_report = normal_fields
-            else:
-                assert False
+                if isclass(klass) and issubclass(klass, BaseReportField):
+                    dependencies_names = klass.get_full_dependency_list()
 
-            klass = col_data['ref']
-            from .fields import BaseReportField
-            # if not issubclass(klass, BaseReportField):
-            #     continue
-            try:
-                dependencies = klass.get_full_dependency_list()
-            except:
-                continue
+                    # check if any of this dependencies is on the report
+                    fields_on_report = [x for x in window_cols if x['ref'] in dependencies_names]
+                    for field in fields_on_report:
+                        self._report_fields_dependencies[window][field['name']] = col_data['name']
+            # import pdb; pdb.set_trace()
+            for col_data in window_cols:
+                klass = col_data['ref']
+                # if getattr(klass, 'name', '') not in klasses_names:
+                #     continue
+                name = col_data['name']
 
-            self.existing_dependencies[key] += list(dependencies)
+                # if column has a dependency then skip it
+                if not (isclass(klass) and issubclass(klass, BaseReportField)):
+                    continue
+                if self._report_fields_dependencies[window].get(name, False):
+                    continue
 
-            # FieldReport can call calculation for its dependencies
-            # However, as some dependencies are already on the report and gonna be computed anyway
-            # so we look for only those not on the report, store them and make FieldReport compute only those.
+                report_class = klass(self.doc_type_plus_list, self.doc_type_minus_list,
+                                     self.report_model, date_field=self.date_field)
+                # import pdb; pdb.set_trace()
 
-            compute_dependency = []
-            existing_dependency = []
-            for d in dependencies:
-                if d.name not in fields_on_report:
-                    compute_dependency.append(d.name)
-                else:
-                    existing_dependency.append(d.name)
+                q_filters = None
+                date_filter = {
+                    f'{self.date_field}__gt': col_data.get('start_date', self.start_date),
+                    f'{self.date_field}__lte': col_data.get('end_date', self.end_date),
+                }
+                date_filter.update(self.kwargs_filters)
+                if window == 'crosstab':
+                    q_filters = self.construct_crosstab_filter(col_data)
 
-            self.report_fields_dependencies[key][col] = {
-                'computed_by_field': compute_dependency,
-                'existing_on_report': existing_dependency
-            }
-            self.report_fields_classes[col] = klass(self.doc_type_plus_list, self.doc_type_minus_list,
-                                                    self.report_model, date_field=self.date_field)
-
-    def prepare_calculation(self):
-        group_by_field = self.focus_field_as_key
-
-        crypt_key = False
-        matrix_index = None
-        timeseries_index = None
-        column_container = []  # holds two lists , time series fields if any & "normal" fields
-        matrix_cols = []
-        if self.time_series_pattern:
-            times = self._get_time_series_dates()
-            repeat_columns = self.get_time_series_parsed_columns()
-            timeseries_index = len(column_container)
-            column_container.append(repeat_columns)
-
-        else:
-            times = [(self.start_date, self.end_date)]
-
-        if self.crosstab_model:
-            matrix_cols = self.get_crosstab_parsed_columns()  # [x['name'] for x in self.get_crosstab_parsed_columns()]
-            matrix_index = len(column_container)
-            column_container.append(matrix_cols)
-
-        #
-        # Appened other fields that are not part of the series
-        # in order to get prepared too
-
-        column_container.append(self.parsed_columns)
-
-        i = 0
-        matrix_fields = False
-        for container in column_container:
-            if i == timeseries_index:
-                crypt_key = True
-                current_iteration = 'series'
-            elif i == matrix_index:
-                crypt_key = False
-                matrix_fields = True
-                current_iteration = 'matrix'
-            else:
-                current_iteration = 'normal'
-                matrix_fields = False
-                crypt_key = False
-                times = [(self.start_date, self.end_date)]  # added to prevent un-needed time iteration
-
-            i += 1
-            processed_col = []
-            for col_data in container:
-                col_name = col_data['name']
-                previous_date = self.start_date
-
-                # prevent duplication of matrix fiuelds computation which would lead to errors if happened
-                if not matrix_fields and col_name in matrix_cols:
-                    processed_col.append(col_name)
-
-                if col_name.startswith('__') and col_name not in processed_col:
-                    for _time in times:
-
-                        cache_list = None
-                        q_filters = None
-                        doc_date_filter = {}
-                        if crypt_key:
-                            col_key = self._crypt_key(col_name, _time[0])  # f.extract_time_series(col):
-
-                        elif matrix_fields:
-                            col_key = col_name
-                            # col_name, entity, matrix_filter = self._decrypt_matrix_col(col_data)
-                            q_filters = self.construct_crosstab_filter(col_data)
-                            # if '----' in col_key:
-                            #     q_filters = matrix_filter
-                            #     matrix_filter = {}
-                            # else:
-                            #     doc_date_filter.update(matrix_filter)
-                        else:
-                            doc_date_filter = {}
-                            col_key = col_name
-
-                        doc_date_filter[f'{self.date_field}__gt'] = _time[0]
-                        doc_date_filter[f'{self.date_field}__lte'] = _time[1]
-
-                        filters = doc_date_filter.copy()
-                        filters.update(self.kwargs_filters)
-                        computation_class = col_data['ref'] # self.get_field_computation_class(col_name)
-                        # import pdb; pdb.set_trace()
-                        computation_class = self.get_field_computation_class(col_name)
-                        dep_fields = self.report_fields_dependencies[current_iteration][col_name].get(
-                            'computed_by_field', False)
-                        cache_list = computation_class.prepare(group_by_field, filters, q_filters,
-                                                               bool(dep_fields), dep_fields)
-                        if crypt_key:
-                            col_key = self._crypt_key(col_name, _time[1])
-                        elif not matrix_fields:
-                            col_key = col_name
-
-                        self._prepared_results[col_key] = cache_list
-
-    def get_dependencies_results(self, field, extra_key=None, dep_key=None):
-        dep_results = {}
-        dependencies = self.report_fields_dependencies[dep_key].get(field, {}).get('existing_on_report', [])
-
-        for i in dependencies:
-            dep_results[i + extra_key] = {
-                'results': self._prepared_results[i + extra_key],
-                'instance': self.get_field_computation_class(i)
-            }
-        return dep_results
+                # print(f'preparing {report_class} for {window}')
+                report_class.prepare(self.focus_field_as_key, date_filter, q_filters)
+                self.report_fields_classes[name] = report_class
 
     def get_record_data(self, obj, columns):
         """
@@ -395,72 +254,60 @@ class ReportGenerator(object):
         # todo , if columns are empty for whatever reason this will throw an error
         display_link = self.list_display_links or columns[0]
         data = {}
-        extract_time_series = self.extract_time_series
-        _decrypt_matrix_col = self._decrypt_matrix_col
-        has_attr_fk2_field = hasattr(self, 'group_by_field_attname')
-        # import pdb; pdb.set_trace()
-        print_flag = self.print_flag
         group_by_val = None
-        if has_attr_fk2_field and self.group_by_field_attname:
+        if self.group_by:
             column_data = obj.get(self.group_by_field_attname, obj.get('id'))
             group_by_val = str(column_data)
 
-        _decimal_fields = self._decimal_fields
+        # for i, col_data in enumerate(columns):
+        for window, window_cols in columns:
+            for col_data in window_cols:
 
-        for i, col_data in enumerate(columns):
+                name = col_data['name']
 
-            name = col_data['name']
+                if name.startswith('__') and self.group_by:
+                    source = self._report_fields_dependencies[window].get(name, False)
+                    if source:
+                        computation_class = self.get_field_computation_class(source)
+                        value = computation_class.get_dependency_value(self.focus_field_as_key, group_by_val,
+                                                                       col_data['ref'].name)
+                    else:
+                        try:
+                            computation_class = self.get_field_computation_class(name)
+                        except KeyError:
+                            continue
+                        # dep_results = self.get_dependencies_results(name, extra_key, dep_key)
+                        # print(name, group_by_val, computation_class)
+                        # import pdb; pdb.set_trace()
+                        value = computation_class.resolve(self.focus_field_as_key, group_by_val)
+                    if self.swap_sign: value = -value
+                    data[name] = value
 
-            if name.startswith('__') and has_attr_fk2_field:
-                is_time_field = extract_time_series(name)
-                extra_key = ''
-                if is_time_field:
-                    extra_key = is_time_field[0]
-                    magic_field_name = name.replace(is_time_field[0], '')
-                    dep_key = 'series'
                 else:
-                    magic_field_name = name
-                    dep_key = 'normal'
+                    data[name] = obj.get(name, '')
+                if self.group_by and name in display_link:
+                    data[name] = make_linkable_field(self.group_by_field.related_model, group_by_val, data[name])
 
-                matrix_check, _magic_field_name, entity = _decrypt_matrix_col(name, w_check=True)
-                if matrix_check:
-                    magic_field_name = _magic_field_name
-                    dep_key = 'matrix'
-                # import pdb; pdb.set_trace()
-                try:
-                    computation_class = self.get_field_computation_class(name)
-                except KeyError:
-                    continue
-                dep_results = self.get_dependencies_results(name, extra_key, dep_key)
-                value = computation_class.resolve(self._prepared_results[name],
-                                                  self.focus_field_as_key, group_by_val, dep_results)
-                if self.swap_sign: value = -value
-                data[name] = value
-
-            else:
-                data[name] = obj.get(name, '')
-            if self.group_by and name in display_link:
-                data[name] = make_linkable_field(self.group_by_field.related_model, group_by_val, data[name])
-
-        if 'doc_type' in data:
-            data['doc_type_raw'] = data['doc_type']
-            data['doc_type'] = ugettext_lazy(data['doc_type'])
         return data
 
     def get_report_data(self):
         main_queryset = self.main_queryset
-        # import pdb; pdb.set_trace()
         if self.limit_records:
             main_queryset = main_queryset[:self.limit_records]
-        columns = [x['name'] for x in self.get_list_display_columns()]
+
+        all_columns = (
+            ('normal', self._parsed_columns),
+            ('time_series', self._time_series_parsed_columns),
+            ('crosstab', self._crosstab_parsed_columns),
+        )
 
         get_record_data = self.get_record_data
-        data = [get_record_data(obj, self.get_list_display_columns()) for obj in main_queryset]
+        data = [get_record_data(obj, all_columns) for obj in main_queryset]
         data = [x for x in data if x]
 
         return data
 
-    def parse(self):
+    def _parse(self):
         from .registry import field_registry
 
         if self.group_by:
@@ -480,7 +327,7 @@ class ReportGenerator(object):
                             }
             elif col.startswith('__'):
                 # a magic field
-                if col in ['__time_series__', '__cross_tab__']:
+                if col in ['__time_series__', '__crosstab__']:
                     #     These are placeholder not real computation field
                     continue
 
@@ -503,17 +350,17 @@ class ReportGenerator(object):
                     raise FieldDoesNotExist(
                         f'Field {col} not found as an attribute to the generator class, nor as computation field, nor as a database column for the model {model_to_use._meta.model_name}')
 
-                verbose_name = field.verbose_name
-                type = field.get_internal_type()
-                # field_type = field.type
-
                 col_data = {'name': col,
-                            'verbose_name': verbose_name,
+                            'verbose_name': field.verbose_name,
                             'source': 'database',
                             'ref': field,
-                            'type': type
+                            'type': field.get_internal_type()
                             }
             self.parsed_columns.append(col_data)
+
+            self._parsed_columns = list(self.parsed_columns)
+            self._time_series_parsed_columns = self.get_time_series_parsed_columns()
+            self._crosstab_parsed_columns = self.get_crosstab_parsed_columns()
 
     def get_database_columns(self):
         return [col['name'] for col in self.parsed_columns if col['source'] == 'database']
@@ -563,7 +410,9 @@ class ReportGenerator(object):
                 _values.append({
                     'name': col + 'TS' + dt[1].strftime('%Y%m%d'),
                     'verbose_name': self.get_time_series_field_verbose_name(col, dt),
-                    'ref': magic_field_class
+                    'ref': magic_field_class,
+                    'start_date': dt[0],
+                    'end_date': dt[1],
                 })
         return _values
 
@@ -612,15 +461,6 @@ class ReportGenerator(object):
                     done = True
         return _values
 
-    def _get_date_filter(self):
-        return {
-            f'{self.date_field}__gt': self.start_date,
-            f'{self.date_field}__lte': self.end_date,
-        }
-
-    def get_matrix_ids(self):
-        return [str(x.pk) for x in self.crosstab_ids]
-
     def get_crosstab_parsed_columns(self):
         """
         Return a list of the columns analyzed , with reference to computation field and everything
@@ -632,7 +472,7 @@ class ReportGenerator(object):
             ids.append('----')
         output_cols = []
         ids_length = len(ids) - 1
-        for counter, id in enumerate(ids) :
+        for counter, id in enumerate(ids):
             for col in report_columns:
                 # try:
                 magic_field_class = field_registry.get_field_by_name(col)

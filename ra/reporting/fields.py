@@ -22,6 +22,8 @@ class BaseReportField(object):
     name = None
     verbose_name = None
     type = 'date'
+    requires = None
+    _require_classes = None
 
     def __init__(self, doc_type_plus_list, doc_type_minus_list, report_model=None,
                  calculation_field=None, calculation_method=None, date_field=''):
@@ -33,8 +35,16 @@ class BaseReportField(object):
         self.doc_type_plus_list = doc_type_plus_list
         self.doc_type_minus_list = doc_type_minus_list
         self.component_of = self.component_of or []
+        self.requires = self.requires or []
+        self._require_classes = [field_registry.get_field_by_name(x) for x in self.requires]
+
         if not self.doc_type_minus_list and not self.doc_type_plus_list:
             self._debit_and_credit = False
+
+    @classmethod
+    def _get_required_classes(cls):
+        requires = cls.requires or []
+        return [field_registry.get_field_by_name(x) for x in requires]
 
     def get_doc_type_plus_filter(self):
         return {'doc_type__in': self.doc_type_plus_list}
@@ -50,12 +60,11 @@ class BaseReportField(object):
             queryset = queryset.aggregate(annotation)
         return queryset
 
-    def prepare(self, group_by='', extra_filters=None, q_filters=None, with_dependencies=False, only_dependencies=None):
+    def prepare(self, group_by='', extra_filters=None, q_filters=None, with_dependencies=True, only_dependencies=None):
         dep_values = None
         extra_filters = extra_filters or {}
 
-        if with_dependencies:
-            dep_values = self.prepare_dependencies(only_dependencies, group_by, extra_filters.copy(), q_filters)
+        dep_values = self._prepare_dependencies(group_by, extra_filters.copy(), q_filters)
 
         queryset = self.get_queryset()
         if extra_filters:
@@ -83,6 +92,7 @@ class BaseReportField(object):
             #     credit_results = credit_results.aggregate(annotation)
             credit_results = self.apply_aggregation(queryset, True, group_by, extra_filters, q_filters)
 
+        self._cache = debit_results, credit_results, dep_values
         return debit_results, credit_results, dep_values
 
     def get_queryset(self):
@@ -91,41 +101,48 @@ class BaseReportField(object):
     def get_annotation_name(self):
         return get_calculation_annotation(self.calculation_field, self.calculation_method)
 
-    def prepare_dependencies(self, limit_to=None, group_by='', extra_filters=None, q_filters=None):
+    def _prepare_dependencies(self, group_by='', extra_filters=None, q_filters=None):
         values = {}
-        limit_to = limit_to or []
+        # limit_to = limit_to or []
 
-        for dep_class in self.component_of:
-            if not limit_to or dep_class.name in limit_to:
-                dep = dep_class(self.doc_type_plus_list, self.doc_type_minus_list, self.report_model,
-                                date_field=self.date_field)
-                values[dep.name] = {'results': dep.prepare(group_by, extra_filters, q_filters),
-                                    'instance': dep}
+        for dep_class in self._require_classes:
+            # if not limit_to or dep_class.name in limit_to:
+            dep = dep_class(self.doc_type_plus_list, self.doc_type_minus_list, self.report_model,
+                            date_field=self.date_field)
+            values[dep.name] = {'results': dep.prepare(group_by, extra_filters, q_filters),
+                                'instance': dep}
         return values
 
-    def resolve(self, cached, group_by, current_obj, dependencies_dict=None):
+    def resolve(self, group_by, current_obj):
         '''
         Reponsible for getting the exact data from the prepared value
         :param cached: the returned data from prepare
         :param current_obj:
         :return: a solid number or value
         '''
+        cached = self._cache
         debit_value, credit_value = self.extract_data(cached, group_by, current_obj)
-        dependencies_value = self.resolve_dependencies(cached, group_by, current_obj, dependencies_dict)
+        dependencies_value = self._resolve_dependencies(group_by, current_obj) #, self._cache[2])
 
         return self.final_calculation(debit_value, credit_value, dependencies_value)
 
-    def resolve_dependencies(self, cached, group_by, current_obj, dependencies_dict):
+    def get_dependency_value(self, group_by, current_obj, name=None):
+        values = self._resolve_dependencies(group_by, current_obj)
+        if name:
+            return values.get(name)
+        return values
+
+    def _resolve_dependencies(self, group_by, current_obj):
 
         dep_results = {}
-        dependencies_dict = dependencies_dict or {}
-        cached_debit, cached_credit, dependencies_value = cached
+        # dependencies_dict = dependencies_dict or {}
+        cached_debit, cached_credit, dependencies_value = self._cache
         dependencies_value = dependencies_value or {}
-        dependencies_value.update(dependencies_dict)
+        # dependencies_value.update(dependencies_dict)
         for d in dependencies_value.keys():
             d_instance = dependencies_value[d]['instance']
-            d_results = dependencies_value[d]['results']
-            dep_results[d] = d_instance.resolve(d_results, group_by, current_obj)
+            # d_results = dependencies_value[d]['results']
+            dep_results[d] = d_instance.resolve(group_by, current_obj)
         return dep_results
 
     def get_value(self, obj, key):
@@ -146,6 +163,7 @@ class BaseReportField(object):
                     debit_value = cached_debit[x]
                 else:
                     for i, x in enumerate(cached_debit):
+                        # import pdb; pdb.set_trace()
                         if str(x[group_by]) == current_obj:
                             debit = cached_debit[i]
                             break
@@ -180,10 +198,10 @@ class BaseReportField(object):
         """
 
         def get_dependency(field_class):
-            dependencies = field_class.component_of or []
+
+            dependencies = field_class._get_required_classes()
             klasses = []
-            for col in dependencies:
-                klass = col
+            for klass in dependencies:
                 klasses.append(klass)
                 other = get_dependency(klass)
                 if other:
@@ -213,6 +231,7 @@ field_registry.register(FirstBalanceField)
 class TotalReportField(BaseReportField):
     name = '__total__'
     verbose_name = _('total')
+    requires = ['__debit__', '__credit__']
 
 
 field_registry.register(TotalReportField)
@@ -221,7 +240,8 @@ field_registry.register(TotalReportField)
 class BalanceReportField(BaseReportField):
     name = '__balance__'
     verbose_name = _('balance')
-    component_of = [FirstBalanceField]
+    # component_of = [FirstBalanceField]
+    requires = ['__fb__']
 
     def final_calculation(self, debit, credit, dep_dict):
         fb = dep_dict.get('__fb__')
@@ -237,7 +257,8 @@ field_registry.register(BalanceReportField)
 class CreditReportField(BaseReportField):
     name = '__credit__'
     verbose_name = _('credit')
-    component_of = [TotalReportField]
+
+    # component_of = [TotalReportField]
 
     def final_calculation(self, debit, credit, dep_dict):
         return credit
@@ -249,7 +270,8 @@ field_registry.register(CreditReportField)
 class DebitReportField(BaseReportField):
     name = '__debit__'
     verbose_name = _('debit')
-    component_of = [TotalReportField]
+
+    # component_of = [TotalReportField]
 
     def final_calculation(self, debit, credit, dep_dict):
         return debit

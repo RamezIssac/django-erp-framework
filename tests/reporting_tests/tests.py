@@ -85,8 +85,6 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        import pdb; pdb.set_trace()
-
         self.assertEqual(data['data'][0].get('__balance__'), 300, data['data'][0])
 
     def test_product_total_sales(self):
@@ -106,7 +104,7 @@ class ReportTest(BaseTestData, TestCase):
         data = response.json()
         # import pdb; pdb.set_trace()
         # print(data['data'][0])
-        self.assertEqual(data['data'][0]['__balance__TS%s0301' % year], 200)
+        self.assertEqual(data['data'][0].get('__balance__TS%s0301' % year), 200, data['data'][0])
         self.assertEqual(data['data'][0]['__balance__TS%s0201' % year], 100)
 
         self.assertEqual(data['data'][0]['__total__TS%s0401' % year], 100)
