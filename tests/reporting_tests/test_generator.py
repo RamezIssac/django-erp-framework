@@ -4,7 +4,7 @@ import pytz
 from django.test import TestCase
 from django.utils.timezone import now
 
-from ra.reporting.generator import ReportGenerator
+from slick_reporting.generator import ReportGenerator
 from .models import OrderLine
 
 from .report_generators import GeneratorWithAttrAsColumn, CrosstabOnClient
@@ -29,7 +29,7 @@ class MatrixTests(BaseTestData, TestCase):
         self.assertEqual(len(columns), 4)
 
         report = CrosstabOnClient(crosstab_ids=[self.client1.pk, self.client2.pk],
-                                  crosstab_columns=['__total_quan__', '__balance_quan__'])
+                                  crosstab_columns=['__total_quantity__', '__balance_quan__'])
         columns = report.get_list_display_columns()
         self.assertEqual(len(columns), 8, [x['name'] for x in columns])
 
@@ -37,7 +37,7 @@ class MatrixTests(BaseTestData, TestCase):
 class GeneratorReportStructureTest(TestCase):
     def test_time_series_columns_inclusion(self):
         x = ReportGenerator(OrderLine, date_field='order__date_placed', group_by='client', columns=['title'],
-                            time_series_columns=['__total_quan__'], time_series_pattern='monthly',
+                            time_series_columns=['__total_quantity__'], time_series_pattern='monthly',
                             start_date=datetime(2020, 1, 1, tzinfo=pytz.timezone('utc')),
                             end_date=datetime(2020, 12, 31, tzinfo=pytz.timezone('utc')))
         # import pdb;
@@ -86,6 +86,6 @@ class GeneratorReportStructureTest(TestCase):
 class TestReportFields(TestCase):
 
     def test_get_full_dependency_list(self):
-        from ra.reporting.fields import BalanceReportField
+        from slick_reporting.fields import BalanceReportField
         deps = BalanceReportField.get_full_dependency_list()
         self.assertEqual(len(deps), 1)

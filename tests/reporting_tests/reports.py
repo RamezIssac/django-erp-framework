@@ -1,8 +1,8 @@
 from django.utils.translation import ugettext_lazy as _
 from ra.reporting.decorators import register_report_view
-from ra.reporting.form_factory import report_form_factory
+from slick_reporting.form_factory import report_form_factory
 from ra.reporting.views import ReportView
-from ra.reporting.generator import ReportGenerator
+from slick_reporting.generator import ReportGenerator
 from .models import Client, SimpleSales, Product
 
 

@@ -1,11 +1,10 @@
 from __future__ import unicode_literals
 
 import logging
-import time
 from collections import OrderedDict
 
 from django.apps import apps
-from django.db import connection
+from django.db.models import Max
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, NoReverseMatch
 from django.utils.encoding import force_text
@@ -171,43 +170,16 @@ def get_ra_relevant_content_types():
     return relevant_ct
 
 
-def get_next_serial(model):
+def get_next_serial(model, slug_field='slug'):
     """
     Get the next serial to put in the slug based on the maximum slug found + 1
     :param model: the model to get the next serial for
     :return: a string
     """
-    try:
-        doc_type = model.get_doc_type()
-    except:
-        doc_type = False
 
-    if model._meta.parents.values():
-        # This is an inherited model, look in the parent
-        parent = model._meta.parents.keys()[-1]
-        table_name = parent._meta.db_table
-    else:
-        table_name = model._meta.db_table
-
-    cursor = connection.cursor()
-    try:
-        statment = "select max((slug::text)::DOUBLE PRECISION) from %s where slug ~'^\d+$'" % table_name
-        if doc_type:
-            statment += " and doc_type='%s'" % doc_type
-
-        cursor.execute(statment)
-        row = cursor.fetchone()
-        max_slug = row[0]
-        if max_slug:
-            try:
-                max_slug = str(int(max_slug) + 1)
-            except ValueError:
-                max_slug = ''
-        else:
-            max_slug = '1'
-        return max_slug
-    except Exception as e:
-        raise e
+    qs = model.objects.aggregate(Max(slug_field))
+    max_slug = qs.get(f'{slug_field}__max', 0) or 0
+    return int(max_slug) + 1
 
 
 def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **kwargs):

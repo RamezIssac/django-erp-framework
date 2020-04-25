@@ -345,7 +345,7 @@ $.ra.datatable.defaults = {
     totalComputationFunction: calculateTotalOnObjectArray,
     createChildTableFunctionName: '$.ra.datatable.createTableInModal',
     totalFields: ['__balance__', 'value', '__debit__', '__credit__', '__doc_count__', '__line_count__', '__total__', '__fb__',
-        '__balance_quan__', 'quan', '__debit_quan__', '__credit_quan__', '__total_quan__', '__fb_quan__', '__gross_value__', '__tax_addition__', '__tax_substract__', '__doc_value__'],
+        '__balance_quan__', 'quan', '__debit_quan__', '__credit_quan__', '__total_quantity__', '__fb_quan__', '__gross_value__', '__tax_addition__', '__tax_substract__', '__doc_value__'],
     intFields: ['__doc_count__'], //apply total to them & format them as int (ie no .00)
     ajax_url: '', // request_url
     GROUP_BY_FIELD_NAME: 'group_by',

@@ -7,7 +7,7 @@ from django.utils.encoding import force_text
 
 from ra.base import app_settings
 
-easter_western_map = {1776: 48,  # 0
+eastern_western_map = {1776: 48,  # 0
                       1777: 49,  # 1
                       1778: 50,  # 2
                       1779: 51,  # 3

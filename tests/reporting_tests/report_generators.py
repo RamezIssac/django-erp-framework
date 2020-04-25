@@ -1,4 +1,4 @@
-from ra.reporting.generator import ReportGenerator
+from slick_reporting.generator import ReportGenerator
 from .models import Order, OrderLine
 
 
@@ -26,6 +26,6 @@ class GeneratorWithAttrAsColumn(GenericGenerator):
 
 class CrosstabOnClient(GenericGenerator):
     group_by = 'product'
-    columns = ['title', '__total_quan__']
+    columns = ['title', '__total_quantity__']
     crosstab_model = 'client'
-    crosstab_columns = ['__total_quan__']
+    crosstab_columns = ['__total_quantity__']
