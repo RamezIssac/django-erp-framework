@@ -14,6 +14,11 @@
     :target: https://codecov.io/gh/ra-systems/RA
 
 
+**Announcement April 2020**
+
+The reporting engine is now in a separate repo `django-slick-reporting <https://github.com/ra-systems/django-slick-reporting>`_
+
+
 
 Ra Framework
 ============
