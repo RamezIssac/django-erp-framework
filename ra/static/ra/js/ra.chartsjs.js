@@ -7,7 +7,11 @@
     var COLORS = ['#7cb5ec', '#f7a35c', '#90ee7e', '#7798BF', '#aaeeee', '#ff0066', '#eeaaee', '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'];
 
     function is_time_series(response) {
-        return typeof response['series'] !== "undefined"
+        return response['metadata']['time_series_pattern'] !== ""
+    }
+
+    function getTimeSeriesColumnNames(response) {
+        return response['metadata']['time_series_column_names'];
     }
 
     function createChartObject(response, chartId, extraOptions) {
@@ -71,10 +75,12 @@
         let datasetData = [];
 
         if (isTimeSeries) {
-            legendResults = response.series_column_names;
-            let seriesColNames = $.map(response.series, function (element, i) {
-                return dataFieldName + 'TS' + element
-            });
+            legendResults = response.metadata['time_series_column_verbose_names'];
+            // let seriesColNames = $.map(response.series, function (element, i) {
+            //     return dataFieldName + 'TS' + element
+            // });
+            let seriesColNames = getTimeSeriesColumnNames(response);
+
             if (chartOptions.plot_total) {
                 let results = calculateTotalOnObjectArray(response.data, seriesColNames);
                 for (let fieldIdx = 0; fieldIdx < seriesColNames.length; fieldIdx++) {
@@ -94,8 +100,8 @@
                 for (let i = 0; i < response.data.length; i++) {
                     let row = response.data[i];
                     let rowData = [];
-                    for (let field = 0; field < response.series.length; field++) {
-                        rowData.push(response.data[i][dataFieldName + 'TS' + response.series[field]])
+                    for (let field = 0; field < seriesColNames.length; field++) {
+                        rowData.push(response.data[i][seriesColNames[field]])
                     }
                     datasets.push({
                         label: $(row[titleFieldName]).text(),

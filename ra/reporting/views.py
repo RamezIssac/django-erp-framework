@@ -573,23 +573,17 @@ class ReportView(UserPassesTestMixin, SampleReportView):
 
         queryset = self.get_queryset()
         report_generator = self.get_report_generator(queryset, for_print)
-        report_meta_data = {}  # self.report_meta_data_class(self.form, self.form_settings, self.chart_settings,
-        # self.request.GET, self.get_report_title())
         data = report_generator.get_report_data()
         data = self.order_results(data)
         data = self.filter_results(data, for_print)
-        # import pdb;
-        # pdb.set_trace()
         data = {
             'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
-            'form_settings': self.form_settings,
+            'meta': self.form_settings,
             'data': data,
-            'columns': self.get_columns_data(report_generator.get_list_display_columns())
-            # 'verbose_data': report_meta_data.get_verbose_data(),
+            'columns': self.get_columns_data(report_generator.get_list_display_columns()),
+            'metadata': self.get_metadata(generator=report_generator),
+            'chart_settings': self.get_chart_settings()
         }
-        # meta_data = report_meta_data.get_meta_data()
-        # data.update(meta_data)
-        data['chart_settings'] = self.get_chart_settings()
         return data
 
     def order_results(self, data):
