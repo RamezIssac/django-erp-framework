@@ -20,7 +20,7 @@ if (typeof moment === 'undefined') {
   throw new Error('Tempus Dominus Bootstrap4\'s requires moment.js. Moment.js must be included before Tempus Dominus Bootstrap4\'s JavaScript.');
 }
 
-var version = moment.version.split('.');
+var version = moment.version.split('.')
 if ((version[0] <= 2 && version[1] < 17) || (version[0] >= 3)) {
   throw new Error('Tempus Dominus Bootstrap4\'s requires at least moment.js v2.17.0 but less than v3.0.0');
 }

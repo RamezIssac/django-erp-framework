@@ -1,5 +1,5 @@
 /*!
- *   AdminLTE v3.0.2-pre
+ *   AdminLTE v3.0.5
  *     Only Extra Components
  *   Author: Colorlib
  *   Website: AdminLTE.io <http://adminlte.io>
@@ -134,6 +134,7 @@
   min-height: 80px;
   padding: .5rem;
   position: relative;
+  width: 100%;
 }
 
 .info-box .progress {
@@ -161,12 +162,17 @@
 }
 
 .info-box .info-box-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 120%;
   flex: 1;
-  padding: 5px 10px;
+  padding: 0 10px;
 }
 
 .info-box .info-box-number {
   display: block;
+  margin-top: .25rem;
   font-weight: 700;
 }
 
@@ -753,6 +759,16 @@
 
 .direct-chat-dark .right > .direct-chat-text::after, .direct-chat-dark .right > .direct-chat-text::before {
   border-left-color: #343a40;
+}
+
+.direct-chat-lightblue .right > .direct-chat-text {
+  background: #3c8dbc;
+  border-color: #3c8dbc;
+  color: #ffffff;
+}
+
+.direct-chat-lightblue .right > .direct-chat-text::after, .direct-chat-lightblue .right > .direct-chat-text::before {
+  border-left-color: #3c8dbc;
 }
 
 .direct-chat-navy .right > .direct-chat-text {
