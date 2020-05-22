@@ -608,9 +608,6 @@ class ReportView(UserPassesTestMixin, SampleReportView):
     def form_invalid(self, form):
         return JsonResponse(form.errors, status=400)
 
-    def get_chart_settings(self):
-        return self.chart_settings or []
-
     @classmethod
     def get_default_from_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_FROM_DATETIME

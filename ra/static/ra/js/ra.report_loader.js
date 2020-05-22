@@ -41,7 +41,7 @@
         //     console.log(chart_id + " can't be found in the charts for this report")
         // }
         // chartObject = $.ra.highchart.createChartObject(true, data.data, data, chartObject);
-        let chartObject = $.ra.chartsjs.createChartObject(data,chart_id, {});
+        let chartObject = $.slick_reporting.chartsjs.createChartObject(data,chart_id, {});
 
         // try {
         //     var _to_destroy = chart.highcharts();
