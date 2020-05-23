@@ -26,12 +26,12 @@ class ClientTotalBalance(ReportView):
         {
             'id': 'pie',
             'title': _('pie'),
-            'settings': {
-                'chart_type': 'pie',
-                'title': _('Clients Balance'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Clients Balance')],
-            }
+
+            'type': 'pie',
+
+            'data_source': ['__balance__'],
+            'title_source': ['title'],
+
         },
     ]
 
@@ -163,24 +163,19 @@ class ProductSalesMonthlySeries(ReportView):
         {
             'id': 'movement_column',
             'title': _('comparison - column'),
-            'settings': {
-                'chart_type': 'column',
-                'title': _('{product} Avg. purchase price '),
-                'sub_title': _('{date_verbose}'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Avg. purchase price')],
-            }
+            'type': 'column',
+
+            'chart_type': 'column',
+            'data_source': ['__balance__'],
+
         },
         {
             'id': 'movement_line',
             'title': _('comparison - line'),
-            'settings': {
-                'chart_type': 'line',
-                'title': _('{product} Avg. purchase price '),
-                'sub_title': _('{date_verbose}'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Avg. purchase price')],
-            }
+            'type': 'line',
+            'data_source': '__balance__',
+            'title_source': 'title',
+
         },
     ]
 
@@ -211,6 +206,8 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
     columns = ['slug', 'title']
     time_series_pattern = 'monthly'
     time_series_columns = ['__debit__', '__credit__', '__balance__', '__total__']
+
+
 #
 
 @register_report_view
