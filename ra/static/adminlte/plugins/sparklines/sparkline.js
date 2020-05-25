@@ -24,7 +24,7 @@
     this.element = element;
     this.options = extend(options || {}, Sparkline.options);
 
-    {
+    init: {
       this.element.innerHTML = "<canvas></canvas>";
       this.canvas = this.element.firstChild;
       this.context = this.canvas.getContext("2d");
@@ -71,7 +71,7 @@
     var sparkline = new Sparkline(element, options);
     sparkline.draw(points);
     return sparkline;
-  };
+  }
 
   function getY(minValue, maxValue, offsetY, height, index) {
     var range = maxValue - minValue;
@@ -200,7 +200,7 @@
     dot(this.options.maxColor, this.options.maxLine, maxX + (points.length == 1 ? width / 2 : 0), y(points.indexOf(maxValue)));
 
     //line(this.options.averageLine, )
-  };
+  }
 
   function minmax(a, b, c) {
     return Math.max(a, Math.min(b, c));

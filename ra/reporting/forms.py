@@ -1,13 +1,6 @@
 from __future__ import unicode_literals
-import datetime
+
 from django import forms
-from django.utils.timezone import now
-import pytz
-from ra.base.app_settings import RA_DEFAULT_FROM_DATETIME
-from ra.reporting.form_fields import RaDateDateTimeField
-from ra.base.widgets import RaBootstrapDateTime
-from django.utils.translation import ugettext_lazy as _
-from django.forms.utils import ErrorList
 
 
 class OrderByForm(forms.Form):
@@ -39,82 +32,3 @@ class OrderByForm(forms.Form):
                 asc = False
             return order_field, not asc
         return None, None
-
-
-class SimpleReportForm(forms.Form):
-    doc_date = forms.DateField(input_formats=["%Y-%m-%d"], required=False, label=_('at date'))
-
-    from_doc_date = RaDateDateTimeField(required=False, label=_('from date'),
-                                        initial=RA_DEFAULT_FROM_DATETIME,
-                                        widget=RaBootstrapDateTime(),
-                                        input_date_formats=['%Y-%m-%d', '%Y-%m-%d'],
-                                        input_time_formats=['%H:%M', '%H:%M:%S'])
-
-    to_date_initial = datetime.datetime.combine(now().date(), datetime.time.max)
-    to_doc_date = RaDateDateTimeField(required=False, initial=to_date_initial,
-                                      label=_('to date'), widget=RaBootstrapDateTime(),
-                                      input_date_formats=['%Y-%m-%d', '%Y-%m-%d'],
-                                      input_time_formats=['%H:%M', '%H:%M:%S'])
-
-    def get_queryset_filters(self, w_date=False):
-        """
-        Return a dict that represents filter on the form
-        :param w_date:
-        :param w_doc_types:
-        :return:
-        """
-        _values = {}
-        doc_date = self.cleaned_data['doc_date']
-        try:
-            doc_date = doc_date.strftime('%Y-%m-%d')
-        except:
-            doc_date = None
-
-        if doc_date:
-            date_1 = pytz.utc.localize(
-                datetime.datetime.combine(self.cleaned_data['doc_date'], datetime.datetime.min.time()))
-
-            date_2 = date_1 + datetime.timedelta(days=1)
-            # _values['doc_date__gt'] = date_1
-            self.cleaned_data['from_doc_date'] = date_1
-            # _values['doc_date__lte'] = date_2
-            self.cleaned_data['to_doc_date'] = date_2
-
-        if w_date:
-            _values['doc_date__gt'] = self.get_from_doc_date()
-            _values['doc_date__lte'] = self.get_to_doc_date()
-
-        return _values
-
-    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
-                 label_suffix=None, empty_permitted=False, **kwargs):
-        super(SimpleReportForm, self).__init__(data, files, auto_id, prefix, initial, error_class, label_suffix,
-                                               empty_permitted)
-
-    @property
-    def _fkeys(self):
-        return []
-
-    def get_from_doc_date(self):
-        return self.cleaned_data.get('from_doc_date') or RA_DEFAULT_FROM_DATETIME
-
-    def get_to_doc_date(self):
-        x = now()
-        return self.cleaned_data.get('to_doc_date') or x.combine(x, x.time().max)
-
-    def is_time_series(self, *args, **kwargs):
-        return False
-
-    def is_matrix_support(self, *args, **kwargs):
-        return False
-
-
-class ReportFormWithSeries(SimpleReportForm):
-    time_series_pattern = forms.CharField()
-
-    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
-                 label_suffix=None, empty_permitted=False, **kwargs):
-        super(ReportFormWithSeries, self).__init__(data, files, auto_id, prefix, initial, error_class, label_suffix,
-                                                   empty_permitted, **kwargs)
-        self.fields['time_series_pattern'].wiget = forms.Select(choices=(('none', _('None')), ('daily', _('Daily')),
-                                                                         ('monthly', _('Monthly'))))

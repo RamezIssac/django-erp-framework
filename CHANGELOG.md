@@ -3,6 +3,10 @@ All notable changes to this project are/will be documented in this file.
 
 
 ## [Unreleased]
+#Added
+- Reporting Engine is moved to its own new package [Slick Reporting](https://github.com/ra-systems/django-slick-reporting).   
+- Framework no longer depends Postgres Database specifically.
+- Update underlying AdminLTE Theme to 3.0.5  
 
 
 ## [v0.1.1] - 2020-01-12

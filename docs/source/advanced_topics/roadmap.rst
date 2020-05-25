@@ -4,7 +4,7 @@ Road Map
 - Bring back top search
 - Bring back print on page
 - Bring back activity log
-- matrix charting capabilities
+- crosstab charting capabilities
 
 Documentation
 --------------
@@ -16,5 +16,5 @@ Documentation
 Tests:
 ------
 
-- Test matrix on doc_type
+- Test crosstab on doc_type
 - test timeseries on doctype

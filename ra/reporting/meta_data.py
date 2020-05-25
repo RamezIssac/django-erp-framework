@@ -41,23 +41,21 @@ class ReportMetaData(object):
     def get_datatable_options(self):
 
         is_group = True
-        appened_fkeys = True
         if self.form.is_time_series(is_group):
-            original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wTimeSeries=False)
+            original_columns = self.form.get_datatable_columns(is_group, wTimeSeries=False)
             time_series_colums = self.form.get_time_series_columns(is_group)
             options = self.get_ordered_columns(original_columns, [], is_group, True, time_series_colums)
 
         elif self.form.is_matrix_support(is_group):
-            original_columns = self.form.get_datatable_columns(is_group, appened_fkeys, wMatrix=False)
-            time_series_colums = self.form.get_matrix_fields()
+            original_columns = self.form.get_datatable_columns(is_group, wMatrix=False)
+            time_series_colums = [] #self.form.get_matrix_fields()
             options = self.get_ordered_columns(original_columns, [], is_group, True, time_series_colums)
 
 
         else:
-            options = self.form.get_datatable_columns(is_group, appened_fkeys)
+            options = self.form.get_datatable_columns(is_group)
             options = self.get_ordered_columns(options, [], is_group)
 
-        self.datatable_structure = options
         options = {'columns': options}
 
         column_names = self.get_column_names(options['columns'], is_group)
@@ -69,8 +67,10 @@ class ReportMetaData(object):
             options['series_column_names'] = self._get_time_series_verbose(series, self.form.cleaned_data[
                 'time_series_pattern'])
         if self.form.is_matrix_support(is_group):
-            series = self.form.get_matrix_core_columns()
-            options['matrix_core_columns'] = series
+            # todo revise and maybe bring back
+            pass
+            # series =
+            # options['matrix_core_columns'] = self.form.get_matrix_core_columns()
 
         return options
 
@@ -207,20 +207,21 @@ class ReportMetaData(object):
 
         for f in form_filters:
             if '_id' in f:
-                main_filter = self.applied_filters.get(f, '')
-                model_name = f[:-3]
-                model_klass = registry.get_ra_model_by_name(model_name)
-                if not main_filter and model_klass:
-                    header = '%s %s' % (original_ugettext('for all'), model_klass._meta.verbose_name_plural)
-                else:
-                    ids = main_filter.split(',')
-                    length = len(ids)
-                    if length == 1:
-                        ''' One Selected '''
-                        header = cache.get_cached_name(model_name, ids[0])
-                    else:
-                        header = '%s %s' % (original_ugettext('several'), model_klass._meta.verbose_name_plural)
-                ret_val[model_name] = header
+                pass
+                # main_filter = self.applied_filters.get(f, '')
+                # model_name = f[:-3]
+                # model_klass = registry.get_ra_model_by_name(model_name)
+                # if not main_filter and model_klass:
+                #     header = '%s %s' % (original_ugettext('for all'), model_klass._meta.verbose_name_plural)
+                # else:
+                #     ids = main_filter.split(',')
+                #     length = len(ids)
+                #     if length == 1:
+                #         ''' One Selected '''
+                #         header = cache.get_cached_name(model_name, ids[0])
+                #     else:
+                #         header = '%s %s' % (original_ugettext('several'), model_klass._meta.verbose_name_plural)
+                # ret_val[model_name] = header
         ret_val['time_series_pattern'] = ugettext(form_settings.get('time_series_pattern', 'n/A'))
 
         return ret_val

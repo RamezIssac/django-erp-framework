@@ -22,8 +22,10 @@ class RaModelsRegistry(object):
         try:
             model = self._registry[model_name.lower()]
         except:
-            raise NotRegistered('Model name %s not identified. Are you sure that the model exsits and its '
-                                'app is added to INSTALLED_APPS ?' % model_name)
+            options = self._registry.keys()
+            raise NotRegistered(
+                f'Model name {model_name} not identified. options are {options}. \n Are you sure that the model exsits and its '
+                'app is added to INSTALLED_APPS ?')
 
         return model
 
@@ -107,4 +109,3 @@ def _fill_models_settings():
             url = ''
 
         models_settings[model.__name__.lower()] = {'model': model, 'redirect_url_prefix': url}
-

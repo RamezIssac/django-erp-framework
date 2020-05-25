@@ -33,8 +33,7 @@
             }
             if (stop_colspan_detection == false) {
                 footer_colspan += 1;
-            }
-            else {
+            } else {
                 footer_th += '<th data-id="' + cols[i] + '"></th>';
             }
         }
@@ -61,7 +60,7 @@
     function buildAndInitializeDataTable(data, $elem, extraOptions, successFunction) {
         let isGroup = true;
         var opts = $.extend({}, $.ra.datatable.defaults, extraOptions);
-        opts['datatableContainer']= $elem;
+        opts['datatableContainer'] = $elem;
 
         var datatable_container = opts.datatableContainer;
         var datatableOptions = opts.datatableOptions;
@@ -70,33 +69,40 @@
         var provide_total = frontend_settings.provide_total;
         provide_total = typeof provide_total == 'undefined' ? true : provide_total;
         var total_fields = frontend_settings.total_fields || [];
+        var column_names = [];
+        for (var i = 0; i< data['columns'].length; i++) {
+            var col = data['columns'][i];
+            column_names.push(col['verbose_name']);
+            if (col['type'] === 'number') {
+                total_fields.push(col['name'])
+            }
+        }
         if (data.data.length == 0) provide_total = false;
 
-        if (isGroup == false) {
-
-//            datatable_container = datatableOptions.container;
-
-            var slug = datatableOptions.current_id;
-            _cache[slug] = data;
-            //if (opts.detailsTableIsChild) {
-
-            datatable_container.child('<div class="inner_table"> ' + constructTable(slug, $.ra.datatable.defaults.tableCssClass, data['columns'], data['column_names'], provide_total, opts.messages.total, total_fields) + ' </div> ').show();
-            var $datatable = datatable_container.child().find('table');
-            //}
-            initializeReportDatatable($datatable, data, isGroup, opts);
-
-        }
-        else {
+//         if (isGroup == false) {
+//
+// //            datatable_container = datatableOptions.container;
+//
+//             var slug = datatableOptions.current_id;
+//             _cache[slug] = data;
+//             //if (opts.detailsTableIsChild) {
+//
+//             datatable_container.child('<div class="inner_table"> ' + constructTable(slug, $.ra.datatable.defaults.tableCssClass, data['columns'], column_names, provide_total, opts.messages.total, total_fields) + ' </div> ').show();
+//             var $datatable = datatable_container.child().find('table');
+//             //}
+//             initializeReportDatatable($datatable, data, isGroup, opts);
+//
+//         } else {
 
             //New method //
             _cache['groupData'] = data;
             var datatable_slug = _get_group_by(data, opts);
-            datatable_container.html(constructTable(datatable_slug + 'groupTable', $.ra.datatable.defaults.tableCssClass, data['columns'], data['column_names'], provide_total, opts.messages.total, total_fields));
+            datatable_container.html(constructTable(datatable_slug + 'groupTable', $.ra.datatable.defaults.tableCssClass, data['columns'], column_names, provide_total, opts.messages.total, total_fields));
             initializeReportDatatable(datatable_container.find('table'), data, isGroup, opts);
 
-        }
+        // }
 
-        if (typeof(successFunction) === 'function') {
+        if (typeof (successFunction) === 'function') {
             successFunction(data);
         }
 
@@ -104,9 +110,10 @@
 
 
     function getDatatableColumns(isGroup, data) {
-        isGroup = data['columns'].indexOf('_control_') != -1;
+        // isGroup = data['columns'].indexOf('_control_') != -1;
+        isGroup = false;
         var columns = [];
-        if (isGroup == true) {
+        if (isGroup === true) {
             columns = [
                 {
                     "class": 'details-control',
@@ -123,10 +130,16 @@
         }
         for (var i = 0; i < data['columns'].length; i++) {
             if ((isGroup && i > 0) || !isGroup) {
-                var col_data = {"data": data['columns'][i]};
-                if (data['columns'][i].indexOf('_id') > -1) col_data['visible'] = false;
-                if (data['columns'][i].indexOf('doc_typeid') > -1) col_data['visible'] = false;
-                if (hide_columns.indexOf(data['columns'][i]) > -1) col_data['visible'] = false;
+                var server_data = data['columns'][i];
+                var col_data = {
+                    "data": server_data['name'],
+                    'visible': server_data['visible'],
+                    'title': server_data['verbose_name']
+                };
+                // col_data['visible'] =
+                // if (data['columns'][i].indexOf('_id') > -1) col_data['visible'] = false;
+                // if (data['columns'][i].indexOf('doc_typeid') > -1) col_data['visible'] = false;
+                // if (hide_columns.indexOf(data['columns'][i]) > -1) col_data['visible'] = false;
                 columns.push(col_data);
             }
         }
@@ -144,7 +157,7 @@
         $.ra.report_loader.getDataFromServer(url, function (data) {
             var datatable_container = datatableOptions.container;
             var slug = datatableOptions.current_id;
-            datatable_container.child('<div class="inner_table"> ' + constructTable(slug, $.ra.datatable.defaults.tableCssClass, data['columns'], data['column_names'], true, opts.messages.total) + ' </div> ').show();
+            datatable_container.child('<div class="inner_table"> ' + constructTable(slug, $.ra.datatable.defaults.tableCssClass, data['columns'], column_names, true, opts.messages.total) + ' </div> ').show();
             initializeReportDatatable(datatable_container.child().find('table'), data, provideGroupSupport(data['columns']));
         });
 
@@ -164,7 +177,7 @@
         $.ra.report_loader.getDataFromServer(url, function (data) {
             var datatable_container = datatableOptions.container;
             var slug = datatableOptions.current_id;
-            datatable_container.html('<div class="inner_table"> ' + constructTable(slug, $.ra.datatable.defaults.tableCssClass + ' display', data['columns'], data['column_names'], true, opts.messages.total) + ' </div> ').show();
+            datatable_container.html('<div class="inner_table"> ' + constructTable(slug, $.ra.datatable.defaults.tableCssClass + ' display', data['columns'], column_names, true, opts.messages.total) + ' </div> ').show();
             initializeReportDatatable(datatable_container.find('table'), data, provideGroupSupport(data['columns']));
             reportModal.find('.chartContainer .controls').html($.ra.report_loader.createChartsUIfromResponse(data, 'inModalChart'));
             reportModal.attr('data-current-id', current_id);
@@ -194,9 +207,6 @@
             var group_by = _get_group_by(data, opts);
             if (!(group_by == 'slug' || group_by == 'doc_date' || group_by == 'doc_type')) {
                 group_by = group_by + '_id'; //todo: Show be edited to _id
-            }
-            if (group_by == 'doc_type') {
-                group_by = '__doc_typeid__'
             }
             var current_id = row.data()[group_by];
             executeFunctionByName(opts.createChildTableFunctionName, window, row, current_id, group_by, opts);
@@ -261,13 +271,13 @@
         provide_total = typeof provide_total == 'undefined' ? true : provide_total;
         var total_fields = frontend_settings.total_fields || [];
 
-        var dom = typeof(extraOptions.dom) == 'undefined' ? 'lfrtip' : extraOptions.dom;
-        var paging = typeof(extraOptions.paging) == 'undefined' ? true : extraOptions.paging;
-        var ordering = typeof(extraOptions.ordering) == 'undefined' ? true : extraOptions.ordering;
-        var info = typeof(extraOptions.info) == 'undefined' ? true : extraOptions.info;
+        var dom = typeof (extraOptions.dom) == 'undefined' ? 'lfrtip' : extraOptions.dom;
+        var paging = typeof (extraOptions.paging) == 'undefined' ? true : extraOptions.paging;
+        var ordering = typeof (extraOptions.ordering) == 'undefined' ? true : extraOptions.ordering;
+        var info = typeof (extraOptions.info) == 'undefined' ? true : extraOptions.info;
         if (data.data.length == 0) dom = '<"mb-20"t>';
 
-        var datatableOptions = $.extend({}, extraOptions['datatableOptions'] );
+        var datatableOptions = $.extend({}, extraOptions['datatableOptions']);
 
         datatableOptions.dom = dom;
         datatableOptions.ordering = ordering;
@@ -289,7 +299,7 @@
             }
             apply_table_totals(data, opts, tableSelector, total_fields);
         };
-                dt = $(tableSelector).DataTable(datatableOptions);
+        dt = $(tableSelector).DataTable(datatableOptions);
 //        dt = $(tableSelector).DataTable({
 //            dom: dom,
 //            ordering: ordering,
@@ -335,7 +345,7 @@ $.ra.datatable.defaults = {
     totalComputationFunction: calculateTotalOnObjectArray,
     createChildTableFunctionName: '$.ra.datatable.createTableInModal',
     totalFields: ['__balance__', 'value', '__debit__', '__credit__', '__doc_count__', '__line_count__', '__total__', '__fb__',
-        '__balance_quan__', 'quan', '__debit_quan__', '__credit_quan__', '__total_quan__', '__fb_quan__', '__gross_value__', '__tax_addition__', '__tax_substract__', '__doc_value__'],
+        '__balance_quan__', 'quan', '__debit_quan__', '__credit_quan__', '__total_quantity__', '__fb_quan__', '__gross_value__', '__tax_addition__', '__tax_substract__', '__doc_value__'],
     intFields: ['__doc_count__'], //apply total to them & format them as int (ie no .00)
     ajax_url: '', // request_url
     GROUP_BY_FIELD_NAME: 'group_by',

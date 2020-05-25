@@ -38,6 +38,7 @@ sales = {'name': 'sales', 'plus_list': ['Client'], 'minus_list': ['Product'],
 
 register_doc_type(sales)
 
+
 class Invoice(BaseMovementInfo):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
 
@@ -79,3 +80,20 @@ class JournalWithCriteria(Journal):
     class Meta:
         proxy = True
 
+
+# Vanilla models
+
+class Order(models.Model):
+    date_placed = models.DateTimeField(auto_created=True)
+    client = models.ForeignKey(Client, null=True, on_delete=models.CASCADE)
+
+
+class OrderLine(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+    client = models.ForeignKey(Client, null=True, on_delete=models.CASCADE)
+
+    # price_before_tax = models.DecimalField()
+    # price_after_tax = models.DecimalField()
+    # total_value = models.DecimalField()

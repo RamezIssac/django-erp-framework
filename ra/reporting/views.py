@@ -1,5 +1,4 @@
 import copy
-import datetime
 import hashlib
 import logging
 
@@ -12,19 +11,20 @@ from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 # cache = get_cache('default')
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
-from django.utils.encoding import force_text
-from django.utils.functional import Promise
-from django.utils.translation import ugettext_lazy, get_language_bidi, ugettext
-from django.views.generic import FormView, TemplateView
+from django.utils.translation import get_language_bidi, ugettext
+from django.views.generic import TemplateView
+from slick_reporting.form_factory import report_form_factory
+from slick_reporting.generator import ReportGenerator
+from slick_reporting.views import SampleReportView
 
 from ra.base import app_settings, registry
 from ra.base.app_settings import RA_ADMIN_SITE_NAME
 from ra.base.helpers import dictsort
-from ra.reporting.form_factory import report_form_factory
 from ra.reporting.forms import OrderByForm
 from ra.reporting.printing import regroup_data, HTMLPrintingClass, ExportToCSV
-from .generator import ReportGenerator
-from .meta_data import ReportMetaData
+
+# from .generator import ReportGenerator
+# from .meta_data import ReportMetaData
 
 logger = logging.getLogger('ra.reporting')
 
@@ -158,7 +158,106 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
                 "or tuple." % key)
 
 
-class ReportView(UserPassesTestMixin, FormView):
+class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
+    """
+    Base class to create a report list page
+    """
+
+    def get_meta_data(self):
+        """
+        Gets Meta data used for Page title , breadcrumbs links etc.
+        Make sure that opts is a model._meta or s sufficient dictionary
+        :return: tuple (verbose_name, verbose_name_plural, page_title, model_meta)
+        """
+        raise NotImplemented
+
+    def get_permissions(self):
+        """
+        Override of RAAccessControl.get_permissions
+        :return: a dictionary with 'any' and/ or 'all' permission. required
+        """
+        raise NotImplemented
+
+    def get_reports_map(self):
+        """
+        Hook to get reports. By default it uses the helper `get_reports_map` to get
+         the reports based on the base_model, However you can override and return your list of reports
+
+        :return: a dictionary with two values `slugs` and `reports`
+        slugs: map to a list of report slugs
+        reports: map to a list of ReportView classes
+        """
+        raise NotImplemented
+
+
+class ReportList(ReportListBase):
+    template_name = f'{app_settings.RA_THEME}/report_list.html'
+    _bypass = True
+
+    def get_order_list(self):
+        from ra.admin.admin import ra_admin_site
+
+        model_admin = ra_admin_site.get_admin_by_model_name(self.kwargs['base_model'])
+        if model_admin:
+            try:
+                return model_admin['admin'].typed_reports_order_list or []
+            except AttributeError:
+                # The admin class does not have an order list for teh reports
+                pass
+        return []
+
+    def get_permissions(self):
+        return {}
+
+    def get_reports_map(self):
+        from ra.admin.admin import get_reports_map
+        from ra.base.registry import get_ra_model_by_name
+        model = get_ra_model_by_name(self.kwargs['base_model'])
+        try:
+            model_name = model.get_class_name().lower()
+        except:
+            model_name = model._meta.model_name
+        val = get_reports_map(model_name, self.request.user, self.request, self.get_order_list())
+        return val
+
+    def get_meta_data(self):
+        model = registry.get_ra_model_by_name(self.kwargs['base_model'])
+        verbose_name = model._meta.verbose_name
+        verbose_name_plural = model._meta.verbose_name_plural
+        is_bidi = get_language_bidi()
+        if is_bidi:
+            page_title = '%s %s' % (ugettext('reports'), model._meta.verbose_name_plural)
+        else:
+            page_title = '%s %s' % (model._meta.verbose_name_plural, ugettext('reports'))
+        opts = model._meta
+        return verbose_name, verbose_name_plural, page_title, opts
+
+    def get_context_data(self, **kwargs):
+        from ra.admin.admin import ra_admin_site
+        from ra.admin.helpers import get_each_context
+
+        context = super(ReportList, self).get_context_data(**kwargs)
+
+        context['reports'] = self.get_reports_map()
+
+        v, vp, page_title, opts = self.get_meta_data()
+        context['verbose_name'] = v
+        context['verbose_name_plural'] = vp
+        context['page_title'] = page_title
+        context['title'] = page_title
+
+        context['opts'] = opts
+
+        context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
+        context['has_detached_sidebar'] = True
+        context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
+
+        extra_context = get_each_context(self.request, ra_admin_site)
+        context.update(extra_context)
+        return context
+
+
+class ReportView(UserPassesTestMixin, SampleReportView):
     """
     The Base class for reports .
     It handles the report ajax request, load the report form which provides the needed filers,
@@ -172,7 +271,7 @@ class ReportView(UserPassesTestMixin, FormView):
     report_generator_class = ReportGenerator
 
     # class responsible for supplying meta data for front end
-    report_meta_data_class = ReportMetaData
+    # report_meta_data_class = ReportMetaData
 
     # class responsible for customizing the output for print
     printing_class = HTMLPrintingClass
@@ -192,9 +291,6 @@ class ReportView(UserPassesTestMixin, FormView):
     # control the chart settings, passed to front end as is.
     chart_settings = None
 
-    _imposed_start_date = False
-    no_distinct = False  # a flag to the report generator telling it to get get the main queryset from base_model
-
     other_namespaces = None
 
     report_slug = ''
@@ -210,7 +306,6 @@ class ReportView(UserPassesTestMixin, FormView):
     hidden = False
 
     # will swap the sign on the report, useful when reporting on object which main side is credit
-    swap_sign = False
 
     # Control the header report function
     must_exist_filter = None
@@ -228,6 +323,8 @@ class ReportView(UserPassesTestMixin, FormView):
     cache = True
     cache_duration = 300
 
+    # V2
+
     @classmethod
     def get_report_slug(cls):
         return cls.report_slug or cls.__name__.lower()
@@ -242,7 +339,7 @@ class ReportView(UserPassesTestMixin, FormView):
 
     @classmethod
     def get_url(cls):
-        url = reverse('admin:report_list', args=(cls.get_base_model_name(),))
+        url = reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(cls.get_base_model_name(),))
         url += '%s/' % cls.get_report_slug()
         return url
 
@@ -283,7 +380,7 @@ class ReportView(UserPassesTestMixin, FormView):
         hence this function.
         :return: form_class
         """
-        return cls.form_class or report_form_factory(cls.get_report_model(), cls.base_model)
+        return cls.form_class or report_form_factory(cls.get_report_model())
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)
@@ -301,6 +398,7 @@ class ReportView(UserPassesTestMixin, FormView):
 
     @classmethod
     def initialize_form(cls):
+        # todo remove me
         form_class = cls.get_form_class()
         if hasattr(form_class, 'initial_settings'):
             settings = form_class.initial_settings.copy()
@@ -309,7 +407,8 @@ class ReportView(UserPassesTestMixin, FormView):
         settings.update(cls.form_settings or {})
         settings['from_doc_date'] = cls.get_default_from_date()
         settings['to_doc_date'] = cls.get_default_to_date()
-        return form_class(**{'form_settings': settings})
+        # return form_class(support_doc_type=True, **{'form_settings': settings})
+        return form_class()
 
     def get_form_settings(self):
         # todo : Review
@@ -325,40 +424,6 @@ class ReportView(UserPassesTestMixin, FormView):
     def get_all_print_settings(cls):
         # todo review
         return {}
-
-    def get_form_kwargs(self):
-        """
-        Returns the keyword arguments for instantiating the form.
-        """
-        kwargs = {
-            'initial': self.get_initial(),
-            'prefix': self.get_prefix(),
-        }
-
-        if self.request.method in ('POST', 'PUT'):
-            kwargs.update({
-                'data': self.request.POST,
-                'files': self.request.FILES,
-            })
-        elif self.request.method in ('GET',):
-            form_settings = self.get_form_settings()
-            kwargs.update({
-                # 'files': self.request.FILES,
-                'form_settings': form_settings
-            })
-            kwargs.update({
-                'data': self.request.GET,
-                'files': self.request.FILES,
-            })
-        kwargs['admin_state'] = False
-
-        return kwargs
-
-    def get_report_generator(self, queryset, for_print):
-        return self.report_generator_class(self.get_report_model(), self.form, queryset, no_distinct=self.no_distinct,
-                                           base_model=self.base_model, print_flag=for_print,
-                                           limit_records=self.limit_records, swap_sign=self.swap_sign)
-        # return self.report_generator_class
 
     def return_header_report_or_none(self):
         """
@@ -445,11 +510,14 @@ class ReportView(UserPassesTestMixin, FormView):
                                      must_exist_filter, self).get_response()
 
     def get(self, request, *args, **kwargs):
+
         cache_status, cache_key = self.get_cache_status_and_key(request)
         if cache_status and cache_key:
             cache_val = cache.get(cache_key)
             if cache_val:
                 return cache_val
+
+        # self.parse()
 
         form_class = self.get_form_class()
         self.form = self.get_form(form_class)
@@ -481,7 +549,8 @@ class ReportView(UserPassesTestMixin, FormView):
                 return self.form_invalid(self.form)
         else:
             # Accessing the report page directly is not allowed
-            return HttpResponseRedirect(reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
+            return HttpResponseRedirect(
+                reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
 
     @classmethod
     def get_report_title(cls):
@@ -504,20 +573,17 @@ class ReportView(UserPassesTestMixin, FormView):
 
         queryset = self.get_queryset()
         report_generator = self.get_report_generator(queryset, for_print)
-        report_meta_data = self.report_meta_data_class(self.form, self.form_settings, self.chart_settings,
-                                                       self.request.GET, self.get_report_title())
         data = report_generator.get_report_data()
         data = self.order_results(data)
         data = self.filter_results(data, for_print)
         data = {
             'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
-            'form_settings': self.form_settings,
+            'meta': self.form_settings,
             'data': data,
-            'verbose_data': report_meta_data.get_verbose_data(),
+            'columns': self.get_columns_data(report_generator.get_list_display_columns()),
+            'metadata': self.get_metadata(generator=report_generator),
+            'chart_settings': self.get_chart_settings()
         }
-        meta_data = report_meta_data.get_meta_data()
-        data.update(meta_data)
-        data['chart_settings'] = self.get_chart_settings()
         return data
 
     def order_results(self, data):
@@ -531,15 +597,6 @@ class ReportView(UserPassesTestMixin, FormView):
             data = dictsort(data, order_field, asc)
         return data
 
-    def filter_results(self, data, for_print=False):
-        """
-        Hook to Filter results based on computed data (like eliminate __balance__ = 0, etc)
-        :param data: List of objects
-        :param for_print: is print request
-        :return: filtered data
-        """
-        return data
-
     def prepare_results_for_printing(self, results):
         """
         Hook before sending the results for teh printing generator
@@ -548,133 +605,13 @@ class ReportView(UserPassesTestMixin, FormView):
         """
         return results
 
-    #
-    # def get_report_page(self):
-    #     return self.render_to_response(self.get_context_data(form=self.form))
-
-    def get_queryset(self):
-        return self.get_report_model().objects
-
-    def serialize_to_json(self, response_data):
-        """ Returns the JSON string for the compiled data object. """
-
-        def date_handler(obj):
-            if type(obj) is datetime.datetime:
-                return obj.strftime('%Y-%m-%d %H:%M')
-            elif hasattr(obj, 'isoformat'):
-                return obj.isoformat()
-            elif isinstance(obj, Promise):
-                return force_text(obj)
-
-        indent = None
-        if settings.DEBUG:
-            indent = 4
-
-        return json.dumps(response_data, indent=indent, use_decimal=True, default=date_handler)
-
     def form_invalid(self, form):
         return JsonResponse(form.errors, status=400)
-
-    def get_chart_settings(self):
-        return self.chart_settings or []
 
     @classmethod
     def get_default_from_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_FROM_DATETIME
 
-
     @classmethod
     def get_default_to_date(cls, **kwargs):
         return app_settings.RA_DEFAULT_TO_DATETIME
-
-
-
-class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
-    """
-    Base class to create a report list page
-    """
-
-    def get_meta_data(self):
-        """
-        Gets Meta data used for Page title , breadcrumbs links etc.
-        Make sure that opts is a model._meta or s sufficient dictionary
-        :return: tuple (verbose_name, verbose_name_plural, page_title, model_meta)
-        """
-        raise NotImplemented
-
-    def get_permissions(self):
-        """
-        Override of RAAccessControl.get_permissions
-        :return: a dictionary with 'any' and/ or 'all' permission. required
-        """
-        raise NotImplemented
-
-    def get_reports_map(self):
-        """
-        Hook to get reports. By default it uses the helper `get_reports_map` to get
-         the reports based on the base_model, However you can override and return your list of reports
-
-        :return: a dictionary with two values `slugs` and `reports`
-        slugs: map to a list of report slugs
-        reports: map to a list of ReportView classes
-        """
-        raise NotImplemented
-
-
-class ReportList(ReportListBase):
-    template_name = f'{app_settings.RA_THEME}/report_list.html'
-    _bypass = True
-
-    def get_order_list(self):
-        from ra.admin.admin import ra_admin_site
-
-        model_admin = ra_admin_site.get_admin_by_model_name(self.kwargs['base_model'])
-        if model_admin:
-            return model_admin['admin'].typed_reports_order_list or []
-        return []
-
-    def get_permissions(self):
-        return {}
-
-    def get_reports_map(self):
-        from ra.admin.admin import get_reports_map
-        from ra.base.registry import get_ra_model_by_name
-        model = get_ra_model_by_name(self.kwargs['base_model'])
-        val = get_reports_map(model.get_class_name().lower(), self.request.user, self.request, self.get_order_list())
-        return val
-
-    def get_meta_data(self):
-        model = registry.get_ra_model_by_name(self.kwargs['base_model'])
-        verbose_name = model._meta.verbose_name
-        verbose_name_plural = model._meta.verbose_name_plural
-        is_bidi = get_language_bidi()
-        if is_bidi:
-            page_title = '%s %s' % (ugettext('reports'), model._meta.verbose_name_plural)
-        else:
-            page_title = '%s %s' % (model._meta.verbose_name_plural, ugettext('reports'))
-        opts = model._meta
-        return verbose_name, verbose_name_plural, page_title, opts
-
-    def get_context_data(self, **kwargs):
-        from ra.admin.admin import ra_admin_site
-        from ra.admin.helpers import get_each_context
-
-        context = super(ReportList, self).get_context_data(**kwargs)
-
-        context['reports'] = self.get_reports_map()
-
-        v, vp, page_title, opts = self.get_meta_data()
-        context['verbose_name'] = v
-        context['verbose_name_plural'] = vp
-        context['page_title'] = page_title
-        context['title'] = page_title
-
-        context['opts'] = opts
-
-        context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
-        context['has_detached_sidebar'] = True
-        context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
-
-        extra_context = get_each_context(self.request, ra_admin_site)
-        context.update(extra_context)
-        return context

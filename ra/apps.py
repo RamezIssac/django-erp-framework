@@ -10,7 +10,6 @@ class RaConfig(AppConfig):
     def ready(self):
         super(RaConfig, self).ready()
         from .utils.permissions import create_report_permissions
-        from .reporting import fields
         from . import checks
 
         post_migrate.connect(

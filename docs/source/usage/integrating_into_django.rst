@@ -90,7 +90,7 @@ We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
 
     urlpatterns = [
         ...
-        path('erp', ra_admin_site.urls),
+        path('erp/', ra_admin_site.urls),
         ...
     ]
 

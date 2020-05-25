@@ -1,7 +1,8 @@
 from django.utils.translation import ugettext_lazy as _
 from ra.reporting.decorators import register_report_view
-from ra.reporting.form_factory import report_form_factory
+from slick_reporting.form_factory import report_form_factory
 from ra.reporting.views import ReportView
+from slick_reporting.generator import ReportGenerator
 from .models import Client, SimpleSales, Product
 
 
@@ -19,23 +20,18 @@ class ClientTotalBalance(ReportView):
 
     # Where is the data to compute
     report_model = SimpleSales
-
-    # here is the meat and potatos of the report,
-    # we group the sales per client , we display columns slug and title (of the `base_model` defied above
-    # and we add the magic field `__balance__` we compute the client balance.
-    form_settings = {'group_by': 'client',
-                     'group_columns': ['slug', 'title', '__balance__'],
-                     }
+    group_by = 'client'
+    columns = ['slug', 'title', '__balance__', '__total__']
     chart_settings = [
         {
             'id': 'pie',
             'title': _('pie'),
-            'settings': {
-                'chart_type': 'pie',
-                'title': _('Clients Balance'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Clients Balance')],
-            }
+
+            'type': 'pie',
+
+            'data_source': ['__balance__'],
+            'title_source': ['title'],
+
         },
     ]
 
@@ -74,6 +70,8 @@ class ProductTotalSales(ReportView):
     form_settings = {'group_by': 'product',
                      'group_columns': ['slug', 'title', '__balance__', '__balance_quan__'],
                      }
+    group_by = 'product'
+    columns = ['slug', 'title', '__balance__', '__balance_quan__']
 
 
 @register_report_view
@@ -91,6 +89,8 @@ class ClientList(ReportView):
         'group_columns': ['slug', 'title'],
         'add_details_control': True,
     }
+    group_by = 'client'
+    columns = ['slug', 'title']
 
 
 @register_report_view
@@ -102,12 +102,15 @@ class ProductClientSales(ReportView):
     report_title = _('Client net sales for each product')
     must_exist_filter = 'client_id'
     header_report = ClientList
-    form_class = report_form_factory(report_model, base_model)
+    form_class = report_form_factory(report_model)
 
     form_settings = {
         'group_by': 'product',
         'group_columns': ['slug', 'title', '__balance_quan__', '__balance__'],
     }
+    group_by = 'product'
+    columns = ['slug', 'title', '__balance_quan__', '__balance__']
+
     chart_settings = [
         {
             'id': 'total_pie',
@@ -148,32 +151,31 @@ class ProductSalesMonthlySeries(ReportView):
         'group_columns': ['slug', 'title'],
 
         'time_series_pattern': 'monthly',
-        'time_series_fields': ['__balance_quan__', '__balance__'],
-
+        'time_series_columns': ['__balance_quan__', '__balance__'],
     }
+
+    group_by = 'product'
+    columns = ['slug', 'title']
+    time_series_pattern = 'monthly',
+    time_series_columns = ['__balance_quan__', '__balance__']
 
     chart_settings = [
         {
             'id': 'movement_column',
             'title': _('comparison - column'),
-            'settings': {
-                'chart_type': 'column',
-                'title': _('{product} Avg. purchase price '),
-                'sub_title': _('{date_verbose}'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Avg. purchase price')],
-            }
+            'type': 'column',
+
+            'chart_type': 'column',
+            'data_source': ['__balance__'],
+
         },
         {
             'id': 'movement_line',
             'title': _('comparison - line'),
-            'settings': {
-                'chart_type': 'line',
-                'title': _('{product} Avg. purchase price '),
-                'sub_title': _('{date_verbose}'),
-                'y_sources': ['__balance__'],
-                'series_names': [_('Avg. purchase price')],
-            }
+            'type': 'line',
+            'data_source': '__balance__',
+            'title_source': 'title',
+
         },
     ]
 
@@ -197,12 +199,36 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
         'group_columns': ['slug', 'title'],
 
         'time_series_pattern': 'monthly',
-        'time_series_fields': ['__debit__', '__credit__', '__balance__', '__total__'],
+        'time_series_columns': ['__debit__', '__credit__', '__balance__', '__total__'],
     }
 
+    group_by = 'client'
+    columns = ['slug', 'title']
+    time_series_pattern = 'monthly'
+    time_series_columns = ['__debit__', '__credit__', '__balance__', '__total__']
+
+
+#
 
 @register_report_view
 class ClientDetailedStatement(ReportView):
+    report_title = _('client statement')
+    base_model = Client
+    report_model = SimpleSales
+    #
+    # header_report = ClientList
+    # must_exist_filter = 'client_id'
+
+    form_settings = {
+        'group_by': '',
+        'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
+    }
+    group_by = None
+    columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
+
+
+@register_report_view
+class ClientDetailedStatement2(ReportView):
     report_title = _('client statement')
     base_model = Client
     report_model = SimpleSales
@@ -214,6 +240,8 @@ class ClientDetailedStatement(ReportView):
         'group_by': '',
         'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
     }
+    group_by = None
+    columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
 
 
 @register_report_view
@@ -235,3 +263,20 @@ class ProductClientSalesMatrix(ReportView):
         },
     }
     swap_sign = True
+
+    group_by = 'client'
+    columns = ['slug', 'title']
+
+    crosstab_model = 'client'
+    crosstab_columns = ['__total__']
+
+
+class GeneratorClassWithAttrsAs(ReportGenerator):
+    columns = ['get_icon', 'slug', 'title']
+
+
+@register_report_view
+class ClientTotalBalancesWithShowEmptyFalse(ClientTotalBalance):
+    report_slug = None
+    default_order_by = '-__balance__'
+    show_empty_records = False

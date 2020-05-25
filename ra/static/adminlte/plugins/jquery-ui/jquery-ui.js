@@ -4095,14 +4095,15 @@ if ( $.fn.jquery.substring( 0, 3 ) === "1.7" ) {
 	};
 }
 
-    /*!
-     * jQuery UI Keycode 1.12.1
-     * http://jqueryui.com
-     *
-     * Copyright jQuery Foundation and other contributors
-     * Released under the MIT license.
-     * http://jquery.org/license
-     */
+;
+/*!
+ * jQuery UI Keycode 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
 
 //>>label: Keycode
 //>>group: Core

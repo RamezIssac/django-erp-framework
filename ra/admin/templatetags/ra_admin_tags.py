@@ -13,14 +13,14 @@ from ra.base import app_settings
 register = template.Library()
 
 
-@register.simple_tag
-def get_by_index(lst, i):
-    return lst[i]
+# @register.simple_tag
+# def get_by_index(lst, i):
+#     return lst[i]
 
 
-@register.simple_tag
-def get_logentry_url():
-    return reverse('%s:admin_logentry_changelist' % app_settings.RA_ADMIN_SITE_NAME)
+# @register.simple_tag
+# def get_logentry_url():
+#     return reverse('%s:admin_logentry_changelist' % app_settings.RA_ADMIN_SITE_NAME)
 
 
 @register.simple_tag(takes_context=True)
@@ -34,14 +34,14 @@ def render_navigation_menu(context):
 DOT = '.'
 
 
-@register.simple_tag
-def ra_url(url_name):
-    """
-    A helper function to get the url without worrying about the admin url
-    :param url_name:
-    :return:
-    """
-    return reverse('%s:%s' % (app_settings.RA_ADMIN_SITE_NAME, url_name))
+# @register.simple_tag
+# def ra_url(url_name):
+#     """
+#     A helper function to get the url without worrying about the admin url
+#     :param url_name:
+#     :return:
+#     """
+#     return reverse('%s:%s' % (app_settings.RA_ADMIN_SITE_NAME, url_name))
 
 
 @register.simple_tag(takes_context=True)

@@ -9,6 +9,7 @@ First Let's recap what we did so far.
 
 Now let's create some reports!!
 We would like to know
+
     1. How much each Client bought (in value).
     2. How much each Product is Sold (In value and in quantity)
     3. For each client, the total bought of each product
@@ -36,8 +37,9 @@ In our sales app, let's create a `reports.py` file *it can be any name, this is 
         base_model = Client
         report_model = SimpleSales
 
-        form_settings = {'group_by': 'client',
-                         'group_columns': ['slug', 'title', '__balance__']}
+        group_by = 'client'
+        columns = ['slug', 'title', '__balance__']
+
 
 Now we need to import `reports.py` so our code is executed.
 Best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
@@ -99,8 +101,8 @@ How much each product was sold?
         # We group the records in SimpleSales by Client ,
         # And we display the columns `slug` and `title` (relative to the `base_model` defined above)
         # the magic field `__balance__` computes the balance (of the base model)
-        form_settings = {'group_by': 'product',
-                         'group_columns': ['slug', 'title', '__balance__']}
+        group_by = 'product'
+        columns = ['slug', 'title', '__balance__']
 
 Did you notice that both class definition are almost the same.
 Only differences are the `base_model` and in `form_settings.group_by`.
@@ -137,12 +139,8 @@ Let's add this code to our `reports.py`
         hidden = True
 
         form_settings = {
-            'group_by': 'client',
-            'group_columns': ['slug', 'title'],
-
-            # adds + sign in the start of the report table
-            'add_details_control': True,
-        }
+        group_by = 'client'
+        columns = ['slug', 'title']
 
 
     @register_report_view
@@ -155,10 +153,9 @@ Let's add this code to our `reports.py`
         must_exist_filter = 'client_id'
         header_report = ClientList
 
-        form_settings = {
-            'group_by': 'product',
-            'group_columns': ['slug', 'title', '__balance_quan__', '__balance__'],
-        }
+        group_by =  'product'
+        columns =  ['slug', 'title', '__balance_quan__', '__balance__']
+
 
 
 Let's run this code and see what it did then we will analyze it.
@@ -196,9 +193,9 @@ Which is a simple list of the sales transaction
         must_exist_filter = 'client_id'
         header_report = ClientList
 
-        form_settings = {
-            'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
-        }
+
+        columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
+
 
 .. _adding_charts_tutorial:
 
@@ -220,14 +217,14 @@ Here is an example we will add two charts to teh first report we created `Client
                 'type': 'pie',
                 'title': _('Client Balances'),
                 'data_source': '__balance__',
-                'title_source': 'client__title',
+                'title_source': 'title',
             },
             {
                 'id': 'bar_chart',
                 'type': 'bar',
                 'title': _('Client Balances [Bar]'),
                 'data_source': '__balance__',
-                'title_source': 'client__title',
+                'title_source': 'title',
             },
         ]
 

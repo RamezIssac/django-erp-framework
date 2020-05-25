@@ -42,7 +42,7 @@ Report Form Settings
 
 This is the main controller of the report, let's discover possible options.
 
-* group_columns: These are the columns you'd want to display on the report table.
+* columns: These are the columns you'd want to display on the report table.
   They have to be either a report_model field, Or, a ``Report Field``
 
 .. code-block:: python
@@ -53,7 +53,7 @@ This is the main controller of the report, let's discover possible options.
         report_model = SimpleSales
         report_title = 'Simple report'
         form_settings = {
-            'group_columns': ['slug', 'doc_date', 'value']
+            'columns': ['slug', 'doc_date', 'value']
         }
 
 

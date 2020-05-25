@@ -41,7 +41,7 @@
         //     console.log(chart_id + " can't be found in the charts for this report")
         // }
         // chartObject = $.ra.highchart.createChartObject(true, data.data, data, chartObject);
-        let chartObject = $.ra.chartsjs.createChartObject(data,chart_id, {});
+        let chartObject = $.slick_reporting.chartsjs.createChartObject(data,chart_id, {});
 
         // try {
         //     var _to_destroy = chart.highcharts();
@@ -67,7 +67,7 @@
         if (url === '#') return; // there is no actual url, probably not enough permissions
         else url = url +'?';
         let extraParams = $elem.attr('data-extra-params') || '';
-        blockDiv($elem);
+        // blockDiv($elem);
         // get the date if present
 
         if (no_cache) url = url + '&no-cache' + _getDateFormParams($elem.parents('.panel'));

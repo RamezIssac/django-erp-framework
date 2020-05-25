@@ -4,35 +4,6 @@ from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.core.exceptions import ImproperlyConfigured
 
 
-class ReportFieldRegistry(object):
-    def __init__(self):
-        super(ReportFieldRegistry, self).__init__()
-        self._registry = {}  # holds
-
-    def register(self, report_field):
-        if report_field.name in self._registry:
-            raise AlreadyRegistered('This field is already registered')
-        self._registry[report_field.name] = report_field
-        return report_field
-
-    def unregister(self, report_field):
-        if report_field.name not in self._registry:
-            raise NotRegistered(report_field)
-        del self._registry[report_field.name]
-
-    def get_field_by_name(self, name):
-        if name in self._registry:
-            return self._registry[name]
-        else:
-            raise NotRegistered(name)
-
-    def get_all_report_fields_names(self):
-        return list(self._registry.keys())
-
-
-field_registry = ReportFieldRegistry()
-
-
 class ReportRegistry(object):
     def __init__(self):
         super(ReportRegistry, self).__init__()
@@ -58,11 +29,11 @@ class ReportRegistry(object):
                     raise AttributeError
             except AttributeError:
                 raise ImproperlyConfigured('Report %s is missing a `report_title`' % report_class)
-            try:
-                assert type(report_class.form_settings) is dict
-            except (AttributeError, AssertionError):
-                raise ImproperlyConfigured(
-                    'Report %s is missing a `form_settings` or form_settings is not a dict' % report_class)
+            # try:
+            #     assert type(report_class.form_settings) is dict
+            # except (AttributeError, AssertionError):
+            #     raise ImproperlyConfigured(
+            #         'Report %s is missing a `form_settings` or form_settings is not a dict' % report_class)
             if not report_class.get_report_model():
                 raise ImproperlyConfigured(
                     'Report %s is missing a `report_model`' % report_class)

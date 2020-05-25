@@ -4,7 +4,8 @@ from django.utils.encoding import force_text
 from django.utils.functional import Promise
 from django.utils.safestring import mark_safe
 
-from ra.base.app_settings import RA_APP_ICONS
+from ra.base.app_settings import RA_APP_ICONS, RA_ADMIN_SITE_NAME
+
 
 register = template.Library()
 
@@ -21,7 +22,7 @@ def get_typed_report_url_param(widget_instance, obj_instance, pk_name=None, appe
     default_param = '?&ajax=true'  # &from_doc_date=2014-01-01%2000:00:00
     namespace = widget_instance['namespace'] if type(widget_instance) is dict else widget_instance.get_base_model_name()
     report_slug = widget_instance['report_slug'] if type(widget_instance) is dict else widget_instance.get_report_slug()
-    url = reverse('admin:report_list', args=(namespace,))
+    url = reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(namespace,))
     url += '%s/' % report_slug
 
     report_settings = widget_instance['form_settings'] if type(
@@ -31,8 +32,8 @@ def get_typed_report_url_param(widget_instance, obj_instance, pk_name=None, appe
     report_matrix_show_other = report_settings.get('matrix_show_other', True)
     report_group_by = report_settings.get('group_by', '')
 
-    if report_group_by != pk_name[:-3] or not (obj_instance and pk_name):
-        default_param += '&get_group=true'
+    # if report_group_by != pk_name[:-3] or not (obj_instance and pk_name):
+    #     default_param += '&get_group=true'
     if obj_instance and pk_name:  # False in case of Home Page
         if report_matrix == '-' or report_matrix == '' or not report_matrix:
             default_param += '&%s=%s' % (pk_name, str(obj_instance.pk))
@@ -44,8 +45,8 @@ def get_typed_report_url_param(widget_instance, obj_instance, pk_name=None, appe
     return mark_safe(default_param)
 
 
-def is_time_series(report, obj_instance, pk_name):
-    return report.get('time_series_pattern', '')
+# def is_time_series(report, obj_instance, pk_name):
+#     return report.get('time_series_pattern', '')
 
 
 from django.core.serializers import serialize
@@ -78,23 +79,6 @@ def subtract(value, arg):
     return value - arg
 
 
-panel_format = """<div class="panel panel-default">
-								<div class="panel-heading">
-									<i class="clip-stats"></i>
-									%(panel_title)s
-									<div class="panel-tools">
-										<a class="btn btn-xs btn-link panel-collapse collapses" href="#">
-										</a>
-										%(panel_options)s
-
-									</div>
-								</div>
-								<div class="panel-body">
-									%(body)s
-								</div>
-							</div>
-"""
-
 
 @register.simple_tag
 def get_app_icon(app):
@@ -106,7 +90,7 @@ def get_app_icon(app):
     return mark_safe(icon)
 
 
-@register.filter
-def translate_change_message(message):
-    from ra.activity.admin import translate_change_message
-    return translate_change_message(message)
+# @register.filter
+# def translate_change_message(message):
+#     from ra.activity.admin import translate_change_message
+#     return translate_change_message(message)
