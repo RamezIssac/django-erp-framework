@@ -45,8 +45,8 @@ def get_typed_report_url_param(widget_instance, obj_instance, pk_name=None, appe
     return mark_safe(default_param)
 
 
-def is_time_series(report, obj_instance, pk_name):
-    return report.get('time_series_pattern', '')
+# def is_time_series(report, obj_instance, pk_name):
+#     return report.get('time_series_pattern', '')
 
 
 from django.core.serializers import serialize
@@ -79,23 +79,6 @@ def subtract(value, arg):
     return value - arg
 
 
-panel_format = """<div class="panel panel-default">
-								<div class="panel-heading">
-									<i class="clip-stats"></i>
-									%(panel_title)s
-									<div class="panel-tools">
-										<a class="btn btn-xs btn-link panel-collapse collapses" href="#">
-										</a>
-										%(panel_options)s
-
-									</div>
-								</div>
-								<div class="panel-body">
-									%(body)s
-								</div>
-							</div>
-"""
-
 
 @register.simple_tag
 def get_app_icon(app):
@@ -107,7 +90,7 @@ def get_app_icon(app):
     return mark_safe(icon)
 
 
-@register.filter
-def translate_change_message(message):
-    from ra.activity.admin import translate_change_message
-    return translate_change_message(message)
+# @register.filter
+# def translate_change_message(message):
+#     from ra.activity.admin import translate_change_message
+#     return translate_change_message(message)
