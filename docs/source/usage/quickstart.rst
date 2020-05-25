@@ -1,15 +1,8 @@
 Quick Start
 ===========
 
-A light-weight effective Django based framework to create business application and various resource planing systems,
+A light-weight effective Django based framework to create business applications and various resource planing systems (ERP),
 equipped with a reporting engine and a responsive dashboard.
-
-
-Dependencies
-------------
-* `Python 3 <https://www.python.org/downloads/>`_
-* `PostgreSQL <https://www.postgresql.org/download//>`_
-
 
 
 Installation
@@ -38,18 +31,7 @@ Create your first Ra project
 This will create a new project folder `myproject`, based on a template containing everything you need to get started.
 You can always integrate ra framework to your existing project, please refer to :ref:`integrating_into_django`
 
-3. Database
-
-.. note::
-
-    Ra only support Postgresql.
-
-    As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
-    ``distinct(*fields)`` is used by the reporting engine.
-
-Create a postgres database, and assign its details to ``DATABASES`` setting
-
-4. Run the usual commands needed for any django project
+3. Run the usual commands needed for any django project
 
 .. code-block:: console
 
@@ -58,7 +40,7 @@ Create a postgres database, and assign its details to ``DATABASES`` setting
     $ ./manage.py runserver
 
 
-5. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
+4. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
 .. image:: https://rasystems.io/static/images/raframework/dashboard.png
     :target: https://rasystems.io/static/images/raframework/dashboard.png

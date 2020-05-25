@@ -114,13 +114,13 @@ Let's see an example
         report_model = SimpleSales
 
         form_settings = {
-            'group_by': 'product',
-            'group_columns': ['slug', 'title'],
+        group_by ='product'
+        columns = ['slug', 'title']
 
             # how we made the report a time series report
-            'time_series_pattern': 'monthly',
-            'time_series_fields': ['__balance__'],
-        }
+        time_series_pattern = 'monthly'
+        time_series_fields = ['__balance__']
+
 
 
 Reload your development server , go to Product reports, and check the Product Sales Monthly report.
@@ -142,12 +142,9 @@ Add ``'__balance_quan__'`` to the ``time_series_fields`` list,
     @register_report_view
     class ProductSalesMonthly(ReportView):
         ...
-        form_settings = {
-            ...
-            'time_series_pattern': 'monthly',
-            'time_series_fields': ['__balance_quan__', '__balance__'],
 
-        }
+        time_series_pattern = 'monthly'
+        time_series_fields = ['__balance_quan__', '__balance__']
 
         swap_sign = True
 
@@ -170,7 +167,7 @@ Now let's add some charts, shall we ?
                 'id': 'movement_column_total',
                 'title': _('comparison - Bar - Total'),
                 'data_source': '__balance__',
-                'title_source': 'product__title',
+                'title_source': 'title',
                 'type': 'bar',
                 'plot_total': True,
             },
@@ -178,7 +175,7 @@ Now let's add some charts, shall we ?
                 'id': 'movement_column_ns',
                 'title': _('comparison - Bar'),
                 'data_source': '__balance__',
-                'title_source': 'product__title',
+                'title_source': 'title',
                 'type': 'bar',
                 'stacked': False,
             },
@@ -186,7 +183,7 @@ Now let's add some charts, shall we ?
                 'id': 'movement_bar',
                 'title': _('comparison - Bar - Stacked'),
                 'data_source': '__balance__',
-                'title_source': 'product__title',
+                'title_source': 'title',
                 'type': 'bar',
                 'stacked': True,
             },
@@ -194,7 +191,7 @@ Now let's add some charts, shall we ?
                 'id': 'movement_line_total',
                 'title': _('comparison - line - Total'),
                 'data_source': '__balance__',
-                'title_source': 'product__title',
+                'title_source': 'title',
                 'type': 'line',
                 'plot_total': True,
             },
@@ -202,14 +199,14 @@ Now let's add some charts, shall we ?
                 'id': 'movement_line',
                 'title': _('comparison - line'),
                 'data_source': '__balance__',
-                'title_source': 'product__title',
+                'title_source': 'title',
                 'type': 'line',
             },
             {
                 'id': 'movement_line_stacked',
                 'title': _('comparison - line - Stacked'),
                 'data_source': '__balance__',
-                'title_source': 'product__title',
+                'title_source': 'title',
                 'type': 'line',
                 'stacked': True,
             },
@@ -236,13 +233,13 @@ It would look like something like this
         base_model = Client
         report_model = SimpleSales
 
-        form_settings = {
-            'group_by': 'client',
-            'group_columns': ['slug', 'title'],
 
-            'time_series_pattern': 'monthly',
-            'time_series_fields': ['__balance__'],
-        }
+        group_by = 'client'
+        columns = ['slug', 'title']
+
+        time_series_pattern = 'monthly'
+        time_series_fields = ['__balance__']
+
 
 You can add charts to this report too !
 
@@ -256,20 +253,20 @@ A cross tab report is when the column represents another different named data ob
 .. code-block:: python
 
     @register_report_view
-    class ProductClientSalesMatrix(ReportView):
+    class ProductClientSalescrosstab(ReportView):
         base_model = Product
         report_model = SimpleSales
         report_title = _('Product Client sales Cross-tab')
 
-        form_settings = {
-            'group_by': 'product',
-            'group_columns': ['slug', 'title'],
+
+        'group_by' = 'product'
+        'columns' = ['slug', 'title']
 
             # cross tab settings
-            'matrix': 'client',
-            'matrix_columns': ['__total__'],
+        'crosstab' = 'client'
+        'crosstab_columns' = ['__total__']
 
-        }
+
 
         # sales decreases our product balance, accounting speaking,
         # but for reports sometimes we need the value sign reversed.
@@ -277,8 +274,8 @@ A cross tab report is when the column represents another different named data ob
 
 Lke with the time series pattern, we added
 
-1- ``matrix``: the field to use as comparison column
-2. ``matrix_column`` the report field we want to compare per the crosstab .
+1- ``crosstab``: the field to use as comparison column
+2. ``crosstab_column`` the report field we want to compare per the crosstab .
 3- we used ``__total__`` report field.
 
    Example:

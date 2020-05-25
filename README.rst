@@ -18,15 +18,15 @@
 Ra Framework
 ============
 
-A light-weight effective Django based framework to create business application and various resource planing systems,
+A light-weight effective Django based framework to create business applications and various resource planing systems (ERP),
 equipped with a reporting engine and a responsive dashboard.
 
 Features
 --------
 
-- A responsive dashboard built on top of Django's admin.
-- Reporting Engine that filters and compute several types of reports with simple lines of code.
-- A charting capabilities to turn reports into attractive charts.
+- A responsive dashboard built on top of Django's admin and Bootstrap AdminLte theme.
+- Using Django Slick Reporting for report Engine to compute and chart several types of reports with simple lines of code.
+- A charting capabilities
 - A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
 - Python 3.6 / 3.7 / 3.8
@@ -41,11 +41,6 @@ Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials ar
 The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
 can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
 
-
-Dependencies
-------------
-* `Python 3 <https://www.python.org/downloads/>`_
-* `PostgreSQL <https://www.postgresql.org/download//>`_
 
 
 Installation
@@ -75,17 +70,7 @@ Quick start
     This will create a new project folder `myproject`, based on a template containing everything you need to get started.
     You can always integrate ra framework to your existing project, please refer to the docs `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
 
-3. Create a postgres database, and assign its details to ``DATABASES`` setting
-
-    .. note::
-
-        Ra only support Postgresql.
-
-        As Django's `QuerySet.distinct(*fields) <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#django.db.models.query.QuerySet.distinct>`_ is supported only on Postgres.
-        ``distinct(*fields)`` is used by the reporting engine.
-
-
-4. Run the usual commands needed for any django project
+3. Run the usual commands needed for any django project
 
     .. code-block:: console
 
@@ -94,7 +79,7 @@ Quick start
         $ ./manage.py runserver
 
 
-5. Voila!! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
+4. Voila!! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
 .. image:: https://rasystems.io/static/images/raframework/dashboard.png
     :target: https://rasystems.io/static/images/raframework/dashboard.png
