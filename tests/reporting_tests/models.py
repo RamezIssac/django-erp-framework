@@ -1,7 +1,7 @@
 from django.db import models
 from django.urls import reverse_lazy
 
-from ra.base.models import BaseInfo, BasePersonInfo, BaseMovementInfo, QuanValueMovementItem, BaseMovementItemInfo
+from ra.base.models import BaseInfo, BaseMovementInfo, QuanValueMovementItem, BaseMovementItemInfo
 from ra.base.registry import register_doc_type
 from django.utils.translation import ugettext_lazy as _
 
@@ -12,7 +12,7 @@ class Product(BaseInfo):
         verbose_name_plural = _('Products')
 
 
-class Client(BasePersonInfo):
+class Client(BaseInfo):
     criteria = models.CharField(max_length=1, null=True)
 
     class Meta:

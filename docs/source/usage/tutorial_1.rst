@@ -19,7 +19,7 @@ To track product sales to clients, we would need 3 models. Client, Product and A
 .. code-block:: python
 
     from django.db import models
-    from ra.base.models import BaseInfo, BasePersonInfo, BaseMovementInfo, QuanValueMovementItem
+    from ra.base.models import BaseInfo, BaseMovementInfo, QuanValueMovementItem
     from ra.base.registry import register_doc_type
     from django.utils.translation import ugettext_lazy as _
 
@@ -30,7 +30,7 @@ To track product sales to clients, we would need 3 models. Client, Product and A
             verbose_name_plural = _('Products')
 
 
-    class Client(BasePersonInfo):
+    class Client(BaseInfo):
         class Meta:
             verbose_name = _('Client')
             verbose_name_plural = _('Clients')

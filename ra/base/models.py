@@ -77,6 +77,7 @@ class RAModel(DiffingMixin, models.Model):
     class Meta:
         abstract = True
 
+
 class RaModelMixin(object):
     """
     This is a sample interface for integrating with teh framework
@@ -92,15 +93,16 @@ class BaseInfo(RAModel):
                             unique=True, db_index=True, blank=True)
     title = models.CharField(_('name'), max_length=255, unique=True, db_index=True)
     notes = models.TextField(_('notes'), null=True, blank=True)
-    fb = models.DecimalField(_('beginning balance'), help_text=_('Opening Balance or initial balance '), max_digits=19,
-                             decimal_places=2, default=0)
+
+    # fb = models.DecimalField(_('beginning balance'), help_text=_('Opening Balance or initial balance '), max_digits=19,
+    #                          decimal_places=2, default=0)
 
     class Meta:
         abstract = True
 
     def __init__(self, *args, **kwargs):
         super(BaseInfo, self).__init__(*args, **kwargs)
-        self.reporting_model = None
+        # self.reporting_model = None
         if not getattr(self, 'pk_name', False):
             self.pk_name = None
 
@@ -150,10 +152,20 @@ class BaseInfo(RAModel):
     def name(self):
         return self.title
 
+    def get_next_slug(self):
+        """
+        Get the next slug
+        If it's a new instance and the slug is not provided, we try and attempt a serial over the already added slugs
+        in relation to the model
+        :return:
+        """
+        from .helpers import get_next_serial
+        return get_next_serial(self.__class__)  # repr(time.time()).replace('.', '')
+
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.pk is None:
             if not self.slug:
-                self.slug = repr(time.time()).replace('.', '')
+                self.slug = self.get_next_slug()
             if not self.owner_id:
                 try:
                     self.owner = self.lastmod_user
@@ -166,7 +178,7 @@ class BaseInfo(RAModel):
         super(BaseInfo, self).save(force_insert, force_update, using, update_fields)
 
     @classmethod
-    def get_doc_type_plus_list(cls):
+    def _get_doc_type_plus_list(cls):
         '''
 
         Returns List of Identified doctype that a plus effect on the entity
@@ -174,7 +186,7 @@ class BaseInfo(RAModel):
         return ['fb'] + registry.get_model_doc_type_map(cls.get_class_name()).get('plus_list', [])
 
     @classmethod
-    def get_doc_type_minus_list(cls):
+    def _get_doc_type_minus_list(cls):
         """ Returns List of Identified doctype that a minus effect on the entity"""
 
         return registry.get_model_doc_type_map(cls.get_class_name()).get('minus_list', [])
@@ -185,25 +197,26 @@ class BaseInfo(RAModel):
 
         return []
 
-    @classmethod
-    def get_doc_type_full_map(cls):
-        from .registry import model_doc_type_full_map
+    #
+    # @classmethod
+    # def get_doc_type_full_map(cls):
+    #     from .registry import model_doc_type_full_map
+    #
+    #     doc_types_unfiltered = model_doc_type_full_map.get(cls.get_class_name(), [])
+    #     doc_typed_filtered = []
+    #     for doc_type in doc_types_unfiltered:
+    #         if not doc_type.get('hidden', False):
+    #             doc_typed_filtered.append(doc_type)
+    #
+    #     return doc_typed_filtered
 
-        doc_types_unfiltered = model_doc_type_full_map.get(cls.get_class_name(), [])
-        doc_typed_filtered = []
-        for doc_type in doc_types_unfiltered:
-            if not doc_type.get('hidden', False):
-                doc_typed_filtered.append(doc_type)
-
-        return doc_typed_filtered
-
-    @classmethod
-    def get_doc_types(cls):
-        """
-        Return a list of the doc_types supported by the current model , Must implemented when needed by children
-        @return:
-        """
-        return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list() + cls.get_doc_type_neuter_list()
+    # @classmethod
+    # def get_doc_types(cls):
+    #     """
+    #     Return a list of the doc_types supported by the current model , Must implemented when needed by children
+    #     @return:
+    #     """
+    #     return cls._get_doc_type_plus_list() + cls._get_doc_type_minus_list() + cls.get_doc_type_neuter_list()
 
     def get_pk_name(self):
         """
@@ -243,17 +256,19 @@ class BaseInfo(RAModel):
             app_settings.RA_ADMIN_SITE_NAME, cls._meta.app_label, cls.get_class_name().lower()))
 
 
-class BasePersonInfo(BaseInfo):
-    address = models.CharField(_('address'), max_length=260, null=True, blank=True)
-    telephone = models.CharField(_('telephone'), max_length=130, null=True, blank=True)
-    email = models.EmailField(_('email'), null=True, blank=True)
+# class BasePersonInfo(BaseInfo):
+#     address = models.CharField(_('address'), max_length=260, null=True, blank=True)
+#     telephone = models.CharField(_('telephone'), max_length=130, null=True, blank=True)
+#     email = models.EmailField(_('email'), null=True, blank=True)
+#
+#     class Meta:
+#         abstract = True
+#         # swappable = swapper.swappable_setting('ra', 'BasePersonInfo')
 
-    class Meta:
-        abstract = True
-        # swappable = swapper.swappable_setting('ra', 'BasePersonInfo')
 
+class BaseMovementInfo(BaseInfo):
+    title = None
 
-class BaseMovementInfo(DiffingMixin, models.Model):
     slug = models.SlugField(_('refer code'), max_length=50, db_index=True, validators=[], blank=True)
     doc_date = models.DateTimeField(_('date'), db_index=True)
     doc_type = models.CharField(max_length=30, db_index=True)
@@ -276,33 +291,11 @@ class BaseMovementInfo(DiffingMixin, models.Model):
         raise NotImplementedError(
             f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
 
-    @classmethod
-    def get_class_name(cls):
-        """
-        return the class name, useable when a ra model is mimicing
-        another model behaviour.
-        This method is used is get_doc_type_* functions,
-        This method is made to avoid to repeat registered doc_type to make adjustments
-        """
-        return cls.__name__
-
-    def __init__(self, *args, **kwargs):
-        super(BaseMovementInfo, self).__init__(*args, **kwargs)
-        self.send_report_attention_event = True
-        self.children = None
-        self.reporting_models = []
-
     def __str__(self):
         return '%s-%s' % (self._meta.verbose_name, self.slug)
 
     def __repr__(self):
         return '<%s pk:%s slug:%s doc_type:%s>' % (self.__class__.__name__, self.pk, self.slug, self.doc_type)
-
-    def get_pk_name(self):
-        if hasattr(self, 'pk_name'):
-            return self.pk_name
-        else:
-            return '%s_id' % self.__class__.__name__.lower()
 
     class Meta:
         abstract = True
@@ -325,8 +318,7 @@ class BaseMovementInfo(DiffingMixin, models.Model):
         if not self.slug:
             self.slug = get_next_serial(self.__class__)
 
-        self.slug = slugify(self.slug)
-        self.method = None
+        # self.slug = slugify(self.slug)
         if not self.pk:
             if not self.lastmod_user_id:
                 self.lastmod_user_id = request.user.pk
@@ -417,13 +409,13 @@ class BaseReportModel(DiffingMixin, models.Model):
 
         return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
 
-    @classmethod
-    def get_doc_types(cls):
-        """
-        Return a list of the doc_types supported by the current model , Must implemented when needed by children
-        @return:
-        """
-        return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
+    # @classmethod
+    # def get_doc_types(cls):
+    #     """
+    #     Return a list of the doc_types supported by the current model , Must implemented when needed by children
+    #     @return:
+    #     """
+    #     return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
 
     class Meta:
         abstract = True
@@ -448,13 +440,13 @@ class QuanValueReport(BaseReportModel):
 
         return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
 
-    @classmethod
-    def get_doc_types(cls):
-        """
-        Return a list of the doc_types supported by the current model , Must implemented when needed by children
-        @return:
-        """
-        return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
+    # @classmethod
+    # def get_doc_types(cls):
+    #     """
+    #     Return a list of the doc_types supported by the current model , Must implemented when needed by children
+    #     @return:
+    #     """
+    #     return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
 
     class Meta:
         abstract = True
