@@ -358,7 +358,7 @@ class TransactionItemModel(TransactionModel):
         abstract = True
 
 
-class QuantitativeTransactionItem(TransactionItemModel):
+class QuantitativeTransactionItemModel(TransactionItemModel):
     quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
     price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
     discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
@@ -367,7 +367,7 @@ class QuantitativeTransactionItem(TransactionItemModel):
         self.value = self.quantity * self.price
         if self.discount:
             self.value -= self.value * self.discount / 100
-        super(QuantitativeTransactionItem, self).save(force_insert, force_update, using, update_fields)
+        super(QuantitativeTransactionItemModel, self).save(force_insert, force_update, using, update_fields)
 
     class Meta:
         abstract = True

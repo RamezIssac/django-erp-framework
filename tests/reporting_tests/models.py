@@ -1,7 +1,7 @@
 from django.db import models
 from django.urls import reverse_lazy
 
-from ra.base.models import TransactionModel, EntityModel, QuantitativeTransactionItem, TransactionItemModel
+from ra.base.models import TransactionModel, EntityModel, QuantitativeTransactionItemModel, TransactionItemModel
 from ra.base.registry import register_doc_type
 from django.utils.translation import ugettext_lazy as _
 
@@ -20,7 +20,7 @@ class Client(EntityModel):
         verbose_name_plural = _('Clients')
 
 
-class SimpleSales(QuantitativeTransactionItem):
+class SimpleSales(QuantitativeTransactionItemModel):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
@@ -47,7 +47,7 @@ class Invoice(TransactionModel):
         return 'sales'
 
 
-class InvoiceLine(QuantitativeTransactionItem):
+class InvoiceLine(QuantitativeTransactionItemModel):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
