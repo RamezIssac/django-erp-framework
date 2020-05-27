@@ -115,27 +115,27 @@ class ProductClientSales(ReportView):
         {
             'id': 'total_pie',
             'title': _('sales by client'),
-            'settings': {
-                'chart_type': 'pie',
-                'title': _('sales for {product}'),
+            # 'settings': {
+            'type': 'pie',
+            # 'title': _('sales for {product}'),
 
-                'sub_title': _('{date_verbose}'),
-                'y_sources': ['__balance_quan__'],
-                'series_names': [_('Sales Qty')],
-            }
+            'sub_title': _('{date_verbose}'),
+            'data_source': ['__balance_quan__'],
+            'series_names': [_('Sales Qty')],
+            # }
         },
-        {
-            'id': 'total_bar',
-            'title': _('sales by client (Bar)'),
-            'settings': {
-                'chart_type': 'column',
-                'y_sources': ['__balance_quan__'],
-
-                'title': _('sales for {product}'),
-                'sub_title': _('{date_verbose}'),
-                'series_names': [_('sales Qty')],
-            }
-        },
+        # {
+        #     'id': 'total_bar',
+        #     'title': _('sales by client (Bar)'),
+        #     'settings': {
+        #         'chart_type': 'column',
+        #         'y_sources': ['__balance_quan__'],
+        #
+        #         'title': _('sales for {product}'),
+        #         'sub_title': _('{date_verbose}'),
+        #         'series_names': [_('sales Qty')],
+        #     }
+        # },
 
     ]
 

@@ -20,19 +20,19 @@ def regroup_data(obj_list, header_report, key):
     return values
 
 
-def is_time_series(name):
-    is_time_field = re_time_series.findall(name)
-    return is_time_field or False
+# def is_time_series(name):
+#     is_time_field = re_time_series.findall(name)
+#     return is_time_field or False
 
-
-def is_partial_text_in_list(text, lst):
-    check = False
-    for item in lst:
-        if text in item:
-            check = True
-            break
-    return check
-
+#
+# def is_partial_text_in_list(text, lst):
+#     check = False
+#     for item in lst:
+#         if text in item:
+#             check = True
+#             break
+#     return check
+#
 
 class HTMLPrintingClass(object):
     def __init__(self, request, form_settings, response, header_report=None, header_group=None, report_view=None,
@@ -83,8 +83,9 @@ class ExportToCSV(object):
         return response
 
     def get_columns(self, extra_context=None):
-        cols = self.response['columns']
-        col_names = self.response['column_names']
+
+        cols, col_names = list(zip(*[(x['name'], x['verbose_name']) for x in self.response['columns']]))
+        # col_names = self.response['column_names']
         result_cols = []
         result_col_names = []
         for i, c in enumerate(cols):

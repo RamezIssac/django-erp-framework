@@ -122,7 +122,7 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
-    @skip('revise print option')
+    @skip('revise print option with mandatory filters')
     def test_print_header_report(self):
         # todo, printing here is not consistent
         self.client.login(username='super', password='secret')
@@ -206,11 +206,11 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
 
-    @skip('export to csv ')
+    # @skip('export to csv ')
     def test_export_to_csv(self):
         self.client.login(username='super', password='secret')
 
-        response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')),
+        response = self.client.get(reverse('ra_admin:report', args=('product', 'total_sales')),
                                    data={
                                        'csv': True,
                                        'matrix_show_other': True}, )
@@ -253,7 +253,7 @@ class ReportTest2(BaseTestData, TestCase):
     as ajax and redirect is not picked up
     """
 
-    #todo
+    # todo
     @skip('Revise why failing')
     def test_redirect_report_list_when_access_a_report(self):
         """
