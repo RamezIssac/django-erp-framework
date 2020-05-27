@@ -1,18 +1,18 @@
 from django.db import models
 from django.urls import reverse_lazy
 
-from ra.base.models import BaseInfo, BaseMovementInfo, QuanValueMovementItem, BaseMovementItemInfo
+from ra.base.models import TransactionModel, EntityModel, QuantitativeTransactionItem, TransactionItemModel
 from ra.base.registry import register_doc_type
 from django.utils.translation import ugettext_lazy as _
 
 
-class Product(BaseInfo):
+class Product(EntityModel):
     class Meta:
         verbose_name = _('Product')
         verbose_name_plural = _('Products')
 
 
-class Client(BaseInfo):
+class Client(EntityModel):
     criteria = models.CharField(max_length=1, null=True)
 
     class Meta:
@@ -20,7 +20,7 @@ class Client(BaseInfo):
         verbose_name_plural = _('Clients')
 
 
-class SimpleSales(QuanValueMovementItem):
+class SimpleSales(QuantitativeTransactionItem):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
@@ -39,7 +39,7 @@ sales = {'name': 'sales', 'plus_list': ['Client'], 'minus_list': ['Product'],
 register_doc_type(sales)
 
 
-class Invoice(BaseMovementInfo):
+class Invoice(TransactionModel):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
 
     @classmethod
@@ -47,7 +47,7 @@ class Invoice(BaseMovementInfo):
         return 'sales'
 
 
-class InvoiceLine(QuanValueMovementItem):
+class InvoiceLine(QuantitativeTransactionItem):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -58,7 +58,7 @@ class InvoiceLine(QuanValueMovementItem):
         return 'sales'
 
 
-class Journal(BaseMovementInfo):
+class Journal(TransactionModel):
     data = models.CharField(max_length=100, null=True, blank=True)
 
     @classmethod
@@ -66,7 +66,7 @@ class Journal(BaseMovementInfo):
         return 'journal-sales'
 
 
-class JournalItem(BaseMovementItemInfo):
+class JournalItem(TransactionItemModel):
     journal = models.ForeignKey(Journal, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     data = models.CharField(max_length=100, null=True, blank=True)

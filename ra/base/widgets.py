@@ -14,9 +14,6 @@ class RaRelatedFieldWidgetWrapper(RelatedFieldWidgetWrapper):
     pass
 
 
-
-
-
 class RaBootstrapDateTime(SplitDateTimeWidget):
     def render(self, name, value, attrs=None, renderer=None):
         if self.is_localized:

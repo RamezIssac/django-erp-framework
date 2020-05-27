@@ -1,12 +1,12 @@
-from ra.base.models import BaseInfo
+from ra.base.models import EntityModel
 from ra.base.registry import register_doc_type
 
 
-class SampleModelA(BaseInfo):
+class SampleModelA(EntityModel):
     pass
 
 
-class SampleModelB(BaseInfo):
+class SampleModelB(EntityModel):
     pass
 
 
@@ -15,5 +15,5 @@ doc_type_example = {'name': 'transaction', 'plus_list': ['SampleModelA'], 'minus
 register_doc_type(doc_type_example)
 
 
-class ModelWithCustomPK(BaseInfo):
+class ModelWithCustomPK(EntityModel):
     pk_name = 'arbitrary_name'

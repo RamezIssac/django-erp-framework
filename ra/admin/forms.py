@@ -1,9 +1,7 @@
 from __future__ import unicode_literals
-from django.contrib.contenttypes.models import ContentType
-from django.utils.translation import ugettext_lazy as _
+
 from django.contrib.auth.forms import UserChangeForm
-from django import forms
-from ra.base.helpers import get_ra_relevant_content_types
+from django.utils.translation import ugettext_lazy as _
 
 
 class RaUserChangeForm(UserChangeForm):

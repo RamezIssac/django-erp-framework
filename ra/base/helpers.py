@@ -43,9 +43,9 @@ def get_from_list(by_getattr, lst, attr_name, val):
 
 class RaPermissionWidgetExclude(object):
     def __call__(self, model):
-        from ra.base.models import BaseMovementItemInfo, BaseReportModel
+        from ra.base.models import TransactionItemModel, BaseReportModel
 
-        if BaseMovementItemInfo in model.__mro__ or BaseReportModel in model.__mro__ or model._meta.managed is False:
+        if TransactionItemModel in model.__mro__ or BaseReportModel in model.__mro__ or model._meta.managed is False:
             return True
         if model._meta.auto_created:
             return True
@@ -142,32 +142,32 @@ def dictsort(value, arg, desc=False):
     """
     return sorted(value, key=lambda x: x[arg], reverse=desc)
 
-
-def get_ra_relevant_content_types():
-    """
-    This method scans the content type and show only what relevant based on the the exclude function supplied to
-    tabular_permissions
-    #todo make a separate function that might fall back to tabular_permissions
-    :return:
-    """
-    from django.contrib.contenttypes.models import ContentType
-    from ra.base.models import BaseReportModel
-    from tabular_permissions.app_settings import EXCLUDE_FUNCTION
-
-    relevant_ct = []
-    cs = ContentType.objects.all()
-    exclude_function = EXCLUDE_FUNCTION
-    for c in cs:
-        model = c.model_class()
-        if not model:
-            continue
-        if BaseReportModel in model.__mro__:
-            continue
-        if model:
-            if not exclude_function(model):
-                relevant_ct.append((c.pk, force_text(model._meta.verbose_name_plural)))
-
-    return relevant_ct
+#
+# def get_ra_relevant_content_types():
+#     """
+#     This method scans the content type and show only what relevant based on the the exclude function supplied to
+#     tabular_permissions
+#     #todo make a separate function that might fall back to tabular_permissions
+#     :return:
+#     """
+#     from django.contrib.contenttypes.models import ContentType
+#     from ra.base.models import BaseReportModel
+#     from tabular_permissions.app_settings import EXCLUDE_FUNCTION
+#
+#     relevant_ct = []
+#     cs = ContentType.objects.all()
+#     exclude_function = EXCLUDE_FUNCTION
+#     for c in cs:
+#         model = c.model_class()
+#         if not model:
+#             continue
+#         if BaseReportModel in model.__mro__:
+#             continue
+#         if model:
+#             if not exclude_function(model):
+#                 relevant_ct.append((c.pk, force_text(model._meta.verbose_name_plural)))
+#
+#     return relevant_ct
 
 
 def get_next_serial(model, slug_field='slug'):

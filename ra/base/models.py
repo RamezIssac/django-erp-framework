@@ -1,21 +1,13 @@
 import datetime
 import logging
 
-import pytz
-import time
-
 from crequest.middleware import CrequestMiddleware
-from django.conf import settings
-
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ImproperlyConfigured
 from django.db import models
-from django.template.defaultfilters import floatformat
 from django.urls import reverse, NoReverseMatch
-from django.utils.encoding import force_text
-from django.utils.text import slugify
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
+
 from . import app_settings, registry
 
 logger = logging.getLogger(__name__)
@@ -84,7 +76,7 @@ class RaModelMixin(object):
     """
 
 
-class BaseInfo(RAModel):
+class EntityModel(RAModel):
     """
     The Main base for Ra `static` models
     Example: Client , Expense etc..
@@ -101,7 +93,7 @@ class BaseInfo(RAModel):
         abstract = True
 
     def __init__(self, *args, **kwargs):
-        super(BaseInfo, self).__init__(*args, **kwargs)
+        super(EntityModel, self).__init__(*args, **kwargs)
         # self.reporting_model = None
         if not getattr(self, 'pk_name', False):
             self.pk_name = None
@@ -175,7 +167,7 @@ class BaseInfo(RAModel):
 
         self.lastmod = now()
 
-        super(BaseInfo, self).save(force_insert, force_update, using, update_fields)
+        super(EntityModel, self).save(force_insert, force_update, using, update_fields)
 
     @classmethod
     def _get_doc_type_plus_list(cls):
@@ -266,7 +258,7 @@ class BaseInfo(RAModel):
 #         # swappable = swapper.swappable_setting('ra', 'BasePersonInfo')
 
 
-class BaseMovementInfo(BaseInfo):
+class TransactionModel(EntityModel):
     title = None
 
     slug = models.SlugField(_('refer code'), max_length=50, db_index=True, validators=[], blank=True)
@@ -329,7 +321,7 @@ class BaseMovementInfo(BaseInfo):
         #     if self.doc_date.tzinfo is None:
         #         self.doc_date = pytz.utc.localize(self.doc_date)
 
-        super(BaseMovementInfo, self).save(force_insert, force_update, using, update_fields)
+        super(EntityModel, self).save(force_insert, force_update, using, update_fields)
 
     #
     # @classmethod
@@ -357,7 +349,7 @@ class BaseMovementInfo(BaseInfo):
         return self.doc_date.strftime('%Y/%m/%d %H:%M')
 
 
-class BaseMovementItemInfo(BaseMovementInfo):
+class TransactionItemModel(TransactionModel):
     """
     Abstract model to identify a movement with a value
     """
@@ -366,7 +358,7 @@ class BaseMovementItemInfo(BaseMovementInfo):
         abstract = True
 
 
-class QuanValueMovementItem(BaseMovementItemInfo):
+class QuantitativeTransactionItem(TransactionItemModel):
     quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
     price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
     discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
@@ -375,7 +367,7 @@ class QuanValueMovementItem(BaseMovementItemInfo):
         self.value = self.quantity * self.price
         if self.discount:
             self.value -= self.value * self.discount / 100
-        super(QuanValueMovementItem, self).save(force_insert, force_update, using, update_fields)
+        super(QuantitativeTransactionItem, self).save(force_insert, force_update, using, update_fields)
 
     class Meta:
         abstract = True
