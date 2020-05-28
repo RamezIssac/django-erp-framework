@@ -24,7 +24,7 @@ install:
 
 script:
   - cd tests/
-  - coverage run --include=../* runtests.py
+  - coverage run runtests.py
 
 after_success:
   - codecov
