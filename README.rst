@@ -1,8 +1,8 @@
-.. image:: https://img.shields.io/pypi/v/django-ra.svg
-    :target: https://pypi.org/project/django-ra
+.. image:: https://img.shields.io/pypi/v/django-ra-erp.svg
+    :target: https://pypi.org/project/django-ra-erp
 
-.. image:: https://img.shields.io/pypi/pyversions/django-ra.svg
-    :target: https://pypi.org/project/django-ra
+.. image:: https://img.shields.io/pypi/pyversions/django-ra-erp.svg
+    :target: https://pypi.org/project/django-ra-erp
 
 .. image:: https://img.shields.io/readthedocs/ra-framework
     :target: https://ra-framework.readthedocs.io/
@@ -14,9 +14,6 @@
     :target: https://codecov.io/gh/ra-systems/RA
 
 
-**Announcement April 2020**
-
-The reporting engine is now in a separate repo `django-slick-reporting <https://github.com/ra-systems/django-slick-reporting>`_
 
 
 
@@ -37,11 +34,11 @@ can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
 History
 -------
 
-This an open source of our Full ERP system. The full ERP system cen be found at `Online Here <https://erp-demo.rasystems.io/>`_
+This an open source of our Full ERP system. The full ERP system cen be found at `Online Here <https://erp-demo.rasystems.io/>`_ and Credentials are admin/stpasswd
 
-Credentials are admin/stpasswd
+Release Date is set to July the first 2020.
 
-Release Date is scheduled for July the first 2020.
+The Django Ra ERP reporting engine is released in a separate package `django-slick-reporting <https://github.com/ra-systems/django-slick-reporting>`_
 
 
 Features
