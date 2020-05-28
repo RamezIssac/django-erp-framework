@@ -1,7 +1,7 @@
 .. _ra_admin:
 
-Ra Site and ModelAdmin
-######################
+The Dashboard
+#############
 
 
 Ra Site
@@ -18,9 +18,9 @@ A subclass of admin.ModelAdmin with various different options
 2. `View` page
 
 
-``RaAdmin`` offer two important hooks to manage little bit complicated flow
+``EntityAdmin`` offer two important hooks to manage little bit complicated flow
 
-1. it offer :fun:py:`RaAdmin.pre_save(self, form, formsets, change)`
+1. it offer `EntityAdmin.pre_save(self, form, formsets, change)`
    It offers you a hook before saving the whole page to do any management you want. Like saving the total of the invoicelines
    in the Invoice.value field.
 

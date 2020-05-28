@@ -10,7 +10,7 @@ Base Classes
 
 .. _baseinfo:
 
-BaseInfo
+EntityModel
 --------
 
 BasePersonInfo
@@ -24,6 +24,6 @@ BaseMovementItemInfo
 --------------------
 
 
-QuanValueMovementItem
+QuantitativeTransactionItemModel
 ----------------------
 

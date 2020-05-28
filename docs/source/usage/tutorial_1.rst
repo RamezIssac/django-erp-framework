@@ -19,24 +19,24 @@ To track product sales to clients, we would need 3 models. Client, Product and A
 .. code-block:: python
 
     from django.db import models
-    from ra.base.models import BaseInfo, BaseMovementInfo, QuanValueMovementItem
+    from ra.base.models import EntityModel, TransactionModel, QuantitativeTransactionItemModel
     from ra.base.registry import register_doc_type
     from django.utils.translation import ugettext_lazy as _
 
 
-    class Product(BaseInfo):
+    class Product(EntityModel):
         class Meta:
             verbose_name = _('Product')
             verbose_name_plural = _('Products')
 
 
-    class Client(BaseInfo):
+    class Client(EntityModel):
         class Meta:
             verbose_name = _('Client')
             verbose_name_plural = _('Clients')
 
 
-    class SimpleSales(QuanValueMovementItem):
+    class SimpleSales(QuantitativeTransactionItemModel):
         client = models.ForeignKey(Client, on_delete=models.CASCADE)
         product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
@@ -56,14 +56,13 @@ To track product sales to clients, we would need 3 models. Client, Product and A
 Two things are worth highlighting here
 
 1. The Base Classes from which we subclassed the Client, Product and SimpleSales models.
-   Ra comes with a set a `Base Classes` that orchestrate the system integration, here we used BaseInfo, BasePersonInfo, and QuanValueMovementItem.
+   Ra comes with a set a `Base Classes` that orchestrate the system integration, here we used EntityModel, and QuantitativeTransactionItemModel.
    You do not need to worry about them too much now, but for you reference you can read more about :ref:`base_classes`.
 
    Here is the short version.
 
-   | **BaseInfo**: is the Base class from which all other base classes are derived.
-   | **BasePersonInfo** is a subclass of BaseInfo, plus some usual data that would be needed when recording a person data (namely address, telephone, email)
-   | **QuanValueMovementItem**: is the base class of a transaction and provide useful fields usually needed for any transaction, like `refer_code`, `doc_date` , `quantity` , `price`, `discount` and `value`
+   | **EntityModel**: is the Base class from which all other base classes are derived.
+   | **QuantitativeTransactionItemModel**: is the base class of a transaction and provide useful fields usually needed for any transaction, like `refer_code`, `doc_date` , `quantity` , `price`, `discount` and `value`
 
 
 2. The ``doc_type``
@@ -87,23 +86,23 @@ The Admin
 
 Ra makes use of the django admin to leverage the process of authentication, authorization and CRUD operation.
 
-This a great because this gives you an easier learning curve. If you know Django admin you'd easily find your way around RaAdmin
+This a great because this gives you an easier learning curve. If you know Django admin you'd easily find your way around EntityAdmin
 With this information in mind, let's add this piece of code into `admin.py`
 
 .. code-block:: python
 
-    from ra.admin.admin import ra_admin_site, RaAdmin, RaMovementAdmin
+    from ra.admin.admin import ra_admin_site, EntityAdmin, TransactionAdmin
     from .models import Client, Product, SimpleSales
 
-    class ClientAdmin(RaAdmin):
-        fields = ('slug', 'title', 'notes', 'address', 'email', 'telephone')
-
-
-    class ProductAdmin(RaAdmin):
+    class ClientAdmin(EntityAdmin):
         pass
 
 
-    class SalesOrderAdmin(RaMovementAdmin):
+    class ProductAdmin(EntityAdmin):
+        pass
+
+
+    class SalesOrderAdmin(TransactionAdmin):
         fields = ['slug', 'doc_date', 'client', ('product', 'price', 'quantity', 'value')]
 
 
@@ -112,14 +111,13 @@ With this information in mind, let's add this piece of code into `admin.py`
     ra_admin_site.register(SimpleSales, SalesOrderAdmin)
 
 
-This is pretty straight forward. Note that, like with models, here we inherit our admin models from ``RaAdmin`` and ``RaMovementAdmin``.
+This is pretty straight forward. Note that, like with models, here we inherit our admin models from ``EntityAdmin`` and ``TransactionAdmin``.
 Also we register our model with their AdminModel with ``ra_admin_site`` which is a totally independent admin site than the "normal" django one.
 
 .. note::
 
-    Keep in mind that RaAdmin and RaMovementAdmin are just subclasses of admin.ModelAdmin. So you can customize it as you'd do normally with any ModelAdmin.
-
-    For example: You can add list_filter, make the foreign key widget to be Select2, adjust which fields and teh fieldsets on the change_form etc.
+    EntityAdmin and TransactionAdmin are just subclasses of admin.ModelAdmin. So you can customize it as you'd do normally with any ModelAdmin.
+    You can add list_filter, make the foreign key widget to be Select2, adjust which fields and teh fieldsets on the change_form etc.
 
 Read more about :ref:`ra_admin`
 
@@ -186,7 +184,7 @@ Now we attach this template to our admin model class, and make the value field r
 
     from django import forms
 
-    class SalesOrderAdmin(RaMovementAdmin):
+    class SalesOrderAdmin(TransactionAdmin):
         ...
 
         add_form_template = change_form_template = 'sales/admin/salesorder_changeform.html'

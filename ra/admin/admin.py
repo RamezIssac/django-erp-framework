@@ -43,13 +43,11 @@ from ra.utils.views import get_typed_reports_for_templates, get_typed_reports_ma
 from .base import RaAdminSiteBase
 from ..base import app_settings
 from ..base.widgets import RaRelatedFieldWidgetWrapper
+from reversion.admin import VersionAdmin
 
 csrf_protect_m = method_decorator(csrf_protect)
 
 default_fields = (('title', 'slug'), 'notes')
-fields_with_fb = default_fields + ('FB',)
-person_fields = default_fields + (('telephone', 'email'), 'address')
-person_with_fb = fields_with_fb + (('telephone', 'email'), 'address')
 
 default_exclude = ('owner', 'creation_date', 'lastmod', 'lastmod_user')
 
@@ -128,8 +126,6 @@ class RaAdminSite(RaAdminSiteBase):
 site_class = import_string(app_settings.RA_ADMIN_SITE_CLASS)
 ra_admin_site = site_class(name=app_settings.RA_ADMIN_SITE_NAME)
 
-from reversion.admin import VersionAdmin
-
 
 class RaThemeMixin:
     change_form_template = f'{app_settings.RA_THEME}/change_form.html'
@@ -145,7 +141,7 @@ class RaThemeMixin:
     view_template = f'{app_settings.RA_THEME}/view.html'
 
 
-class RaAdmin(RaThemeMixin, VersionAdmin):
+class EntityAdmin(RaThemeMixin, VersionAdmin):
     # ModelAdmin Attributes
     view_on_site = False
     list_per_page = 25
@@ -183,7 +179,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
 
     def reversion_register(self, model, **kwargs):
         kwargs['for_concrete_model'] = False
-        super(RaAdmin, self).reversion_register(model, **kwargs)
+        super(EntityAdmin, self).reversion_register(model, **kwargs)
 
     def get_enhanced_obj_title(self, obj):
         request = CrequestMiddleware.get_request()
@@ -323,7 +319,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['description'] = self.description
-        return super(RaAdmin, self).changelist_view(request, extra_context)
+        return super(EntityAdmin, self).changelist_view(request, extra_context)
 
     def get_changelist(self, request, **kwargs):
         return RaChangeList
@@ -334,7 +330,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         if not change:
             obj.owner = request.user
             obj.creation_date = now()
-        super(RaAdmin, self).save_model(request, obj, form, change)
+        super(EntityAdmin, self).save_model(request, obj, form, change)
 
     def get_urls(self):
         # Override ModelAdmin
@@ -375,7 +371,8 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
 
         my_urls = [
             path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
-            url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug), name='%s_%s_get-by-slug' % info),
+            url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug),
+                name='%s_%s_get-by-slug' % info),
         ]
         return my_urls + reversion_urls + urlpatterns
 
@@ -414,7 +411,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         # if db_field.name == 'doc_date' and db_field.__class__ == DateTimeField:
         #     field = forms.SplitDateTimeField(widget=AdminSplitDateTimeNoBr, label=_('Date'))
         # else:
-        field = super(RaAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
+        field = super(EntityAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == 'slug' and self.enable_next_serial:
             field.initial = self.get_next_serial()
         elif db_field.name == 'doc_date':
@@ -583,14 +580,14 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         return self.render_change_form(request, context, add=add, change=not add, obj=obj, form_url=form_url)
 
     def get_actions(self, request):
-        actions = super(RaAdmin, self).get_actions(request)
+        actions = super(EntityAdmin, self).get_actions(request)
         if not (app_settings.RA_ENABLE_ADMIN_DELETE_ALL and request.user.is_superuser):
             if 'delete_selected' in actions:
                 del actions['delete_selected']
         return actions
 
     def get_list_display(self, request):
-        list_display = super(RaAdmin, self).get_list_display(request)
+        list_display = super(EntityAdmin, self).get_list_display(request)
 
         if self.has_view_permission(request):
             list_display = ('get_stats_icon',) + list_display
@@ -598,7 +595,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
         return list_display
 
 
-class RaMovementAdmin(RaAdmin):
+class TransactionAdmin(EntityAdmin):
     enable_view_view = False
     list_per_page = 50
     view_on_site = False
@@ -619,11 +616,11 @@ class RaMovementAdmin(RaAdmin):
     search_fields = ['doc_date', 'slug']
 
     def __init__(self, *args, **kwargs):
-        super(RaMovementAdmin, self).__init__(*args, **kwargs)
+        super(TransactionAdmin, self).__init__(*args, **kwargs)
         self.copy_to_formset = self.copy_to_formset or []
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
-        form_field = super(RaMovementAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
+        form_field = super(TransactionAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, form_field, request, **kwargs)
         return form_field
 
@@ -643,7 +640,7 @@ class RaMovementAdmin(RaAdmin):
         formset.save()
 
 
-class RaMovementInlineAdmin(admin.TabularInline):
+class TransactionItemAdmin(admin.TabularInline):
     template = f'{app_settings.RA_THEME}/edit_inline/tabular.html'
     extra = 2
     exclude = ('slug', 'doc_date', 'doc_type', 'lastmod', 'lastmod_user', 'owner', 'creation_date')
@@ -752,7 +749,7 @@ class RaMovementInlineAdmin(admin.TabularInline):
                     formfield.widget = RaRelatedFieldWidgetWrapper(
                         formfield.widget, db_field.remote_field, self.admin_site, **wrapper_kwargs
                     )
-        form_field = super(RaMovementInlineAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
+        form_field = super(TransactionItemAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, form_field, request, **kwargs)
         return form_field
 
@@ -920,7 +917,7 @@ class PrepopulatedAdmin(object):
         return formsets, inline_instances
 
 
-class RaPrePopulatedAdmin(PrepopulatedAdmin, RaAdmin):
+class RaPrePopulatedAdmin(PrepopulatedAdmin, EntityAdmin):
     pass
     # change_form_template = 'ra/admin/change_form_prepopulated.html'
     # add_form_template = 'ra/admin/change_form_prepopulated.html'

@@ -1,16 +1,16 @@
-from ra.admin.admin import RaAdmin, ra_admin_site, RaMovementAdmin, RaMovementInlineAdmin, RaPrePopulatedAdmin
+from ra.admin.admin import EntityAdmin, ra_admin_site, TransactionAdmin, TransactionItemAdmin, RaPrePopulatedAdmin
 from .models import Client, Product, SimpleSales, Invoice, InvoiceLine, JournalItem, Journal
 
 
-class ClientAdmin(RaAdmin):
+class ClientAdmin(EntityAdmin):
     view_template = 'client_view.html'
 
 
-class ProductAdmin(RaAdmin):
+class ProductAdmin(EntityAdmin):
     pass
 
 
-class SimpleSalesAdmin(RaMovementAdmin):
+class SimpleSalesAdmin(TransactionAdmin):
     pass
 
 
@@ -19,13 +19,13 @@ ra_admin_site.register(Product, ProductAdmin)
 ra_admin_site.register(SimpleSales, SimpleSalesAdmin)
 
 
-class InvoiceLineAdmin(RaMovementInlineAdmin):
+class InvoiceLineAdmin(TransactionItemAdmin):
     fields = ['product', 'quantity', 'discount', 'value']
     model = InvoiceLine
     autocomplete_fields = ['product']
 
 
-class InvoiceAdmin(RaMovementAdmin):
+class InvoiceAdmin(TransactionAdmin):
     fields = [('slug', 'doc_date'), 'client']
     autocomplete_fields = ['client']
     inlines = [InvoiceLineAdmin]
@@ -33,7 +33,7 @@ class InvoiceAdmin(RaMovementAdmin):
 
 ra_admin_site.register(Invoice, InvoiceAdmin)
 
-class BaseInfoInlineAdmin(RaMovementInlineAdmin):
+class BaseInfoInlineAdmin(TransactionItemAdmin):
     model = JournalItem
 
 #

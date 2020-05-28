@@ -7,7 +7,7 @@ In this section we will create time series report and crosstab report with chart
 First let's recap what we did in Part 2
 
 1. We created a `reports.py` in which we organised our ``ReportView`` classes and we made sure to import it in the `AppConfig.ready()`
-2. we explored ``ReportView`` class needed attributes like base_model, report model, form_settings
+2. we explored ``ReportView`` class needed attributes.
 3. we got introduced to the report fields like `__balance__` and `__balance_quan__` , and that they compute the needed values.
 4. we got introduced to the a 2 layer report, also a report with no group where it displays the records directly.
 5- We created charts using ``chart_settings``
@@ -113,7 +113,6 @@ Let's see an example
         base_model = Product
         report_model = SimpleSales
 
-        form_settings = {
         group_by ='product'
         columns = ['slug', 'title']
 

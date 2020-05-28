@@ -13,7 +13,7 @@ See :ref:`base_classes` for information on what are Ra Base Models and how they 
 ``RA_BASEINFO_MODEL``
 ---------------------
 
-Default: ``'ra.base.models.BaseInfo'``
+Default: ``'ra.base.models.EntityModel'``
 
 A dotted path to the Base Model from which all other model shall be inherited.
 
@@ -29,7 +29,7 @@ A dotted path to the Base Transaction Model from which all other transaction mod
 ``RA_QUANVALUEMOVEMENTITEM_MODEL``
 -----------------------------------
 
-Default: ``'ra.base.models.QuanValueMovementItem'``
+Default: ``'ra.base.models.QuantitativeTransactionItemModel'``
 
 A dotted path to the Base Quantity / Value Transaction Model from which all other transaction models shall be inherited.
 

@@ -1,5 +1,5 @@
-Welcome to RA's documentation
-==================================
+Welcome to Django Ra ERP framework documentation
+=================================================
 
 A light-weight effective framework to create business application equipped with a reporting engine and a responsive dashboard written in `Python <https://www.python.org/>`_ and built on the `Django web framework <https://www.djangoproject.com/>`_.
 
@@ -34,12 +34,15 @@ Features
    :caption: API:
 
    advanced_topics/settings
+   advanced_topics/admin
    advanced_topics/reporting
    advanced_topics/report_fields
    advanced_topics/charting
    advanced_topics/base_classes
    advanced_topics/customizing_print
    advanced_topics/javascript
+   advanced_topics/permissions
+   advanced_topics/themeing
    advanced_topics/roadmap
 
 

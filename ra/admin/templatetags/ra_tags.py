@@ -4,8 +4,9 @@ from django.utils.encoding import force_text
 from django.utils.functional import Promise
 from django.utils.safestring import mark_safe
 
-from ra.base.app_settings import RA_APP_ICONS, RA_ADMIN_SITE_NAME
+from ra.utils.permissions import has_report_permission_permission
 
+from ra.base.app_settings import RA_APP_ICONS, RA_ADMIN_SITE_NAME
 
 register = template.Library()
 
@@ -95,7 +96,7 @@ register.filter('jsonify', jsonify)
 #     from ra.activity.admin import translate_change_message
 #     return translate_change_message(message)
 
-from ra.utils.permissions import has_report_permission_permission
+
 @register.simple_tag(takes_context=True)
 def can_print_report(context, report):
     return has_report_permission_permission(context['request'], report.get_base_model_name(), report.get_report_slug())

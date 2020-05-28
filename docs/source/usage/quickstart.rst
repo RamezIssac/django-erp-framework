@@ -17,7 +17,7 @@ Create your first Ra project
 
 1. Create a virtual environment and install ra-framework from Pypi
 
-.. code-block:: console
+.. code-block::console
 
     $ mkvirtualenv ra-env (or use `virtualenv ra-env` if you don't have mkvirtualenv)
     $ pip install django-ra
@@ -41,6 +41,8 @@ You can always integrate ra framework to your existing project, please refer to 
 
 
 4. Voila !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
+
+5. As soon as you're done with the tutorial, you'll be seeing something like this
 
 .. image:: https://rasystems.io/static/images/raframework/dashboard.png
     :target: https://rasystems.io/static/images/raframework/dashboard.png

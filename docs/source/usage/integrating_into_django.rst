@@ -25,6 +25,7 @@ In your settings file, add the following apps to ``INSTALLED_APPS``:
     'crispy_forms',
     'reversion',
     'tabular_permissions',
+    'slick_reporting',
     'ra',
     'ra.admin',
     'ra.activity',
@@ -108,6 +109,6 @@ Superuser accounts receive automatic access to the Ra admin interface; use ``./m
 Start developing
 ----------------
 
-You're now ready to add a new app to your Django project (via ``./manage.py startapp`` and *remember to add it to ``INSTALLED_APPS``*.
+You're now ready to add a new app to your Django project via ``./manage.py startapp``.
 
 Cheers !

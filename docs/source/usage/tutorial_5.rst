@@ -20,7 +20,7 @@ in `models.py`
             return 'sales'
 
 
-    class InvoiceLine(QuanValueMovementItem):
+    class InvoiceLine(QuantitativeTransactionItemModel):
         invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
 
         product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -42,15 +42,15 @@ Then in `admin.py`
 .. code-block::  python
 
     from .models import InvoiceLine, Invoice
-    from ra.admin.admin import RaMovementInlineAdmin
+    from ra.admin.admin import TransactionItemAdmin
 
 
-    class InvoiceLineAdmin(ra_admin.RaMovementInlineAdmin):
+    class InvoiceLineAdmin(ra_admin.TransactionItemAdmin):
         fields = ['product', 'quantity', 'price', 'discount', 'value']
         model = InvoiceLine
 
 
-    class InvoiceAdmin(ra_admin.RaMovementAdmin):
+    class InvoiceAdmin(ra_admin.TransactionAdmin):
         fields = [('slug', 'doc_date'), 'client']
         inlines = [InvoiceLineAdmin]
         copy_to_formset = ['client']
@@ -62,7 +62,7 @@ Then in `admin.py`
 
 What we did:
 
-1. We Used ``RaMovementInlineAdmin`` which is a subclass of django's `TabularInline` + Ra needed logic and styles.
+1. We Used ``TransactionItemAdmin`` which is a subclass of django's `TabularInline` + Ra needed logic and styles.
 2. we used the attribute ``copy_to_formset``, which will copy the value of the field (client) from the main form to the formset.
 
 * to do: create front end calculation of line value and total value

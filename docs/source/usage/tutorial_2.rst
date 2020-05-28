@@ -4,7 +4,7 @@ Creating Reports (Part2)
 First Let's recap what we did so far.
 
 1. We created a `Product`, `Client` and `SimpleSales` models, created and registered a *doc_type*;
-2. We created ModelAdmin classes inheriting from `RaAdmin` and `RaMovement` for our classes;
+2. We created ModelAdmin classes inheriting from `EntityAdmin` and `RaMovement` for our classes;
 3. We created a custom template extending from `RA_THEME|add:'/changeform.html'`, and we used `smartParseFloat` to deal with numbers on front end.
 
 Now let's create some reports!!
@@ -105,15 +105,14 @@ How much each product was sold?
         columns = ['slug', 'title', '__balance__']
 
 Did you notice that both class definition are almost the same.
-Only differences are the `base_model` and in `form_settings.group_by`.
+Only differences are the `base_model` and in `group_by`.
 
 Basically, to create a report we need:
 
 1. Give it a title (obviously)
 2. Assign ``base_model`` and ``report_model``
-3. Depending on what data we want, we need to fill ``form_settings``
 
-For more information about available option in form_settings :ref:`reporting`
+For more information about availables checkout the Django Slick Reporting documentation `Here <https://django-slick-reporting.readthedocs.io/en/latest/>`_
 
 Now let's create a 3rd report.
 
@@ -138,7 +137,6 @@ Let's add this code to our `reports.py`
         # will not appear on the reports menu
         hidden = True
 
-        form_settings = {
         group_by = 'client'
         columns = ['slug', 'title']
 
