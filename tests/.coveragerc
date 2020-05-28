@@ -1,0 +1,23 @@
+[run]
+disable_warnings = no-data-collected
+
+
+source=
+    ra
+
+omit =
+    # omit anything in a .local directory anywhere
+    tests/
+    top_search/*
+
+include =
+    ../../ra/*
+
+[report]
+exclude_lines =
+        raise AssertionError
+        raise NotImplementedError
+        raise AttributeError
+        raise ImproperlyConfigured
+        raise AlreadyRegistered
+        raise NotRegistered

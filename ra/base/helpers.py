@@ -176,9 +176,11 @@ def get_next_serial(model, slug_field='slug'):
     :param model: the model to get the next serial for
     :return: a string
     """
-
+    import time
     qs = model.objects.aggregate(Max(slug_field))
     max_slug = qs.get(f'{slug_field}__max', 0) or 0
+    if type(max_slug) is str and not max_slug.isdigit():
+        return str(time.time()).split('.')[0]
     return int(max_slug) + 1
 
 

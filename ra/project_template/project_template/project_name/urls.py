@@ -17,8 +17,8 @@ Including another URLconf
 from django.urls import path
 from ra.admin.admin import ra_admin_site
 
-handler500 = 'ra.utils.views.server_error'
-handler404 = 'ra.utils.views.not_found_error'
+# handler500 = 'ra.utils.views.server_error'
+# handler404 = 'ra.utils.views.not_found_error'
 
 urlpatterns = [
     path('', ra_admin_site.urls),

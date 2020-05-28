@@ -79,7 +79,9 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
         return self.permissions
 
     def return_access_denied(self):
-        return HttpResponseRedirect(reverse('access_denied'))
+        raise PermissionDenied
+        # return HttpResponseForbidden()
+        # return HttpResponseRedirect(reverse('access_denied'))
 
     def dispatch(self, request, *args, **kwargs):
         from django.contrib.auth.views import redirect_to_login
@@ -99,14 +101,13 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
         self._check_perms_keys("any", perms_any)
 
         # If perms_all, check that user has all permissions in the list/tuple
-        access_denied = HttpResponseRedirect(reverse('%s:access-denied' % RA_ADMIN_SITE_NAME))
         if perms_all:
 
             if not request.user.has_perms(perms_all):
                 if not (self.permission_or_test and self.get_or_test()):
-                    if self.raise_exception:
-                        raise PermissionDenied
-                    return access_denied
+                    # if self.raise_exception:
+                    raise PermissionDenied
+                    # return access_denied
 
         # If perms_any, check that user has at least one in the list/tuple
         if perms_any:
@@ -117,9 +118,9 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
                     break
 
             if not has_one_perm:
-                if self.raise_exception:
-                    raise PermissionDenied
-                return access_denied
+
+                raise PermissionDenied
+
 
         return super(RaMultiplePermissionsRequiredMixin, self).dispatch(
             request, *args, **kwargs)
@@ -353,7 +354,8 @@ class ReportView(UserPassesTestMixin, SampleReportView):
             if self.request.is_ajax():
                 return JsonResponse({}, status=403)
             else:
-                return HttpResponseRedirect(reverse('ra_admin:access-denied'))
+                raise PermissionDenied
+            #     return HttpResponseRedirect(reverse('ra_admin:access-denied'))
         # else:
         return HttpResponseRedirect(reverse('ra_admin:login'))
 
@@ -405,8 +407,8 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         else:
             settings = {}
         settings.update(cls.form_settings or {})
-        settings['from_doc_date'] = cls.get_default_from_date()
-        settings['to_doc_date'] = cls.get_default_to_date()
+        # settings['from_doc_date'] = cls.get_default_from_date()
+        # settings['to_doc_date'] = cls.get_default_to_date()
         # return form_class(support_doc_type=True, **{'form_settings': settings})
         return form_class()
 
@@ -608,10 +610,10 @@ class ReportView(UserPassesTestMixin, SampleReportView):
     def form_invalid(self, form):
         return JsonResponse(form.errors, status=400)
 
-    @classmethod
-    def get_default_from_date(cls, **kwargs):
-        return app_settings.RA_DEFAULT_FROM_DATETIME
-
-    @classmethod
-    def get_default_to_date(cls, **kwargs):
-        return app_settings.RA_DEFAULT_TO_DATETIME
+    # @classmethod
+    # def get_default_from_date(cls, **kwargs):
+    #     return app_settings.RA_DEFAULT_FROM_DATETIME
+    #
+    # @classmethod
+    # def get_default_to_date(cls, **kwargs):
+    #     return app_settings.RA_DEFAULT_TO_DATETIME

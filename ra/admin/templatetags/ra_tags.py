@@ -74,23 +74,28 @@ def jsonify(object):
 register.filter('jsonify', jsonify)
 
 
-@register.filter
-def subtract(value, arg):
-    return value - arg
+# @register.filter
+# def subtract(value, arg):
+#     return value - arg
+#
 
 
-
-@register.simple_tag
-def get_app_icon(app):
-    icon = RA_APP_ICONS.get(app['app_label'], '')
-    if icon:
-        icon = '<i class="%s"></i>' % icon
-    else:
-        icon = '<i class="icon-make-group position-left"></i>'
-    return mark_safe(icon)
+# @register.simple_tag
+# def get_app_icon(app):
+#     icon = RA_APP_ICONS.get(app['app_label'], '')
+#     if icon:
+#         icon = '<i class="%s"></i>' % icon
+#     else:
+#         icon = '<i class="icon-make-group position-left"></i>'
+#     return mark_safe(icon)
 
 
 # @register.filter
 # def translate_change_message(message):
 #     from ra.activity.admin import translate_change_message
 #     return translate_change_message(message)
+
+from ra.utils.permissions import has_report_permission_permission
+@register.simple_tag(takes_context=True)
+def can_print_report(context, report):
+    return has_report_permission_permission(context['request'], report.get_base_model_name(), report.get_report_slug())

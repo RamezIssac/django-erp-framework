@@ -25,7 +25,7 @@ In our sales app, let's create a `reports.py` file *it can be any name, this is 
 .. code-block:: python
 
     from django.utils.translation import ugettext_lazy as _
-    from ra.reporting.decorators import register_report_view
+    from ra.reporting.registry import register_report_view
     from ra.reporting.views import ReportView
     from .models import Client, SimpleSales
 

@@ -38,44 +38,6 @@ def translate_list(l, func=_):
     return t
 
 
-def translate_change_message(change_message, **kwargs):
-    if change_message and change_message[0] == '[':
-        try:
-            change_message = json.loads(change_message)
-        except ValueError:
-            return change_message
-        messages = []
-        for sub_message in change_message:
-            if 'added' in sub_message:
-
-                if sub_message['added']:
-                    sub_message['added']['name'] = ugettext(sub_message['added']['name'])
-                    messages.append(ugettext('Added {name} "{object}".').format(**sub_message['added']))
-                else:
-                    messages.append(ugettext('Added.'))
-
-            elif 'changed' in sub_message:
-                sub_message['changed']['fields'] = get_text_list(
-                    translate_list(sub_message['changed']['fields']), ugettext('and')
-                )
-                if 'name' in sub_message['changed']:
-                    sub_message['changed']['name'] = ugettext(sub_message['changed']['name'])
-                    messages.append(ugettext('Changed {fields} for {name} "{object}".').format(
-                        **sub_message['changed']
-                    ))
-                else:
-                    messages.append(ugettext('Changed {fields}.').format(**sub_message['changed']))
-
-            elif 'deleted' in sub_message:
-                sub_message['deleted']['name'] = ugettext(sub_message['deleted']['name'])
-                messages.append(ugettext('Deleted {name} "{object}".').format(**sub_message['deleted']))
-
-        change_message = ' '.join(msg[0].upper() + msg[1:] for msg in messages)
-        return change_message or ugettext('No fields changed.')
-    else:
-        return change_message
-
-
 class FilterBase(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value():
@@ -203,7 +165,7 @@ class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
     get_user.admin_order_field = 'user'
 
     def get_change_message(self, obj):
-        return truncatewords(translate_change_message(obj.change_message), 23)
+        return truncatewords(obj.get_change_message(), 23)
 
     get_change_message.short_description = _('Comment')
 

@@ -3,20 +3,16 @@ from unittest import skip
 from urllib.parse import urljoin
 
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from pyquery import PyQuery as pq
 
-from .models import Client, Product, SimpleSales, InvoiceLine, Invoice, Journal, JournalItem
+from .models import Client, Product, SimpleSales, InvoiceLine, Journal
 
 User = get_user_model()
 SUPER_LOGIN = dict(username='superlogin', password='password')
 year = now().year
-
-
-class ReportRegistryTest(SimpleTestCase):
-    pass
 
 
 class BaseTestData:
@@ -424,7 +420,7 @@ class TestAdmin(BaseTestData, TestCase):
         """
         self.assertTrue(self.client.login(username='limited', password='password'))
         response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')))
-        self.assertEqual(response.status_code, 302, response)
+        self.assertEqual(response.status_code, 403, response)
 
     def test_report_access_anon_user(self):
         response = self.client.get(reverse('ra_admin:report', args=('product', 'productclientsalesmatrix')))
@@ -457,6 +453,16 @@ class TestAdmin(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(InvoiceLine.objects.filter(slug=999).exists())
 
+    def test_get_by_slug_view(self):
+        self.client.login(username='super', password='secret')
+        client = Client.objects.create(title='my title', lastmod_user_id=self.user.pk)
+        response = self.client.get(reverse('admin:reporting_tests_client_get-by-slug', args=(client.slug,)))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse('admin:reporting_tests_client_get-by-slug', args=(client.slug,)),
+                                   follow=True)
+        # import pdb; pdb.set_trace()
+        self.assertEqual(response.context['original'], client)
+
     # def test_helpcenter_access(self):
     #     self.assertTrue(self.client.login(username='limited', password='password'))
     #     response = self.client.get(reverse('ra_admin:help-center'))
@@ -464,7 +470,7 @@ class TestAdmin(BaseTestData, TestCase):
 
 
 @override_settings(ROOT_URLCONF='reporting_tests.urls', RA_CACHE_REPORTS=True, USE_TZ=False)
-class TestPrePolutaedAdmin(TestAdmin):
+class TestPrePolutaedAdmin(BaseTestData, TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -537,3 +543,16 @@ class TestPrePolutaedAdmin(TestAdmin):
         }
         response = self.client.post(reverse('admin:admin_views_journal_change', args=(self.journal.pk,)), change_dict)
         self.assertEqual(response.status_code, 200)
+
+
+class ReportRegistryTest(TestCase):
+    def test_report_registery(self):
+        from .reports import ProductClientSales
+        from ra.reporting.registry import report_registry
+        from ra.reporting.registry import register_report_view
+        class ProductClientSales2(ProductClientSales):
+            report_slug = 'client_sales_of_products_2'
+
+        register_report_view(ProductClientSales2)
+        report = report_registry.get('client', 'client_sales_of_products_2')
+        self.assertIsNotNone(report)

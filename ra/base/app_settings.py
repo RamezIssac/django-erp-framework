@@ -5,14 +5,14 @@ from django.urls import get_callable
 from django.utils.functional import lazy
 
 
-def get_first_of_this_year():
-    d = datetime.datetime.today()
-    return datetime.datetime(d.year, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
-
-
-def get_end_of_this_year():
-    d = datetime.datetime.today()
-    return datetime.datetime(d.year + 1, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
+# def get_first_of_this_year():
+#     d = datetime.datetime.today()
+#     return datetime.datetime(d.year, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
+#
+#
+# def get_end_of_this_year():
+#     d = datetime.datetime.today()
+#     return datetime.datetime(d.year + 1, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
 
 
 import datetime
@@ -35,9 +35,9 @@ UnDocumented
 
 RA_ENABLE_ADMIN_DELETE_ALL = getattr(settings, 'RA_ENABLE_ADMIN_DELETE_ALL', False)
 
-RA_DEFAULT_FROM_DATETIME = lazy(get_first_of_this_year, datetime.datetime)()
-RA_DEFAULT_TO_DATETIME = lazy(get_end_of_this_year, datetime.datetime)()
-# models
+# RA_DEFAULT_FROM_DATETIME = lazy(get_first_of_this_year, datetime.datetime)()
+# RA_DEFAULT_TO_DATETIME = lazy(get_end_of_this_year, datetime.datetime)()
+# # models
 
 RA_BASEINFO_MODEL = getattr(settings, 'RA_BASEINFO_MODEL', 'ra.base.models.BaseInfo')
 RA_BASEMOVEMENTINFO_MODEL = getattr(settings, 'RA_BASEINFO_MODEL', 'ra.base.models.BaseMovementInfo')

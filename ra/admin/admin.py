@@ -375,7 +375,7 @@ class RaAdmin(RaThemeMixin, VersionAdmin):
 
         my_urls = [
             path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
-            url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug)),
+            url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug), name='%s_%s_get-by-slug' % info),
         ]
         return my_urls + reversion_urls + urlpatterns
 

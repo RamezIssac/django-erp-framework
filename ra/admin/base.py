@@ -61,7 +61,7 @@ class RaAdminSiteBase(AdminSite):
 
 
     def get_urls(self):
-        from ra.utils.views import access_denied
+        # from ra.utils.views import access_denied
         def wrap(view, cacheable=False):
             def wrapper(*args, **kwargs):
                 return self.admin_view(view, cacheable)(*args, **kwargs)
@@ -83,7 +83,7 @@ class RaAdminSiteBase(AdminSite):
             url(r'^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$', get_report_view, name='report'),
             # new from sites
             path('top-search/', TopSearchView.as_view(), name='top-search'),
-            path('access-denied/', access_denied, name='access-denied'),
+            # path('access-denied/', access_denied, name='access-denied'),
         ]
 
         return urls + help_center + settings_update + urlpatterns

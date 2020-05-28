@@ -85,9 +85,6 @@ We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
     from django.urls import path
     from ra.admin.admin import ra_admin_site
 
-    handler500 = 'ra.utils.views.server_error'
-    handler404 = 'ra.utils.views.not_found_error'
-
     urlpatterns = [
         ...
         path('erp/', ra_admin_site.urls),

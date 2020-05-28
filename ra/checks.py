@@ -18,7 +18,7 @@ def check_ra_settings(app_configs, **kwargs):
 
 
 @register()
-def check_crequest(app_configs, **kwargs):
+def check_crequest(app_configs=None, **kwargs):
     errors = []
     if 'crequest' not in settings.INSTALLED_APPS:
         errors.append(
@@ -59,33 +59,4 @@ def check_initial_settings(app_configs, **kwargs):
                   )
         )
 
-    return errors
-
-
-# @register()
-# todo bring back
-def check_custom_error_pages(app_configs, **kwargs):
-    # If there is a problem looking like a circular dependency
-    # like "(project) does not define a "urls" attribute/class
-    # it's probably because urls module isn't fully loaded and functinal
-    # make sure to call reverse() before
-
-    errors = []
-    urls = import_string(settings.ROOT_URLCONF)
-    if not hasattr(urls, 'handler500'):
-        errors.append(
-            Error('Custom handler500 is missing',
-                  hint='Add "handler500 = ra.utils.views.server_error" to %s' % settings.ROOT_URLCONF,
-                  obj='urls',
-                  id='ra.E003',
-                  )
-        )
-    if not hasattr(urls, 'handler404'):
-        errors.append(
-            Error('Custom handler404 is missing',
-                  hint='Add "handler404 = ra.utils.views.not_found_error " to %s' % settings.ROOT_URLCONF,
-                  obj='urls',
-                  id='ra.E003',
-                  )
-        )
     return errors
