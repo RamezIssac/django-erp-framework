@@ -26,6 +26,24 @@ Ra Framework
 A light-weight effective Django based framework to create business applications and various resource planing systems (ERP),
 equipped with a reporting engine and a responsive dashboard.
 
+Demo
+----
+
+Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials are admin/adminpassword
+
+The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
+can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
+
+History
+-------
+
+This an open source of our Full ERP system. The full ERP system cen be found at `Online Here <https://erp-demo.rasystems.io/>`_
+
+Credentials are admin/stpasswd
+
+Release Date is scheduled for July the first 2020.
+
+
 Features
 --------
 
@@ -38,22 +56,13 @@ Features
 - Django 2.2, 3.0 Compatible
 
 
-Demo
-----
-
-Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials are admin/adminpassword
-
-The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
-can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
-
-
 
 Installation
 ------------
 
 .. code-block:: console
 
-    $ pip install django-ra
+    $ pip install django-ra-erp
 
 
 Quick start
@@ -64,7 +73,7 @@ Quick start
     .. code-block:: console
 
         $ mkvirtualenv ra-env (or `virtualenv` if you dont have mkvirtualenv)
-        $ pip install django-ra
+        $ pip install django-ra-erp
 
 2. Once Ra installed, it provides a command to generate a new project.
 

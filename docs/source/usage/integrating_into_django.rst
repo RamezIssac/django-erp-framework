@@ -5,11 +5,11 @@ Integrating Ra into a Django project
 
 Ra provides the ``ra-admin start`` command and project template to get you started with a new Ra project as quickly as possible, but it's easy to integrate Ra into an existing Django project too.
 
-Ra is currently compatible with Django 2.2. First, install the ``django-ra`` package from PyPI:
+Ra is currently compatible with Django 2.2. First, install the ``django-ra-erp`` package from PyPI:
 
 .. code-block:: console
 
-    $ pip install django-ra
+    $ pip install django-ra-erp
 
 or add the package to your existing requirements file.
 

@@ -10,7 +10,7 @@ Installation
 
 .. code-block:: console
 
-    $ pip install django-ra
+    $ pip install django-ra-erp
 
 Create your first Ra project
 -----------------------------
@@ -20,7 +20,7 @@ Create your first Ra project
 .. code-block::console
 
     $ mkvirtualenv ra-env (or use `virtualenv ra-env` if you don't have mkvirtualenv)
-    $ pip install django-ra
+    $ pip install django-ra-erp
 
 2. Once Ra installed, it provides a command to generate a new project.
 
