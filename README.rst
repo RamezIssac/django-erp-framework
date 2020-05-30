@@ -31,10 +31,8 @@ Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials ar
 The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
 can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
 
-History
+Updates
 -------
-
-This an open source of our Full ERP system. The full ERP system cen be found at `Online Here <https://erp-demo.rasystems.io/>`_ and Credentials are admin/stpasswd
 
 Release Date is set to July the first 2020.
 
