@@ -296,7 +296,7 @@ class ReportView(UserPassesTestMixin, SampleReportView):
 
     report_slug = ''
     page_title = None
-    report_title = None
+    report_title = ''
 
     # default order by for the results.
     # ordering can also be controlled on run time by passing order_by='field_name'
