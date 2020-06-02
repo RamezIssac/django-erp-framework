@@ -139,7 +139,7 @@ class EntityModel(RAModel):
     def name(self):
         return self.title
 
-    def get_next_slug(self):
+    def get_next_slug(self, suggestion=None):
         """
         Get the next slug
         If it's a new instance and the slug is not provided, we try and attempt a serial over the already added slugs
@@ -152,7 +152,8 @@ class EntityModel(RAModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.pk is None:
             if not self.slug:
-                self.slug = self.get_next_slug()
+                self.slug = self.get_next_slug(self.title)
+                # print(self.slug)
             if not self.owner_id:
                 try:
                     self.owner = self.lastmod_user
@@ -275,8 +276,9 @@ class TransactionModel(EntityModel):
         Return the doc_type
         :return:
         """
-        raise NotImplementedError(
-            f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
+        return cls.__name__.lower()
+        # raise NotImplementedError(
+        #     f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
 
     def __str__(self):
         return '%s-%s' % (self._meta.verbose_name, self.slug)

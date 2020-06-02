@@ -5,8 +5,10 @@ from .models import Expense, ExpenseTransaction
 class ExpenseAdmin(EntityAdmin):
     pass
 
-class ExpenseTransactionAadmin(TransactionAdmin):
-    pass
+
+class ExpenseTransactionAdmin(TransactionAdmin):
+    fields = ('slug', 'doc_date', 'treasury', 'expense', 'value', 'notes')
+
 
 ra_admin_site.register(Expense, ExpenseAdmin)
-ra_admin_site.register(ExpenseTransaction, ExpenseTransactionAadmin)
+ra_admin_site.register(ExpenseTransaction, ExpenseTransactionAdmin)
