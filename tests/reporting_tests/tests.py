@@ -146,7 +146,22 @@ class ReportTest(BaseTestData, TestCase):
         response = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
                                    data={'client_id': self.client1.pk},
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
         self.assertEqual(response.status_code, 200)
+        return response
+
+    def test_view_filter(self):
+        self.client.login(username='super', password='secret')
+        response = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
+                                   data={'client_id': self.client1.pk},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        response_json = response.json()
+        rows = len(response_json['data'])
+
+        without_filter = self.client.get(reverse('ra_admin:report', args=('client', 'clientdetailedstatement')),
+                                         HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertNotEqual(rows, len(without_filter.json()['data']))
 
     @skip('Feature Halted: No redirect url now')
     def test_report_movement_redirect(self):

@@ -89,7 +89,7 @@ class ExpenseMovementTimeComparison(ReportView):
     chart_settings = [
         {
             'id': 'total_movement_bar',
-            'type': 'column',
+            'type': 'bar',
             'title_source': 'title',
             'data_source': ['__total__'],
             'series_names': [_('total movement')],

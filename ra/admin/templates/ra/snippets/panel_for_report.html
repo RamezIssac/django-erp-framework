@@ -1,0 +1,26 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">{{ report.get_report_title }}</h5>
+
+        {#        <div class="heading-elements not-collapsible">#}
+        {#            {% include 'ra/snippets/chart_list_wrapper.html' with report=monthly_movement default_chart='total_movement_bar' %}#}
+        {#        </div>#}
+    </div>
+    <div class="card-body">
+        {#        {% include 'ra/admin/datepicker_control.html' with report=monthly_movement %}#}
+        <div data-report-widget
+             data-report-url="{{ report.get_url }}"
+             data-extra-params="{{ data_extra_param|default:'' }}"
+             data-success-callback="{{ data_success_callback|default:'' }}"
+{#             data-chart-id="{{ data_chart_id|default:'' }}"#}
+        >
+            {% if not no_chart %}
+                <canvas data-report-chart height="100"></canvas>
+            {% endif %}
+            <div data-report-table>
+
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,4 +1,5 @@
 from django import template
+from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.encoding import force_text
 from django.utils.functional import Promise
@@ -100,3 +101,20 @@ register.filter('jsonify', jsonify)
 @register.simple_tag(takes_context=True)
 def can_print_report(context, report):
     return has_report_permission_permission(context['request'], report.get_base_model_name(), report.get_report_slug())
+
+
+@register.filter
+def addstr(arg1, arg2):
+    """concatenate arg1 & arg2"""
+    return str(arg1) + str(arg2)
+
+
+@register.simple_tag
+def get_html_panel(report, object=None, **kwargs):
+    kwargs['report'] = report
+
+    # No chart argument default to True if no charts in reports
+    kwargs.setdefault('no_chart', not bool(report.chart_settings))
+
+    template = get_template('ra/snippets/panel_for_report.html')
+    return template.render(context=kwargs)

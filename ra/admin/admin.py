@@ -138,7 +138,8 @@ class RaThemeMixin:
     revision_form_template = f'{app_settings.RA_THEME}/reversion/revision_form.html'
     object_history_template = f'{app_settings.RA_THEME}/reversion/object_history.html'
     recover_list_template = f'{app_settings.RA_THEME}/reversion/recover_list.html'
-    view_template = f'{app_settings.RA_THEME}/view.html'
+
+    view_template = None  # Defaults to f'{app_settings.RA_THEME}/view.html'
 
 
 class EntityAdmin(RaThemeMixin, VersionAdmin):
