@@ -118,9 +118,7 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
                     break
 
             if not has_one_perm:
-
                 raise PermissionDenied
-
 
         return super(RaMultiplePermissionsRequiredMixin, self).dispatch(
             request, *args, **kwargs)
@@ -382,7 +380,8 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         hence this function.
         :return: form_class
         """
-        return cls.form_class or report_form_factory(cls.get_report_model())
+        return cls.form_class or report_form_factory(cls.get_report_model(), crosstab_model=cls.crosstab_model,
+                                                     display_compute_reminder=cls.crosstab_compute_reminder)
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)
