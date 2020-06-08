@@ -4,16 +4,15 @@
 
 {% block content %}
 
-{#    <h2>Balance is <span class="expenseTotal"></span></h2>#}
-    {% get_report base_model='expense' report_slug='ExpenseDetailedStatement' as transactions %}
 
-    {% with 'expense_id='|addstr:original.pk as id %}
-    {% get_html_panel transactions data_extra_param=id %}
-    {% endwith %}
+{#    {% get_report base_model='expense' report_slug='ExpenseDetailedStatement' as transactions %}#}
+{#    {% with 'expense_id='|addstr:original.pk as id %}#}
+{#    {% get_html_panel transactions data_extra_param=id %}#}
+{#    {% endwith %}#}
 
     {% get_report base_model='expense' report_slug='ExpenseMovementTimeComparison' as client_sales_of_products %}
     {% with 'expense_id='|addstr:original.pk as id %}
-    {% get_html_panel client_sales_of_products data_extra_param=id %}
+    {% get_html_panel client_sales_of_products %}
     {% endwith %}
 
 {% endblock %}

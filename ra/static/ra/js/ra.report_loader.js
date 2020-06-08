@@ -20,39 +20,34 @@
         }
         let tableElem = $elem.find('[data-report-table]');
         if (tableElem.length !== 0) {
-            $.ra.datatable.buildAdnInitializeDatatable(data,tableElem);
+            $.ra.datatable.buildAdnInitializeDatatable(data, tableElem);
         }
         unblockDiv($elem);
     }
 
     function displayChart(data, $elem) {
+
+        // hand over to the chart plugin
+
         var chart_id = $elem.attr('data-report-default-chart');
         if (typeof (chart_id) == 'undefined') {
             chart_id = '';
-            // console.error('please provide [data-report-default-chart] next to [ra-report-chart]')
         }
         // var chart = $elem.find('.reportChart');
         let chart = $elem;
         // var chartObject = $.ra.dataComprehension.getObjFromArray(data.chart_settings, 'id', chart_id, true)['settings'];
 
-
+        let chartObject = data.chart_settings[0]
         //chartObject = group_chart_objects[report_slug][chart_id];
         // if (typeof (chartObject) === 'undefined') {
         //     console.log(chart_id + " can't be found in the charts for this report")
         // }
-        // chartObject = $.ra.highchart.createChartObject(true, data.data, data, chartObject);
-        let chartObject = $.slick_reporting.chartsjs.createChartObject(data,chart_id, {});
+        chartObject = $.ra.highchart.createChartObject(data, chartObject);
+        chart.highcharts(chartObject);
 
-        // try {
-        //     var _to_destroy = chart.highcharts();
-        //     if (typeof (_to_destroy) !== 'undefined') {
-        //         _to_destroy.destroy();
-        //     }
-        // } catch (err) {
-        //     console.log(err);
-        // }
-        new Chart($elem, chartObject);
-        // chart.highcharts(chartObject);
+        // let chartObject = $.slick_reporting.chartsjs.createChartObject(data,chart_id, {});
+        // new Chart($elem, chartObject);
+
         unblockDiv($elem);
     }
 
@@ -65,13 +60,13 @@
         failFunctionName = failFunctionName || "$.ra.report_loader.failFunction";
         let url = $elem.attr('data-report-url');
         if (url === '#') return; // there is no actual url, probably not enough permissions
-        else url = url +'?';
+        else url = url + '?';
         let extraParams = $elem.attr('data-extra-params') || '';
         // blockDiv($elem);
         // get the date if present
 
         if (no_cache) url = url + '&no-cache' + _getDateFormParams($elem.parents('.panel'));
-        if (extraParams !==''){
+        if (extraParams !== '') {
             url = url + extraParams;
         }
         $.get(url, function (data) {
@@ -249,7 +244,7 @@
         getDataFromServer: getDataFromServer,
         createChartsUIfromResponse: createChartsUIfromResponse,
         displayReport: displayReport,
-        loadComponents:loadComponents,
+        loadComponents: loadComponents,
 
     }
 })(jQuery);

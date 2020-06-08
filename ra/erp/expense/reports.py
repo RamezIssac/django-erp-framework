@@ -89,10 +89,11 @@ class ExpenseMovementTimeComparison(ReportView):
     chart_settings = [
         {
             'id': 'total_movement_bar',
-            'type': 'bar',
+            'type': 'line',
             'title_source': 'title',
             'data_source': ['__total__'],
             'series_names': [_('total movement')],
+            'stacking':'normal',
 
         },
         # {
@@ -119,3 +120,45 @@ class ExpenseMovementTimeComparison(ReportView):
         #     }
         # },
     ]
+
+
+@register_report_view
+class ExpenseMovementMatrixComparison(ReportView):
+    report_title = _('Expenses Comparison')
+    base_model = Expense
+    report_model = ExpenseTransaction
+
+    group_by = 'treasury'
+    crosstab_model = 'expense'
+    crosstab_columns = ['__total__']
+    columns = ['title']
+
+    #     'group_page_title': _('Expenses Comparison'),
+    #     'details_page_title': _('Expenses Comparison'),
+    #
+    #     # 'time_series_pattern': 'monthly',
+    #     # 'time_series_scope': 'both',
+    #     # 'group_time_series_display': ['__total__'],
+    #     # 'time_series_display': ['__total__'],
+    #     'matrix': 'expense',
+    #     'matrix_columns': ['__total__'],
+    #     'matrix_columns_names': {
+    #         '__total__': _('movement')
+    #     },
+    #
+    #     'details_columns': ['treasury__slug', 'treasury__title', '__total__'],
+    #     'details_column_order': ['treasury__slug', 'treasury__title', '__time_series__', '__total__'],
+    #
+    #     'group_columns': ['slug', 'title', '__total__'],
+    #     'group_column_order': ['treasury__slug', 'treasury__title', '__time_series__', '__total__'],
+    #     'group_column_names': {
+    #         '__total__': _('total expense movement'),
+    #     },
+    #
+    #     'time_series_TS_name': _('in'),
+    #
+    #     'group_time_series_column_names': {
+    #         '__total__': _('movement'),
+    #     },
+    #
+    # }

@@ -208,7 +208,7 @@ function capfirst(s) {
 
         return {
             enterTabSupport: enable_tab_support,
-
+            smartParseFloat: smartParseFloat
         }
     };
 

@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}ra/plugins/datatables/datatables.css"/>
     <link rel="stylesheet"
           href="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/css/dataTables.bootstrap4.css"/>
+
     <link rel="stylesheet" href="{% static "adminlte/plugins/select2/css/select2.min.css" %}">
     <link rel="stylesheet" href="{% static "adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css" %}">
     {#    <link rel="stylesheet" href="{% static 'adminlte/plugins/daterangepicker/daterangepicker.css' %}">#}
@@ -350,6 +351,8 @@
 {#        src="{{ STATIC_URL }}ra/js/vendor/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>#}
 {#<script type="text/javascript" src="{{ STATIC_URL }}ra/js/vendor/daterangepicker.js"></script>#}
 <script src="{% static 'ra/plugins/chartsjs/src/Chart.js' %}"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+
 
 <script src="{{ STATIC_URL }}ra/js/vendor/string-format.js"></script>
 <script>format.extend(String.prototype)</script>
@@ -360,6 +363,7 @@
 
 <script type="text/javascript" src="{% static 'ra/js/ra.report_loader.js' %}"></script>
 <script type="text/javascript" src="{% static 'ra/js/ra.dataComprehension.js' %}"></script>
+<script type="text/javascript" src="{% static 'ra/js/ra.highchart.js' %}"></script>
 
 <script src="{% static 'ra/js/ra_main_js.js' %}"></script>
 <script src="{% static 'ra/js/ra.datatable.js' %}"></script>

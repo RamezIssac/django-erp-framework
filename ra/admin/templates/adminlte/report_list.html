@@ -104,6 +104,7 @@
         }
 
         $('.chartContainer').on('click', '.groupChartController', function (e) {
+            $.ra.report_loader.displayChart()
             e.preventDefault();
             DisplayChart($(this));
         });

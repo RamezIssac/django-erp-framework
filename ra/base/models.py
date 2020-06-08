@@ -76,13 +76,10 @@ class EntityModel(RAModel):
     The Main base for Ra `static` models
     Example: Client , Expense etc..
     """
-    slug = models.SlugField(_('refer code'), help_text=_('For fast recall'), max_length=50,
+    slug = models.SlugField(_('Identifier slug'), help_text=_('For fast recall'), max_length=50,
                             unique=True, db_index=True, blank=True)
-    title = models.CharField(_('name'), max_length=255, unique=True, db_index=True)
-    notes = models.TextField(_('notes'), null=True, blank=True)
-
-    # fb = models.DecimalField(_('beginning balance'), help_text=_('Opening Balance or initial balance '), max_digits=19,
-    #                          decimal_places=2, default=0)
+    title = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
+    notes = models.TextField(_('Notes'), null=True, blank=True)
 
     class Meta:
         abstract = True
