@@ -15,7 +15,7 @@
 
     function loadComponents(data, $elem) {
         let chartElem = $elem.find('[data-report-chart]');
-        if (chartElem.length !== 0) {
+        if (chartElem.length !== 0 && data.chart_settings.length !==0 ) {
             displayChart(data, chartElem);
         }
         let tableElem = $elem.find('[data-report-table]');
@@ -59,16 +59,17 @@
         let failFunctionName = $elem.attr('data-fail-callback');
         failFunctionName = failFunctionName || "$.ra.report_loader.failFunction";
         let url = $elem.attr('data-report-url');
+        let extraParams = $elem.attr('data-extra-params') || '';
+
         if (url === '#') return; // there is no actual url, probably not enough permissions
         else url = url + '?';
-        let extraParams = $elem.attr('data-extra-params') || '';
-        // blockDiv($elem);
-        // get the date if present
 
-        if (no_cache) url = url + '&no-cache' + _getDateFormParams($elem.parents('.panel'));
+
+        // if (no_cache) url = url + '&no-cache' + _getDateFormParams($elem.parents('.panel'));
         if (extraParams !== '') {
             url = url + extraParams;
         }
+
         $.get(url, function (data) {
             $.ra.cache[data['report_slug']] = jQuery.extend(true, {}, data);
             executeFunctionByName(successFunctionName, window, data, $elem);
@@ -144,6 +145,7 @@
     }
 
     function loadChartWidgets() {
+        // Main
         $('[data-report-widget]').each(function (i, elem) {
             var $elem = $(elem);
             refreshReportWidget($elem);

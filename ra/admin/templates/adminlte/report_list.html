@@ -85,6 +85,7 @@
         });
 
         function loadReport(report_slug, params, callback) {
+            return;
             if (typeof(params) == "undefined"){
                 params = report_slug + '/?' + $(report_slug).find('form').serialize();
             }

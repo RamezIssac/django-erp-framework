@@ -26,8 +26,8 @@ class ExpenseTotalReport(ReportView):
     chart_settings = [
         {
             'type': 'pie',
-            'data_source': '__total__',
-            'title_source': 'title',
+            'data_source': ['__total__'],
+            'title_source': ['title'],
         },
         {
             'type': 'bar',
@@ -89,7 +89,7 @@ class ExpenseMovementTimeComparison(ReportView):
     chart_settings = [
         {
             'id': 'total_movement_bar',
-            'type': 'line',
+            'type': 'column',
             'title_source': 'title',
             'data_source': ['__total__'],
             'series_names': [_('total movement')],
