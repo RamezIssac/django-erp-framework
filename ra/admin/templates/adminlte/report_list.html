@@ -86,29 +86,25 @@
 
         function loadReport(report_slug, params, callback) {
             return;
-            if (typeof(params) == "undefined"){
-                params = report_slug + '/?' + $(report_slug).find('form').serialize();
-            }
-            var $tabcontent = $('#' + report_slug);
-            blockDiv($tabcontent);
-            var url = params;
-            $.get(url, function (data) {
-                var form_settings = data['form_settings'] || {};
-                var frontend_settings = form_settings['frontend_settings'] || {};
-                var func_path = frontend_settings['displayReportFunc'] || '$.ra.report_loader.displayReport';
-                executeFunctionByName(func_path, window, data, url);
-
-            }).fail(function () {
-                $.ra.report_loader.failFunction($tabcontent);
-                unblockDiv($tabcontent);
-            });
+            {#if (typeof (params) == "undefined") {#}
+            {#    params = report_slug + '/?' + $(report_slug).find('form').serialize();#}
+            {# }#}
+            {#var $tabcontent = $('#' + report_slug);#}
+            {#blockDiv($tabcontent);#}
+            {#var url = params;#}
+            {#$.get(url, function (data) {#}
+            {#    var form_settings = data['form_settings'] || {};#}
+            {#    var frontend_settings = form_settings['frontend_settings'] || {};#}
+            {#    var func_path = frontend_settings['displayReportFunc'] || '$.ra.report_loader.displayReport';#}
+            {#    executeFunctionByName(func_path, window, data, url);#}
+            {##}
+            {# }).fail(function () {#}
+            {#    $.ra.report_loader.failFunction($tabcontent);#}
+            {#    unblockDiv($tabcontent);#}
+            {# });#}
         }
 
-        $('.chartContainer').on('click', '.groupChartController', function (e) {
-            $.ra.report_loader.displayChart()
-            e.preventDefault();
-            DisplayChart($(this));
-        });
+
 
         function DisplayChart($this) {
             {#var $this = $(this);#}
@@ -143,10 +139,10 @@
 
         $('.refreshReport').on('click', function (event) {
             event.preventDefault();
-            var href = $(this).attr('href');
-            var params = $('a[data-toggle="tab"][href="' + href + '"]').attr('ra-report-param');
-            params += $(href).find('form').serialize();
-            loadReport(href.slice(1), params);
+            let $this = $(this);
+            let $elem = $('[data-report-widget][data-report-url="' + $this.attr('data-report-url') + '"]')
+            let $form = $('.formContainer[data-report-url="' + $this.attr('data-report-url') + '"] form')
+            $.ra.report_loader.refreshReportWidget($elem, true, $form.serialize())
         });
 
         $('.printReport').on('click', function (event) {

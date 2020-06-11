@@ -24,15 +24,16 @@ class ExpenseTotalReport(ReportView):
     group_by = 'expense'
     columns = ['slug', 'title', '__total__']
     chart_settings = [
+
         {
-            'type': 'pie',
+            'type': 'bar',
             'data_source': ['__total__'],
             'title_source': ['title'],
         },
         {
-            'type': 'bar',
-            'data_source': '__total__',
-            'title_source': 'title',
+            'type': 'pie',
+            'data_source': ['__total__'],
+            'title_source': ['title'],
         },
     ]
 

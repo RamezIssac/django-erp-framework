@@ -28,7 +28,7 @@
                                 <div class="card-body">
                                     <div class="row filters-container">
                                         <div class="col-sm-12">
-                                            <div class="formContainer" data-report-slug="{{ report.get_report_slug }}">
+                                            <div class="formContainer" data-report-url="{{ report.get_url }}">
                                                 {% csrf_token %}
                                                 {% crispy report.initialize_form %}
                                             </div>
