@@ -19,6 +19,7 @@
                     '<td style="text-align: right"><b>' + this.point.percentage + ' %</b></td></tr></table>'
             }
         };
+        let _chart_cache = {};
 
         function normalStackedTooltipFormatter() {
 
@@ -153,7 +154,7 @@
                     //     pointFormat: '<tr><td style="color:' + Highcharts.theme.contrastTextColor + '">{series.name}: </td>' +
                     //         '<td style="text-align: right; color: ' + Highcharts.theme.contrastTextColor + '"><b>{point.y} </b></td></tr>' +
                     //
-                    //         '<tr><td style="color: ' + Highcharts.theme.contrastTextColor + '">' + $.ra.highchart.defaults.messages.percent + '</td>' +
+                    //         '<tr><td style="color: ' + Highcharts.theme.contrastTextColor + '">' + $.ra.highcharts.defaults.messages.percent + '</td>' +
                     //         '<td style="text-align: right; color: ' + Highcharts.theme.contrastTextColor + '"><b>{point.percentage:.1f} %</b></td></tr>',
                     //     footerFormat: '</table>',
                     //     valueDecimals: 2
@@ -251,13 +252,13 @@
                     highchart_object.xAxis.categories = chart_data.titles
                 }
 
-                highchart_object.credits = $.ra.highchart.defaults.credits;
+                highchart_object.credits = $.ra.highcharts.defaults.credits;
                 highchart_object.lang = {
-                    noData: $.ra.highchart.defaults.messages.noData
+                    noData: $.ra.highcharts.defaults.messages.noData
                 };
                 return highchart_object;
             } catch (err) {
-                $.ra.highchart.defaults.notify_error();
+                $.ra.highcharts.defaults.notify_error();
                 if ($.ra.defaults.debug) {
                     console.log(err);
                 }
@@ -362,8 +363,30 @@
             // return (timeseries_columns != null && !chartOptions.no_time_series_support);
         }
 
-        $.ra.highchart = {
+        function displayChart(data, $elem, chart_id) {
+            // hand over to the chart plugin
+            chart_id = chart_id || $elem.attr('data-report-default-chart') || '';
+            let chart = $elem;
+            let chartObject = $.ra.dataComprehension.getObjFromArray(data.chart_settings, 'id', chart_id, true);
+
+            try {
+                let existing_chart = _chart_cache[data.report_slug];
+                if (typeof (existing_chart) !== 'undefined') {
+                    existing_chart.highcharts().destroy()
+                }
+            } catch (e) {
+                console.log(e)
+            }
+
+            chartObject = $.ra.highcharts.createChartObject(data, chartObject);
+            _chart_cache[data.report_slug] = chart.highcharts(chartObject);
+
+            // unblockDiv($elem);
+        }
+
+        $.ra.highcharts = {
             createChartObject: createChartObject,
+            displayChart: displayChart,
             defaults: {
                 normalStackedTooltipFormatter: normalStackedTooltipFormatter,
                 messages: {

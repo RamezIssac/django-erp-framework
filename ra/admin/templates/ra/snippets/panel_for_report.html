@@ -12,11 +12,11 @@
              data-report-url="{{ report.get_url }}"
              data-extra-params="{{ data_extra_param|default:'' }}"
              data-success-callback="{{ data_success_callback|default:'' }}"
-{#             data-chart-id="{{ data_chart_id|default:'' }}"#}
+                {#             data-chart-id="{{ data_chart_id|default:'' }}"#}
         >
-            {% if not no_chart %}
+            {% if report.chart_settings and not no_chart %}
                 <div id="container" data-report-chart style="width:100%; height:400px;"></div>
-{#                <canvas data-report-chart height="100"></canvas>#}
+                {#                <canvas data-report-chart height="100"></canvas>#}
             {% endif %}
             <div data-report-table>
 

@@ -16,7 +16,6 @@
         cols_names = typeof cols_names != 'undefined' ? cols_names : cols;
 
         let return_val = `<table class="${css_class}"> <thead><tr>`;
-
         let header_th = '';
         let footer_th = '';
         let footer_colspan = 0;
@@ -25,7 +24,6 @@
         for (let i = 0; i < cols.length; i++) {
             let col_name = cols[i].name;
             header_th += `<th data-id="${col_name}">${cols_names[i]}</th>`;
-
             if (total_fields.indexOf(col_name) !== -1) {
                 stop_colspan_detection = true;
             }
@@ -37,10 +35,9 @@
         }
         let footer = '';
         if (add_footer && stop_colspan_detection) {
-            footer = '<tfoot><tr class="tr-totals active"><th colspan="' + footer_colspan + '" style="text-align:left">' + total_verbose + ':</th>' + footer_th + '</tr></tfoot>';
+            footer = '<tfoot><tr class="tr-totals active"><th colspan="' + footer_colspan + '" style="text-align:left">' + total_verbose + '</th>' + footer_th + '</tr></tfoot>';
         }
         return_val = return_val + header_th + `</tr> </thead>${footer}</table>`;
-
         return return_val;
     }
 
@@ -97,10 +94,6 @@
     }
 
 
-    function destroyAllFixedHeaders() {
-        $('.fixedHeader').remove();
-    }
-
     function initializeReportDatatable(tableSelector, data, isGroup, extraOptions) {
         tableSelector = typeof tableSelector != 'undefined' ? tableSelector : '.datatable';
         extraOptions = typeof extraOptions != 'undefined' ? extraOptions : {};
@@ -112,6 +105,7 @@
         let paging = typeof (extraOptions.paging) == 'undefined' ? true : extraOptions.paging;
         let ordering = typeof (extraOptions.ordering) == 'undefined' ? true : extraOptions.ordering;
         let info = typeof (extraOptions.info) == 'undefined' ? true : extraOptions.info;
+        let searching = typeof (extraOptions.searching) == 'undefined' ? true : extraOptions.searching;
         if (data.data.length === 0) dom = '<"mb-20"t>';
 
         let datatableOptions = $.extend({}, extraOptions['datatableOptions']);
@@ -120,6 +114,7 @@
         datatableOptions.ordering = ordering;
         datatableOptions.paging = paging;
         datatableOptions.info = info;
+        datatableOptions.searching = searching;
 
         datatableOptions.sorting = [];
         datatableOptions.processing = true;
@@ -141,7 +136,6 @@
         initializeDataTable: initializeReportDatatable,
         _cache: _cache,
         buildAdnInitializeDatatable: buildAndInitializeDataTable,
-        destroyAllFixedHeaders: destroyAllFixedHeaders,
         constructTable: constructTable,
         instances: _instances
     }

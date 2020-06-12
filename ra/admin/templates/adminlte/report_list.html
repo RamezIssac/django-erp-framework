@@ -56,10 +56,32 @@
 
 {% endblock %}
 {% block bottom_script %}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
+
+
     <script>
-        $('.select2bs4').select2({
-            theme: 'bootstrap4'
-        });
+        {#$('.select2bs4').select2({#}
+        {#    theme: 'bootstrap4'#}
+        {# });#}
+        $(document).ready(function () {
+            $('.raReportDateRange').daterangepicker(setDatePickerObj()).on('apply.daterangepicker', function (ev, picker) {
+
+                var container = picker.element;
+                var $startDate = container.find('[name=start_date_0]');
+                var $startTime = container.find('[name=start_date_1]');
+                var $endDate = container.find('[name=end_date_0]');
+                var $endTime = container.find('[name=end_date_1]');
+                $startDate.val(picker.startDate.format('YYYY') + '-' + picker.startDate.format('MM') + "-" + picker.startDate.format('DD'))
+                $startTime.val(picker.startDate.format('HH') + ":" + picker.startDate.format('mm'));
+                $endDate.val(picker.endDate.format('YYYY') + '-' + picker.endDate.format('MM') + "-" + picker.endDate.format('DD'))
+                $endTime.val(picker.endDate.format('HH') + ":" + picker.endDate.format('mm'));
+                container.parents('.panel').find('.refreshReport').trigger('click');
+
+            })
+        })
 
         var hash = document.location.hash;
         var prefix = "tab_";
@@ -76,12 +98,15 @@
         }
 
         // Change hash for page-reload
-        $('.nav-tabs a').on('shown.bs.tab', function (e) {
+        $(".nav-tabs a").on('shown.bs.tab', function (e) {
             var report_slug = $(this).attr('href').slice(1);
             window.location.hash = e.target.hash.replace("#", "#" + prefix);
             var params = $(this).attr('ra-report-param');
-            params += $('#' + report_slug).find('form').serialize();
-            loadReport(report_slug, params);
+            let $tabcontent = $('#' + report_slug);
+            {#params += $('#' + report_slug).find('form').serialize();#}
+            $tabcontent.find('select').select2()
+            $tabcontent.find('.refreshReport').trigger('click')
+            {#loadReport(report_slug, params);#}
         });
 
         function loadReport(report_slug, params, callback) {
@@ -89,7 +114,6 @@
             {#if (typeof (params) == "undefined") {#}
             {#    params = report_slug + '/?' + $(report_slug).find('form').serialize();#}
             {# }#}
-            {#var $tabcontent = $('#' + report_slug);#}
             {#blockDiv($tabcontent);#}
             {#var url = params;#}
             {#$.get(url, function (data) {#}
@@ -105,44 +129,12 @@
         }
 
 
-
-        function DisplayChart($this) {
-            {#var $this = $(this);#}
-
-            var report_slug = $this.attr('data-report-slug');
-            var $tabcontent = $('#' + report_slug);
-            if ($tabcontent.length === 0) {
-                $tabcontent = $('.chartWidget[data-report-slug=' + report_slug + ']');
-            }
-            var data = $.ra.cache[report_slug];
-
-
-            var $chart = $tabcontent.find('canvas');
-            let chartObject = $.slick_reporting.chartsjs.createChartObject(data, $this.attr('data-chart-id'), {});
-
-            try {
-                myChart.destroy();
-
-            } catch (err) {
-                {#console.log(err);#}
-            }
-            myChart = new Chart($chart, chartObject);
-
-            var ul = $this.parents('ul');
-            //remove old active classes
-            ul.find('li').removeClass('active');
-            // set the new active class
-            ul.find('li[data-chart-id=' + $this.attr("data-chart-id") + ']').addClass('active');
-
-
-        }
-
         $('.refreshReport').on('click', function (event) {
             event.preventDefault();
             let $this = $(this);
             let $elem = $('[data-report-widget][data-report-url="' + $this.attr('data-report-url') + '"]')
             let $form = $('.formContainer[data-report-url="' + $this.attr('data-report-url') + '"] form')
-            $.ra.report_loader.refreshReportWidget($elem, true, $form.serialize())
+            $.ra.report_loader.refreshReportWidget($elem, $form.serialize())
         });
 
         $('.printReport').on('click', function (event) {
@@ -154,8 +146,6 @@
             var formSerialize = $('div[data-report-slug=' + report_slug + '] form').serialize();
             print_theme = typeof (print_theme) === 'undefined' ? 'default' : print_theme;
             window.open(report_url + '?&print=true&print_theme=' + print_theme + formSerialize, report_slug);
-
-            {#request_from_server($(this), , true, '#' + report_slug);#}
         });
 
         $('.download-csv').on('click', function (event) {
@@ -164,42 +154,13 @@
 
             var report_slug = $this.attr('data-report-slug');
             var report_url = $this.attr('data-report-url');
-            var print_theme = $this.attr('print_theme');
             var formSerialize = $('div[data-report-slug=' + report_slug + '] form').serialize();
 
             window.open(report_url + '?&csv=true&download=true&' + formSerialize, report_slug);
 
 
         });
-        $('.printSubTable').on('click', function (event) {
-            event.preventDefault();
-            var reportModal = $('#reportSub');
-            var url = reportModal.attr('data-report-url') + '&print=true';
-            var win = window.open(url, '_blank');
-            if (win) {
-                //Browser has allowed it to be opened
-                win.focus();
-            }
-            {##}
-            {#            var report_slug = $(this).attr('href').slice(1);#}
-            {#            var print_theme = $(this).attr('print_theme');#}
-            {#            print_theme = typeof(print_theme) === 'undefined' ? 'default' : print_theme;#}
-            {#            request_from_server($(this), '&print=true&print_theme=' + print_theme, true, report_slug);#}
-        });
 
-        function request_from_server($this, added_param, new_window, window_name) {
-
-            var href = window_name;
-            var params = $('a[data-toggle="tab"][href="' + href + '"]').attr('ra-report-param');
-            params += $(href).find('form').serialize();
-            params += added_param;
-            if (new_window === true) {
-                window.open(params, window_name);
-            } else {
-                window.location = params
-            }
-
-        }
 
     </script>
 

@@ -398,28 +398,13 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         return self.request.GET.get('print', False)
 
     @classmethod
-    def initialize_form(cls):
-        # todo remove me
+    def get_initialized_form(cls):
+        """
+        Get the form_class initialized.
+        :return:
+        """
         form_class = cls.get_form_class()
-        if hasattr(form_class, 'initial_settings'):
-            settings = form_class.initial_settings.copy()
-        else:
-            settings = {}
-        settings.update(cls.form_settings or {})
-        # settings['from_doc_date'] = cls.get_default_from_date()
-        # settings['to_doc_date'] = cls.get_default_to_date()
-        # return form_class(support_doc_type=True, **{'form_settings': settings})
         return form_class()
-
-    def get_form_settings(self):
-        # todo : Review
-        form_class = self.get_form_class()
-        if hasattr(form_class, 'initial_settings'):
-            settings = form_class.initial_settings.copy()
-        else:
-            settings = {}
-        settings.update(self.form_settings or {})
-        return settings
 
     @classmethod
     def get_all_print_settings(cls):
@@ -566,6 +551,11 @@ class ReportView(UserPassesTestMixin, SampleReportView):
             title = cls.page_title
         return capfirst(title)
 
+    def get_metadata(self, generator):
+        metadata = super().get_metadata(generator)
+        metadata['report_title'] = self.report_title
+        return metadata
+
     def get_report_results(self, for_print=False):
         """
         Gets the reports Data, and, its meta data used by datatables.net and highcharts
@@ -579,7 +569,6 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         data = self.filter_results(data, for_print)
         data = {
             'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
-            'meta': self.form_settings,
             'data': data,
             'columns': self.get_columns_data(report_generator.get_list_display_columns()),
             'metadata': self.get_metadata(generator=report_generator),

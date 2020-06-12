@@ -167,10 +167,10 @@ function capfirst(s) {
             let focusables = $(':focusable');
             $('input').not('[ra_autocomplete_bind="true"]').not('[type="search"]').not('#top_search_box')
                 .on("keydown", function (event) {
-                    if (event.keyCode == 13) {
+                    if (event.keyCode === 13) {
                         let current = focusables.index(this);
                         let check = false;
-                        while (check == false) {
+                        while (!check ) {
                             let next = getNext(current);
                             let readOnly = $(next).attr('readonly');
 
@@ -204,6 +204,11 @@ function capfirst(s) {
             }
 
         }
+
+        function start_load() {
+
+        }
+
 
 
         return {
