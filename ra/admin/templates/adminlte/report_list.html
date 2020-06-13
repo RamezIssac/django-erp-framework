@@ -67,20 +67,35 @@
         {#    theme: 'bootstrap4'#}
         {# });#}
         $(document).ready(function () {
-            $('.raReportDateRange').daterangepicker(setDatePickerObj()).on('apply.daterangepicker', function (ev, picker) {
+            $('input[name="start_date"], [name=end_date]').daterangepicker({
+                    singleDatePicker: true,
+                    showDropdowns: true,
+                    timePicker: true,
+                    {#dateLimit: {years: 3},#}
+                    timePicker24Hour: true,
+                    timePickerIncrement: 10,
+                    autoUpdateInput: true,
+                    autoApply: true,
 
-                var container = picker.element;
-                var $startDate = container.find('[name=start_date_0]');
-                var $startTime = container.find('[name=start_date_1]');
-                var $endDate = container.find('[name=end_date_0]');
-                var $endTime = container.find('[name=end_date_1]');
-                $startDate.val(picker.startDate.format('YYYY') + '-' + picker.startDate.format('MM') + "-" + picker.startDate.format('DD'))
-                $startTime.val(picker.startDate.format('HH') + ":" + picker.startDate.format('mm'));
-                $endDate.val(picker.endDate.format('YYYY') + '-' + picker.endDate.format('MM') + "-" + picker.endDate.format('DD'))
-                $endTime.val(picker.endDate.format('HH') + ":" + picker.endDate.format('mm'));
-                container.parents('.panel').find('.refreshReport').trigger('click');
+                    {#buttonClasses: ['btn'],#}
+                    {#applyClass: 'btn-small btn-info btn-block',#}
+                    {#cancelClass: 'btn-small btn-default btn-block',#}
 
-            })
+
+                    locale: {
+                        direction: {% if LANGUAGE_BIDI %} 'rtl' {% else %}'ltr'{% endif %},
+                        format: 'YYYY-MM-DD HH:mm',
+                        applyLabel: '{% trans "Apply" %}',
+                        fromLabel: '{% trans "From" %}',
+                        toLabel: '{% trans "To" %}',
+                        startLabel: '{% trans "start date"|capfirst %}:',
+                        endLabel: '{% trans "end date"|capfirst %}:',
+                        cancelLabel: '{% trans "Cancel" %}',
+                        customRangeLabel: '{% trans "choose"|capfirst %}',
+                        firstDay: 1
+                    }
+                }
+            );
         })
 
         var hash = document.location.hash;
@@ -90,42 +105,24 @@
         if (hash) {
             let report_slug = hash.replace(prefix, "");
             $('.nav-tabs a[href="' + report_slug + '"]').tab('show');
-            loadReport(report_slug.slice(1));
+            loadTab(report_slug)
         } else {
             let first_report = $('.nav-tabs a:first');
             first_report.tab('show');
-            loadReport(first_report.attr('href').slice(1))
+            loadTab(first_report.attr('href'))
         }
 
         // Change hash for page-reload
         $(".nav-tabs a").on('shown.bs.tab', function (e) {
-            var report_slug = $(this).attr('href').slice(1);
+            var report_slug = $(this).attr('href')
             window.location.hash = e.target.hash.replace("#", "#" + prefix);
-            var params = $(this).attr('ra-report-param');
-            let $tabcontent = $('#' + report_slug);
-            {#params += $('#' + report_slug).find('form').serialize();#}
-            $tabcontent.find('select').select2()
-            $tabcontent.find('.refreshReport').trigger('click')
-            {#loadReport(report_slug, params);#}
+            loadTab(report_slug)
         });
 
-        function loadReport(report_slug, params, callback) {
-            return;
-            {#if (typeof (params) == "undefined") {#}
-            {#    params = report_slug + '/?' + $(report_slug).find('form').serialize();#}
-            {# }#}
-            {#blockDiv($tabcontent);#}
-            {#var url = params;#}
-            {#$.get(url, function (data) {#}
-            {#    var form_settings = data['form_settings'] || {};#}
-            {#    var frontend_settings = form_settings['frontend_settings'] || {};#}
-            {#    var func_path = frontend_settings['displayReportFunc'] || '$.ra.report_loader.displayReport';#}
-            {#    executeFunctionByName(func_path, window, data, url);#}
-            {##}
-            {# }).fail(function () {#}
-            {#    $.ra.report_loader.failFunction($tabcontent);#}
-            {#    unblockDiv($tabcontent);#}
-            {# });#}
+        function loadTab(tab_href, target) {
+            let $tabcontent = $(tab_href);
+            $tabcontent.find('select').select2({theme: 'bootstrap4'})
+            $tabcontent.find('.refreshReport').trigger('click')
         }
 
 

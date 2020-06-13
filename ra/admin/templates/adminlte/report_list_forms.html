@@ -29,7 +29,7 @@
                                     <div class="row filters-container">
                                         <div class="col-sm-12">
                                             <div class="formContainer" data-report-url="{{ report.get_url }}">
-                                                {% csrf_token %}
+{#                                                {% csrf_token %}#}
                                                 {% with report.get_initialized_form as form %}
                                                         {% crispy form form.get_crispy_helper %}
                                                 {% endwith %}

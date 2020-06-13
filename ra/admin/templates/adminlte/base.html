@@ -171,7 +171,7 @@
                         {% endif %}
                     {% endblock %}
                 </nav>
-        <!-- /.navbar -->
+                <!-- /.navbar -->
             {% endblock %}
             {% block main_sidebar %}
                 {% if not is_popup and not is_print %}
@@ -365,62 +365,7 @@
 <script src="{% static 'ra/js/ra.datatable.js' %}"></script>
 
 {% block date_range_default_js %}
-    <script>
-        var DEFAULT_DATE_PICKER_OBJ;
 
-        function setDatePickerObj() {
-            var range_start = new Date();
-            var range_end = new Date();
-            range_start.setHours(0);
-            range_start.setMinutes(0);
-            range_end.setDate(range_start.getDate() + 1);
-            range_end.setHours(0);
-            range_end.setMinutes(0);
-
-            DEFAULT_DATE_PICKER_OBJ = {
-                {#                startDate: startDate,#}
-                {#                endDate: endDate,#}
-                minDate: '01/01/2015',
-
-                {#                maxDate: endDate,#}
-                autoUpdateInput: false,
-                timePicker: true,
-                dateLimit: {years: 3},
-                timePicker24Hour: true,
-                timePickerIncrement: 10,
-                autoApply: true,
-
-                ranges: {
-                    '{% trans "Today" %}': [range_start, range_end],
-                    '{% trans "Yesterday" %}': [moment(range_start).subtract('days', 1), moment(range_end).subtract('days', 1)],
-                    '{% trans "Last 7 Days" %}': [moment(range_start).subtract('days', 6), moment(range_end)],
-                    '{% trans "This Month" %}': [moment(range_start).startOf('month'), moment(range_end).endOf('month')],
-                    '{% trans "Last Month" %}': [moment(range_start).subtract('month', 1).startOf('month'), moment(range_end).subtract('month', 1).endOf('month')]
-                },
-
-                opens: 'right',
-                showDropdowns: true,
-                linkedCalendars: false,
-                buttonClasses: ['btn'],
-                applyClass: 'btn-small btn-info btn-block',
-                cancelClass: 'btn-small btn-default btn-block',
-                locale: {
-                    direction: {% if LANGUAGE_BIDI %} 'rtl' {% else %}'ltr'{% endif %},
-                    format: 'YYYY-MM-DD',
-                    applyLabel: '{% trans "Apply" %}',
-                    fromLabel: '{% trans "From" %}',
-                    toLabel: '{% trans "To" %}',
-                    startLabel: '{% trans "start date"|capfirst %}:',
-                    endLabel: '{% trans "end date"|capfirst %}:',
-                    cancelLabel: '{% trans "Cancel" %}',
-                    customRangeLabel: '{% trans "choose"|capfirst %}',
-                    firstDay: 1
-                }
-            };
-        }
-
-        setDatePickerObj();
-    </script>
 {% endblock %}
 {% block js_defaults_and_init %}
     <script>
@@ -459,7 +404,6 @@
             columnDefs: [{
                 orderable: false,
                 width: '100px',
-                {#            targets: [ 5 ]#}
             }],
             dom: '<"datatable-header"fl><"datatable-scroll"t><"datatable-footer"ip>',
             language: {
@@ -479,23 +423,8 @@
 
         jQuery(document).ready(function () {
             $('.page-container').show();
-            RA_Main.init();
+            {# RA_Main.init(); #}
             $.ra.report_loader.initialize();
-            if (typeof (Storage) !== "undefined") {
-                // Code for localStorage/sessionStorage.
-                var check = localStorage.getItem("ra-intro");
-                if (check == null) {
-                    setTimeout(function () {
-                        $('#ra-help').trigger('click');
-                    }, 500);
-
-                    localStorage.setItem('ra-intro', true);
-                }
-            } else {
-                // Sorry! No Web Storage support..
-            }
-
-            $('.alert.bg-success').not('.noAutoHide').delay(3000).fadeOut()
 
         });
     </script>
