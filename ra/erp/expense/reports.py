@@ -94,7 +94,7 @@ class ExpenseMovementTimeComparison(ReportView):
             'title_source': 'title',
             'data_source': ['__total__'],
             'series_names': [_('total movement')],
-            'stacking':'normal',
+            'stacking': 'normal',
 
         },
         # {
@@ -133,6 +133,29 @@ class ExpenseMovementMatrixComparison(ReportView):
     crosstab_model = 'expense'
     crosstab_columns = ['__total__']
     columns = ['title']
+
+    chart_settings = [
+        {
+            'type': 'column',
+            'data_source': ['__total__'],
+            'plot_total': False,
+            'title_source': 'title',
+        },
+        {
+            'type': 'column',
+            'data_source': ['__total__'],
+            'plot_total': False,
+            'title_source': 'title',
+            'stacking':'normal'
+        },
+
+        {
+            'type': 'pie',
+            'data_source': ['__total__'],
+            'plot_total': False,
+            'title_source': 'title',
+        }
+    ]
 
     #     'group_page_title': _('Expenses Comparison'),
     #     'details_page_title': _('Expenses Comparison'),

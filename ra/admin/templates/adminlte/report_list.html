@@ -106,9 +106,8 @@
                 $.ra.report_loader.refreshReportWidget($elem, $form.serialize())
             });
 
-            var hash = document.location.hash;
-            var prefix = "tab_";
-            var myChart;
+            let hash = document.location.hash;
+            let prefix = "tab_";
 
             if (hash) {
                 let report_slug = hash.replace(prefix, "");

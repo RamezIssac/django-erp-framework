@@ -173,7 +173,7 @@ class ProductSalesMonthlySeries(ReportView):
             'id': 'movement_line',
             'title': _('comparison - line'),
             'type': 'line',
-            'data_source': '__balance__',
+            'data_source': ['__balance__'],
             'title_source': 'title',
 
         },

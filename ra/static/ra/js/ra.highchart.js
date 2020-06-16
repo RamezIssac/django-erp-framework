@@ -66,12 +66,16 @@
 
 
                 let is_time_series = is_timeseries_support(response, chartOptions); // response.metadata.time_series_pattern || '';
+                let is_crosstab = is_crosstab_support(response, chartOptions);
+
                 let chart_type = chartOptions.type;
                 var enable3d = false;
                 let chart_data = {};
 
                 if (is_time_series) {
                     chart_data = get_time_series_data(response, chartOptions)
+                } else if (is_crosstab) {
+                    chart_data = get_crosstab_data(response, chartOptions)
                 } else {
                     chart_data = get_normal_data(response, chartOptions)
                 }
@@ -298,7 +302,7 @@
             let series = []
             let data_sources = {};
             chartOptions.data_source.forEach(function (elem, key) {
-                data_sources[elem] = []; //{'name': chartOptions.series_name[key],}
+                data_sources[elem] = [];
                 response.columns.forEach(function (col, key) {
                     if (col.computation_field === elem) {
                         data_sources[elem].push(col.name)
@@ -345,22 +349,68 @@
             }
         }
 
+        function get_crosstab_data(response, chartOptions) {
 
-        function is_matrix_support(matrix_series, isGroup, chartOptions) {
-            if (matrix_series == null) {
-                return false;
+            let series = []
+            let data_sources = {};
+            let col_dict = $.ra.dataComprehension.dataArrayToObject(response.columns, 'name')
+            chartOptions.data_source.forEach(function (elem, key) {
+                data_sources[elem] = [];
+                response.columns.forEach(function (col, key) {
+                    if (col.computation_field === elem) {
+                        data_sources[elem].push(col.name)
+                    }
+                })
+            })
+            if (!chartOptions.plot_total) {
+                response.data.forEach(function (elem, index) {
+                    Object.keys(data_sources).forEach(function (series_cols, index) {
+                        let data = []
+                        data_sources[series_cols].forEach(function (col, index) {
+                            data.push(elem[col])
+                        })
+                        series.push({
+                            'name': elem[chartOptions.title_source],
+                            'data': data
+                        })
+                    })
+                })
             } else {
-                if (chartOptions['matrix_scope'] == 'both') return true;
-                else if (isGroup && chartOptions['matrix_scope'] == 'group') {
-                    return true;
-                } else return !!(isGroup == false && chartOptions['matrix_scope'] == 'details');
+                let all_column_to_be_summed = []
+                Object.keys(data_sources).forEach(function (series_cols, index) {
+                    all_column_to_be_summed = all_column_to_be_summed.concat(data_sources[series_cols]);
+                })
+                let totalValues = calculateTotalOnObjectArray(response.data, all_column_to_be_summed)
+
+                Object.keys(data_sources).forEach(function (series_cols, index) {
+                    let data = []
+
+                    data_sources[series_cols].forEach(function (col, index) {
+                        data.push(totalValues[col])
+                        series.push({
+                            'name': col_dict[col].verbose_name,
+                            'data': data
+                        })
+
+                    })
+
+
+                })
+            }
+            return {
+                'categories': response.metadata.crosstab_column_verbose_names,
+                'titles': response.metadata.crosstab_column_verbose_names,
+                'series': series,
             }
         }
 
 
         function is_timeseries_support(response, chartOptions) {
             return response.metadata.time_series_pattern || ''
-            // return (timeseries_columns != null && !chartOptions.no_time_series_support);
+        }
+
+        function is_crosstab_support(response, chartOptions) {
+            return response.metadata.crosstab_model || ''
         }
 
         function displayChart(data, $elem, chart_id) {
@@ -375,13 +425,12 @@
                     existing_chart.highcharts().destroy()
                 }
             } catch (e) {
-                console.log(e)
+                console.error(e)
             }
 
             chartObject = $.ra.highcharts.createChartObject(data, chartObject);
             _chart_cache[data.report_slug] = chart.highcharts(chartObject);
 
-            // unblockDiv($elem);
         }
 
         $.ra.highcharts = {
