@@ -225,7 +225,6 @@
                     };
                 } else if (chart_type === 'line') {
                     var marker_enabled = true;
-
                     // disable marker when ticks are more then 12 , relying on the hover of the mouse ;
                     try {
                         if (highchart_object.series[0].data.length > 12) marker_enabled = false;
@@ -325,21 +324,19 @@
             } else {
                 let all_column_to_be_summed = []
                 Object.keys(data_sources).forEach(function (series_cols, index) {
-                    all_column_to_be_summed = all_column_to_be_summed + series_cols;
+                    all_column_to_be_summed = all_column_to_be_summed.concat(data_sources[series_cols]);
                 })
                 let totalValues = calculateTotalOnObjectArray(response.data, all_column_to_be_summed)
 
                 Object.keys(data_sources).forEach(function (series_cols, index) {
                     let data = []
-                    series_cols.forEach(function (col, index) {
+                    data_sources[series_cols].forEach(function (col, index) {
                         data.push(totalValues[col])
                     })
                     series.push({
                         'name': 'Total', //todo
                         'data': data
                     })
-
-
                 })
             }
             return {
@@ -414,7 +411,6 @@
         }
 
         function displayChart(data, $elem, chart_id) {
-            // hand over to the chart plugin
             chart_id = chart_id || $elem.attr('data-report-default-chart') || '';
             let chart = $elem;
             let chartObject = $.ra.dataComprehension.getObjFromArray(data.chart_settings, 'id', chart_id, true);

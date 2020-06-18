@@ -159,63 +159,79 @@ function capfirst(s) {
 (function ($) {
 
 
-    $.ra = function (options) {
-        let opts = $.extend({}, $.ra.defaults, options);
+    // let opts = $.extend({}, $.ra.defaults, options);
 
-        function enable_tab_support() {
-            //support for enter key as a navigation
-            let focusables = $(':focusable');
-            $('input').not('[ra_autocomplete_bind="true"]').not('[type="search"]').not('#top_search_box')
-                .on("keydown", function (event) {
-                    if (event.keyCode === 13) {
-                        let current = focusables.index(this);
-                        let check = false;
-                        while (!check ) {
-                            let next = getNext(current);
-                            let readOnly = $(next).attr('readonly');
+    function enable_tab_support() {
+        //support for enter key as a navigation
+        let focusables = $(':focusable');
+        $('input').not('[ra_autocomplete_bind="true"]').not('[type="search"]').not('#top_search_box')
+            .on("keydown", function (event) {
+                if (event.keyCode === 13) {
+                    let current = focusables.index(this);
+                    let check = false;
+                    while (!check) {
+                        let next = getNext(current);
+                        let readOnly = $(next).attr('readonly');
 
-                            if (typeof readOnly == 'undefined') {
-                                check = true;
-                            }
-                            if ($(next).hasClass('delete-row')) {
-                                check = false;
-                            }
-                            current++;
+                        if (typeof readOnly == 'undefined') {
+                            check = true;
                         }
-                        next.focus();
-                        next.select();
-                        event.preventDefault();
+                        if ($(next).hasClass('delete-row')) {
+                            check = false;
+                        }
+                        current++;
                     }
+                    next.focus();
+                    next.select();
+                    event.preventDefault();
+                }
 
-                    function getNext(current) {
-                        return focusables.eq(current + 1).length ? focusables.eq(current + 1) : focusables.eq(0);
-                    }
-                });
+                function getNext(current) {
+                    return focusables.eq(current + 1).length ? focusables.eq(current + 1) : focusables.eq(0);
+                }
+            });
+    }
+
+    function smartParseFloat(number, to_fixed) {
+        // Wrapper around parseFloat aimed to deliver only numbers
+
+        let val = parseFloat(number);
+        if (isNaN(val)) return 0;
+        else {
+            if (to_fixed > 0 && to_fixed <= 20) return val.toFixed(to_fixed);
+            else return val
         }
 
-        function smartParseFloat(number, to_fixed) {
-            // Wrapper around parseFloat aimed to deliver only numbers
+    }
 
-            let val = parseFloat(number);
-            if (isNaN(val)) return 0;
-            else {
-                if (to_fixed > 0 && to_fixed <= 20) return val.toFixed(to_fixed);
-                else return val
-            }
+    function start_load() {
 
-        }
+    }
 
-        function start_load() {
+    function focus_first($div) {
+        $div = $div || $('#ra_page_content');
+        $div.find('input:visible').not(':disabled').not('.hasDatepicker').not('.timeinput').first().select().focus();
+    }
 
-        }
+    function adjustNumberWidget() {
+        $('input[type=number]').on('focus', function (e) {
+            $(this).on('mousewheel.disableScroll', function (e) {
+                e.preventDefault();
+                var scrollTo = (e.originalEvent.wheelDelta * -1) + $(document.documentElement).scrollTop();
+                $(document.documentElement).scrollTop(scrollTo);
+            })
+        }).on('blur', function (e) {
+            $(this).off('mousewheel.disableScroll')
+        });
+    }
 
+    $.ra = {
+        enterTabSupport: enable_tab_support,
+        smartParseFloat: smartParseFloat,
+        focus_first: focus_first,
 
-
-        return {
-            enterTabSupport: enable_tab_support,
-            smartParseFloat: smartParseFloat
-        }
-    };
+    }
+    // };
 
     $.ra.defaults = {
         debug: true,

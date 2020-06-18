@@ -31,6 +31,10 @@ In your settings file, add the following apps to ``INSTALLED_APPS``:
     'ra.activity',
     'ra.reporting',
 
+    # ERP modules
+    'ra.erp.expense',
+    'ra.erp.treasury',
+
 Add the following entries to ``MIDDLEWARE``:
 
 .. code-block:: python

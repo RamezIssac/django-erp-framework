@@ -1,10 +1,6 @@
 Quick Start
 ===========
 
-A light-weight effective Django based framework to create business applications and various resource planing systems (ERP),
-equipped with a reporting engine and a responsive dashboard.
-
-
 Installation
 ------------
 

@@ -1,8 +1,8 @@
-{% extends 'ra/admin/base.html' %}
+{% extends 'ra/admin/base_site.html' %}
 
 {% load ra_admin_tags ra_tags %}
 
-{% block content %}
+{% block page_content %}
 
 
 {#    {% get_report base_model='expense' report_slug='ExpenseDetailedStatement' as transactions %}#}
@@ -12,7 +12,7 @@
 
     {% get_report base_model='expense' report_slug='ExpenseMovementTimeComparison' as client_sales_of_products %}
     {% with 'expense_id='|addstr:original.pk as id %}
-    {% get_html_panel client_sales_of_products %}
+        {% get_html_panel client_sales_of_products %}
     {% endwith %}
 
 {% endblock %}

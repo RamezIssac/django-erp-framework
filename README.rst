@@ -20,7 +20,7 @@
 Ra Framework
 ============
 
-A light-weight effective Django based framework to create business applications and various resource planing systems (ERP),
+A light-weight, effective, Django based framework to create business applications and various resource planing systems (ERP),
 equipped with a reporting engine and a responsive dashboard.
 
 Demo
@@ -45,10 +45,10 @@ Features
 --------
 
 - A responsive dashboard built on top of Django's admin and Bootstrap AdminLte theme.
-- Using Django Slick Reporting for report Engine to compute and chart several types of reports with simple lines of code.
-- A charting capabilities
+- Using Django Slick Reporting for report Engine to compute and chart several reports types with simple lines of code.
 - A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
+- Extendable ERP modules ready to use.
 - Python 3.6 / 3.7 / 3.8
 - Django 2.2, 3.0 Compatible
 
@@ -112,7 +112,7 @@ To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
     # 1. Clone and install requirements
-    $ git clone git+git@github.com:ra-systems/RA.git
+    $ git clone git+git@github.com:ra-systems/django-ra-erp.git
     $ cd tests
     $ python -m pip install -e ..
     $ python -m pip install -r requirements/py3.txt

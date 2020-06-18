@@ -1,8 +1,136 @@
 {% extends "ra/admin/base.html" %}
+{% load i18n static %}
+
 {% block title %}{{ title|capfirst }} | {{ site_title|default:_('RA ERP') }}{% endblock %}
 
 {% block branding %}
-    <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:'' }}</a></h1>
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:'' }}</a></h1>
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
+{% block extrastyle %}
+    <link href="{{ STATIC_URL }}ra/css/animate.min.css" rel="stylesheet"
+          type="text/css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}ra/plugins/datatables/datatables.css"/>
+    <link rel="stylesheet"
+          href="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/css/dataTables.bootstrap4.css"/>
+
+
+{% endblock %}
+
+{%block extrajs %}
+<script type="text/javascript" src="{{ STATIC_URL }}ra/js/ra.js"></script>
+
+<script>
+    $.ra.rtl = {% if LANGUAGE_BIDI %} true ;{% else %} false; {% endif %}
+    $.ra.defaults.messages = {
+        DoneMessage: '{% trans "Done..."  %}',
+        RedirectionMessage: "{% trans 'Redirecting...' %}",
+        SuccessMessage: '{% trans "Done..."  %}',
+        ErrorMessage: '{% trans "An error happened :( " %}',
+        WaitMessage: '{% trans 'Just a moment...'  %}',
+        LoadingMessage: '{% trans 'loading...'|capfirst  %}',
+        slug_verbose: '{% trans  'slug'|capfirst   %}',
+        title_verbose: '{% trans  'title'|capfirst   %}',
+        choose: '{% trans  'choose'|capfirst   %}',
+        choice: '{% trans  'choice'|capfirst    %}',
+        to_code: '{% trans 'to code'|capfirst   %}',
+        from_code: '{% trans 'from code'|capfirst   %}',
+        select_all: '{% trans  'Select All'  %}',
+        select_none: '{% trans  'Select None'  %}',
+        inverse: '{% trans  'Inverse'  %}',
+        apply: '{% trans  'Apply'  %}',
+        choiceBeenMade: '{% trans  'Choice made'  %}',
+        total: '{% trans  'total'|capfirst  %}',
+        percentage: '{% trans 'percentage'|capfirst  %}',
+        pertoTotal: '{% trans 'per. to total' %}',
+        Total: '{% trans  'Total'  %}',
+        Percentage: '{% trans 'Percentage' %}',
+        availableCharts: "{% trans 'charts'|capfirst %}"
+    };
+</script>
+
+<script type="text/javascript" charset="utf8"
+        src="{{ STATIC_URL }}ra/plugins/datatables/datatables.js"></script>
+<script type="text/javascript" charset="utf8"
+        src="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/js/dataTables.bootstrap4.js"></script>
+{#<script type="text/javascript" charset="utf8"#}
+{#        src="{{ STATIC_URL }}ra/js/vendor/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>#}
+{#<script type="text/javascript" src="{{ STATIC_URL }}ra/js/vendor/daterangepicker.js"></script>#}
+<script src="{% static 'ra/plugins/chartsjs/src/Chart.js' %}"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+
+<script src="{% static 'slick_reporting/ra.chartsjs.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'ra/js/ra.report_loader.js' %}"></script>
+<script type="text/javascript" src="{% static 'ra/js/ra.dataComprehension.js' %}"></script>
+<script type="text/javascript" src="{% static 'ra/js/ra.highchart.js' %}"></script>
+
+
+<script src="{% static 'ra/js/ra.datatable.js' %}"></script>
+
+
+    <script>
+        $.extend($.fn.dataTable.defaults, {
+            "oLanguage": {
+
+                "oAria": {
+                    "sSortDescending": ": activate to sort column descending"
+                },
+                "oPaginate": {
+                    "sFirst": "{% trans "First" %}",
+                    "sLast": "{% trans "Last" %}",
+                    "sNext": "{% trans "Next" %}",
+                    "sPrevious": "{% trans "Previous" %}"
+                },
+                "sEmptyTable": "{% trans "No data available here yet." %}",
+                {% if LANGUAGE_BIDI %}
+                    "sInfo": '',
+                {% else %}
+                    "sInfo": "{% trans "Showing _START_ to _END_ of _TOTAL_ entries" %}",
+                {% endif %}
+                "sInfoEmpty": "{% trans "Nothing found" %}",
+                "sInfoFiltered": "{% trans "(filtered from _MAX_ total entries)" %}",
+                "sInfoPostFix": "",
+                "sInfoThousands": ",",
+                "sLengthMenu": "{% trans "Show _MENU_ entries" %}",
+                "sLoadingRecords": "{% trans "Loading..." %}",
+                "sProcessing": "{% trans "Processing..." %}",
+                "sSearch": "{% trans "Search" %}:",
+                "sUrl": "",
+                "sZeroRecords": "{% trans "No matching records found" %}"
+            },
+
+            {#        // added by theme #}
+            autoWidth: false,
+            columnDefs: [{
+                orderable: false,
+                width: '100px',
+            }],
+            dom: '<"datatable-header"fl><"datatable-scroll"t><"datatable-footer"ip>',
+            language: {
+                search: '<span>{% trans 'Filter' %}:</span> _INPUT_',
+                searchPlaceholder: '{% trans "Type to filter" %}...',
+                lengthMenu: '<span>{% trans 'Show' %}:</span> _MENU_',
+                paginate: {'first': 'First', 'last': 'Last', 'next': '&rarr;', 'previous': '&larr;'}
+            },
+            drawCallback: function () {
+                $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').addClass('dropup');
+            },
+            preDrawCallback: function () {
+                $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').removeClass('dropup');
+            }
+        });
+
+
+        jQuery(document).ready(function () {
+            $('.page-container').show();
+            {# RA_Main.init(); #}
+            $.ra.focus_first();
+            $.ra.report_loader.initialize();
+
+        });
+    </script>
+
+{% endblock %}
+

@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 
 from ra.utils.permissions import has_report_permission_permission
 
-from ra.base.app_settings import RA_APP_ICONS, RA_ADMIN_SITE_NAME
+from ra.base.app_settings import RA_ADMIN_SITE_NAME
 
 register = template.Library()
 
@@ -112,6 +112,8 @@ def addstr(arg1, arg2):
 @register.simple_tag
 def get_html_panel(report, object=None, **kwargs):
     kwargs['report'] = report
+    if not report:
+        raise ValueError("report argument is empty. Are you sure you're using the correct report name")
 
     # No chart argument default to True if no charts in reports
     kwargs.setdefault('no_chart', not bool(report.chart_settings))
