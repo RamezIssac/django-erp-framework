@@ -134,10 +134,10 @@ class RaThemeMixin:
     delete_selected_confirmation_template = f'{app_settings.RA_THEME}/delete_selected_confirmation.html'
     add_form_template = f'{app_settings.RA_THEME}/change_form.html'
 
-    recover_form_template = f'{app_settings.RA_THEME}/reversion/recover_form.html'
-    revision_form_template = f'{app_settings.RA_THEME}/reversion/revision_form.html'
-    object_history_template = f'{app_settings.RA_THEME}/reversion/object_history.html'
-    recover_list_template = f'{app_settings.RA_THEME}/reversion/recover_list.html'
+    recover_form_template = f'ra/reversion/recover_form.html'
+    revision_form_template = f'ra/reversion/revision_form.html'
+    object_history_template = f'ra/reversion/object_history.html'
+    recover_list_template = f'ra/reversion/recover_list.html'
 
     view_template = None  # Defaults to f'{app_settings.RA_THEME}/view.html'
 
