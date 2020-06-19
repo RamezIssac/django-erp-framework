@@ -264,6 +264,8 @@
                 <div id="content" class="{% block coltype %}colM{% endblock %}">
                     {% block content %}
                         {% block object-tools %}{% endblock %}
+                        {% block page_content %}
+                            {% endblock %}
                         {{ content }}
                     {% endblock %}
                     {% block sidebar %}{% endblock %}
@@ -361,7 +363,7 @@
 <script type="text/javascript" src="{% static 'ra/js/ra.dataComprehension.js' %}"></script>
 <script type="text/javascript" src="{% static 'ra/js/ra.highchart.js' %}"></script>
 
-<script src="{% static 'ra/js/ra_main_js.js' %}"></script>
+
 <script src="{% static 'ra/js/ra.datatable.js' %}"></script>
 
 {% block date_range_default_js %}
@@ -424,6 +426,7 @@
         jQuery(document).ready(function () {
             $('.page-container').show();
             {# RA_Main.init(); #}
+            $.ra.focus_first();
             $.ra.report_loader.initialize();
 
         });

@@ -190,7 +190,7 @@ class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
 
 
 class ReportList(ReportListBase):
-    template_name = f'{app_settings.RA_THEME}/report_list.html'
+    template_name = f'ra/admin/report_list.html'
     _bypass = True
 
     def get_order_list(self):
@@ -373,6 +373,14 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         """
         return cls.report_model
 
+    @staticmethod
+    def form_filter_func(fkeys_dict):
+        output = {}
+        for k, v in fkeys_dict.items():
+            if k not in ['owner_id', 'polymorphic_ctype_id', 'lastmod_user_id']:
+                output[k] = v
+        return output
+
     @classmethod
     def get_form_class(cls):
         """
@@ -381,7 +389,8 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         :return: form_class
         """
         return cls.form_class or report_form_factory(cls.get_report_model(), crosstab_model=cls.crosstab_model,
-                                                     display_compute_reminder=cls.crosstab_compute_reminder)
+                                                     display_compute_reminder=cls.crosstab_compute_reminder,
+                                                     fkeys_filter_func=cls.form_filter_func)
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)

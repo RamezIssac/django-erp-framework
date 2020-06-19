@@ -12,8 +12,7 @@
                     {% for report in reports.reports %}
                         <div class="tab-pane animated {% if LANGUAGE_BIDI %}bounceInLeft {% else %}bounceInRight{% endif %}"
                              id="{{ report.get_report_slug }}"
-                             role="tabpanel"
-                        >
+                             role="tabpanel">
 
                             <div class="card">
                                 <div class="card-header">
@@ -21,7 +20,7 @@
 
 
                                     <div class="card-tools">
-                                        {% include RA_THEME|add:'/report_list_form_buttons.html' %}
+                                        {% include 'ra/admin/report_list_form_buttons.html' %}
                                     </div>
 
                                 </div>
@@ -29,9 +28,9 @@
                                     <div class="row filters-container">
                                         <div class="col-sm-12">
                                             <div class="formContainer" data-report-url="{{ report.get_url }}">
-{#                                                {% csrf_token %}#}
+                                                {#                                                {% csrf_token %}#}
                                                 {% with report.get_initialized_form as form %}
-                                                        {% crispy form form.get_crispy_helper %}
+                                                    {% crispy form form.get_crispy_helper %}
                                                 {% endwith %}
 
                                             </div>
@@ -43,12 +42,15 @@
                                 </div>
                                 <div class="card-footer">
                                     <div class="card-tools">
-                                        {% include RA_THEME|add:'/report_list_form_buttons.html' %}
+                                        {% include 'ra/admin/report_list_form_buttons.html' %}
                                     </div>
 
                                 </div>
                             </div>
                             <div class="card">
+                            <div class="card-header">
+                                <div class="card-title"><h5>Results</h5></div>
+                            </div>
                                 <div class="card-body">
                                     <div data-report-widget data-no-auto-load
                                          data-report-url="{{ report.get_url }}"

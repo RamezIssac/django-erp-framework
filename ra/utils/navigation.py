@@ -11,5 +11,5 @@ class RaSuitMenu(object):
     def get_menu(cls, context, request, admin_site):
         from ra.admin.templatetags.suit_menu import get_menu as suit_get_menu
         context['app_list'] = suit_get_menu(context, request)
-        return get_template('%s/menu.html' % app_settings.RA_THEME).render(context.flatten())
+        return get_template('ra/admin/menu.html').render(context.flatten())
 

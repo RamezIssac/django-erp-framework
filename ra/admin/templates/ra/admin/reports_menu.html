@@ -1,0 +1,25 @@
+{% load i18n %}
+
+<li class="nav-item has-treeview {% if is_in_reports %} menu-open {% endif %}">
+    <a class="nav-link {% if is_in_reports %} active {% endif %}" href="">
+        <i class="nav-icon fas fa-chart-line"> </i>
+
+        <p>
+            {% trans 'Reports' %}
+            <i class="right fas fa-angle-left"></i>
+        </p>
+
+    </a>
+
+    <ul class="nav nav-treeview">
+        {% for report in classes %}
+            <li class="nav-item ">
+                <a href="{{ report.get_report_list_url }}"
+                   class="nav-link {% if active_base_model == report.get_model_name %}active{% endif %}">
+{#                    <i class="far fa-circle nav-icon"></i>#}
+                    <p>{{ report.get_verbose_name_plural }}</p>
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</li>

@@ -56,7 +56,7 @@ def render_reports_menu(context):
     from ra.reporting.registry import report_registry
     classes = report_registry.get_base_models()
     if classes:
-        t = get_template(f'{app_settings.RA_THEME}/reports_menu.html')
+        t = get_template(f'ra/admin/reports_menu.html')
         return mark_safe(
             t.render({'classes': classes, 'is_in_reports': is_in_reports, 'active_base_model': active_base_model}))
     return ''

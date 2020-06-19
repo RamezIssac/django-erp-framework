@@ -17,8 +17,12 @@
 
 
 {% endblock %}
+{% block sidebar %}
+    {% include 'ra/admin/sidebar.html' %}
+{% endblock %}
 
 {%block extrajs %}
+    <script src="{% static 'adminlte/plugins/moment/moment.min.js' %}"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}ra/js/ra.js"></script>
 
 <script>
@@ -128,9 +132,12 @@
             {# RA_Main.init(); #}
             $.ra.focus_first();
             $.ra.report_loader.initialize();
+            $('#changelist-form table').addClass('table table-hover table-striped table-condensed table-bordered')
 
         });
     </script>
 
 {% endblock %}
 
+
+{% block footer %} {% endblock %}
