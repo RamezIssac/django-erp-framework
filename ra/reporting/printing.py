@@ -49,7 +49,7 @@ class HTMLPrintingClass(object):
         self.print_settings = print_settings
         self.report_title = self.report_view.get_report_title() if getattr(report_view, 'get_report_title',
                                                                            False) else ''
-        self.template_name = f'{app_settings.RA_THEME}/print_base.html'
+        self.template_name = f'ra/admin/print_base.html'
 
     def get_response(self, template_name=None, extra_context=None):
         template_name = template_name or self.template_name

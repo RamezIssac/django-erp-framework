@@ -4,7 +4,7 @@
 {% block title %}{{ title|capfirst }} | {{ site_title|default:_('RA ERP') }}{% endblock %}
 
 {% block branding %}
-<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:'' }}</a></h1>
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:'' }}</a></h1>
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
@@ -14,64 +14,48 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}ra/plugins/datatables/datatables.css"/>
     <link rel="stylesheet"
           href="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/css/dataTables.bootstrap4.css"/>
+    <style>
+        .groupChartControllers {
+            margin: 5px;
+            text-align: center;
+        }
+    .nav-charts{
+                    display: inline-flex;
+    }
 
+    </style>
 
 {% endblock %}
 {% block sidebar %}
     {% include 'ra/admin/sidebar.html' %}
 {% endblock %}
 
-{%block extrajs %}
+{% block extrajs %}
     <script src="{% static 'adminlte/plugins/moment/moment.min.js' %}"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}ra/js/ra.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}ra/js/ra.js"></script>
 
-<script>
-    $.ra.rtl = {% if LANGUAGE_BIDI %} true ;{% else %} false; {% endif %}
-    $.ra.defaults.messages = {
-        DoneMessage: '{% trans "Done..."  %}',
-        RedirectionMessage: "{% trans 'Redirecting...' %}",
-        SuccessMessage: '{% trans "Done..."  %}',
-        ErrorMessage: '{% trans "An error happened :( " %}',
-        WaitMessage: '{% trans 'Just a moment...'  %}',
-        LoadingMessage: '{% trans 'loading...'|capfirst  %}',
-        slug_verbose: '{% trans  'slug'|capfirst   %}',
-        title_verbose: '{% trans  'title'|capfirst   %}',
-        choose: '{% trans  'choose'|capfirst   %}',
-        choice: '{% trans  'choice'|capfirst    %}',
-        to_code: '{% trans 'to code'|capfirst   %}',
-        from_code: '{% trans 'from code'|capfirst   %}',
-        select_all: '{% trans  'Select All'  %}',
-        select_none: '{% trans  'Select None'  %}',
-        inverse: '{% trans  'Inverse'  %}',
-        apply: '{% trans  'Apply'  %}',
-        choiceBeenMade: '{% trans  'Choice made'  %}',
-        total: '{% trans  'total'|capfirst  %}',
-        percentage: '{% trans 'percentage'|capfirst  %}',
-        pertoTotal: '{% trans 'per. to total' %}',
-        Total: '{% trans  'Total'  %}',
-        Percentage: '{% trans 'Percentage' %}',
-        availableCharts: "{% trans 'charts'|capfirst %}"
-    };
-</script>
+    <script>
+        $.ra.rtl = {% if LANGUAGE_BIDI %} true ;{% else %} false; {% endif %}
+    </script>
 
-<script type="text/javascript" charset="utf8"
-        src="{{ STATIC_URL }}ra/plugins/datatables/datatables.js"></script>
-<script type="text/javascript" charset="utf8"
-        src="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/js/dataTables.bootstrap4.js"></script>
-{#<script type="text/javascript" charset="utf8"#}
-{#        src="{{ STATIC_URL }}ra/js/vendor/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>#}
-{#<script type="text/javascript" src="{{ STATIC_URL }}ra/js/vendor/daterangepicker.js"></script>#}
-<script src="{% static 'ra/plugins/chartsjs/src/Chart.js' %}"></script>
-<script src="https://code.highcharts.com/highcharts.js"></script>
+    <script type="text/javascript" charset="utf8"
+            src="{{ STATIC_URL }}ra/plugins/datatables/datatables.js"></script>
+    <script type="text/javascript" charset="utf8"
+            src="{{ STATIC_URL }}ra/plugins/datatables/DataTables-1.10.20/js/dataTables.bootstrap4.js"></script>
+    {#<script type="text/javascript" charset="utf8"#}
+    {#        src="{{ STATIC_URL }}ra/js/vendor/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>#}
+    {#<script type="text/javascript" src="{{ STATIC_URL }}ra/js/vendor/daterangepicker.js"></script>#}
+    <script src="{% static 'ra/plugins/chartsjs/src/Chart.js' %}"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
 
-<script src="{% static 'slick_reporting/ra.chartsjs.js' %}"></script>
+    <script src="{% static 'slick_reporting/ra.chartsjs.js' %}"></script>
 
-<script type="text/javascript" src="{% static 'ra/js/ra.report_loader.js' %}"></script>
-<script type="text/javascript" src="{% static 'ra/js/ra.dataComprehension.js' %}"></script>
-<script type="text/javascript" src="{% static 'ra/js/ra.highchart.js' %}"></script>
+    <script type="text/javascript" src="{% static 'ra/js/ra.report_loader.js' %}"></script>
+    <script type="text/javascript" src="{% static 'ra/js/ra.dataComprehension.js' %}"></script>
+    <script type="text/javascript" src="{% static 'ra/js/ra.highchart.js' %}"></script>
 
 
-<script src="{% static 'ra/js/ra.datatable.js' %}"></script>
+    <script src="{% static 'ra/js/ra.datatable.js' %}"></script>
 
 
     <script>
@@ -118,12 +102,12 @@
                 lengthMenu: '<span>{% trans 'Show' %}:</span> _MENU_',
                 paginate: {'first': 'First', 'last': 'Last', 'next': '&rarr;', 'previous': '&larr;'}
             },
-            drawCallback: function () {
-                $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').addClass('dropup');
-            },
-            preDrawCallback: function () {
-                $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').removeClass('dropup');
-            }
+            {#drawCallback: function () {#}
+            {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').addClass('dropup');#}
+            {# },#}
+            {#preDrawCallback: function () {#}
+            {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').removeClass('dropup');#}
+            {# }#}
         });
 
 

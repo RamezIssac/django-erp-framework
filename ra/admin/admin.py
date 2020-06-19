@@ -311,8 +311,9 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
         request.current_app = self.admin_site.name
         return TemplateResponse(request, self.view_template or [
-            "admin/%s/%s/view.html" % (opts.app_label, opts.model_name),
-            "admin/%s/view.html" % opts.app_label,
+            "ra/admin/%s/%s/view.html" % (opts.app_label, opts.model_name),
+            "ra/admin/%s/view.html" % opts.app_label,
+            'ra/admin/view.html',
             f"{app_settings.RA_THEME}/view.html",
         ], context)
 

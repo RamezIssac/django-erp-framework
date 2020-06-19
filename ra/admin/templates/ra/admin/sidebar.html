@@ -2,7 +2,7 @@
 {% if jazzmin_settings.show_sidebar %}
     {% get_side_menu as side_menu_list %}
 
-    <aside class="zzzzzzzzzzzzzz main-sidebar elevation-4 {{ jazzmin_ui.sidebar_classes }}" id="jazzy-sidebar">
+    <aside class="main-sidebar elevation-4 {{ jazzmin_ui.sidebar_classes }}" id="jazzy-sidebar">
         <a href="{% url 'admin:index' %}" class="brand-link {{ jazzmin_ui.brand_classes }}" id="jazzy-logo">
             <img src="{% static jazzmin_settings.site_logo %}" alt="{{ jazzmin_settings.site_header }} Logo"
                  class="brand-image img-circle elevation-3" style="opacity: .8">

@@ -72,7 +72,8 @@ ALWAYS_INSTALLED_APPS = [
     'ra',
     'ra.admin',
     'ra.activity',
-    'ra.reporting'
+    'ra.reporting',
+    'jazzmin',
 ]
 
 ALWAYS_MIDDLEWARE = [
