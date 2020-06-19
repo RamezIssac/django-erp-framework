@@ -7,7 +7,6 @@
         {#        </div>#}
     </div>
     <div class="card-body">
-        {#        {% include 'ra/admin/datepicker_control.html' with report=monthly_movement %}#}
         <div data-report-widget
              data-report-url="{{ report.get_url }}"
              data-extra-params="{{ data_extra_param|default:'' }}"

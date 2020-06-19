@@ -33,7 +33,7 @@ And in the our template we add code like this
 
 .. code-block:: javascript
 
-    {% extends 'ra/admin/base_site.html' %}
+    {% extends 'ra/base_site.html' %}
     {% load ra_admin_tags %}
 
     {% block content %}
@@ -128,7 +128,7 @@ To add apply this information, we only need to add ``data-extra-params`` to the 
 
 .. code-block:: javascript
 
-    {% extends 'ra/admin/base.html' %}
+    {% extends 'ra/base.html' %}
     {% load ra_admin_tags %}
 
     {% block content %}

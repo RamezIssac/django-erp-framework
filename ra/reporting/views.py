@@ -190,7 +190,7 @@ class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
 
 
 class ReportList(ReportListBase):
-    template_name = f'ra/admin/report_list.html'
+    template_name = f'ra/report_list.html'
     _bypass = True
 
     def get_order_list(self):

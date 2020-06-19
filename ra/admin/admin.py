@@ -311,9 +311,9 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
         request.current_app = self.admin_site.name
         return TemplateResponse(request, self.view_template or [
-            "ra/admin/%s/%s/view.html" % (opts.app_label, opts.model_name),
-            "ra/admin/%s/view.html" % opts.app_label,
-            'ra/admin/view.html',
+            "ra/%s/%s/view.html" % (opts.app_label, opts.model_name),
+            "ra/%s/view.html" % opts.app_label,
+            'ra/view.html',
             f"{app_settings.RA_THEME}/view.html",
         ], context)
 
@@ -921,9 +921,6 @@ class PrepopulatedAdmin(object):
 
 class RaPrePopulatedAdmin(PrepopulatedAdmin, EntityAdmin):
     pass
-    # change_form_template = 'ra/admin/change_form_prepopulated.html'
-    # add_form_template = 'ra/admin/change_form_prepopulated.html'
-
 
 class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
     enable_view_view = False

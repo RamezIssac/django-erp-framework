@@ -1,4 +1,4 @@
-{% extends "ra/admin/base.html" %}
+{% extends "ra/base.html" %}
 {% load i18n static %}
 
 {% block title %}{{ title|capfirst }} | {{ site_title|default:_('RA ERP') }}{% endblock %}
@@ -27,7 +27,7 @@
 
 {% endblock %}
 {% block sidebar %}
-    {% include 'ra/admin/sidebar.html' %}
+    {% include 'ra/sidebar.html' %}
 {% endblock %}
 
 {% block extrajs %}
