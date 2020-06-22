@@ -1,11 +1,13 @@
 Django Ra Components
 =====================
 
-1. Core Models
+1. Base Models
 
-2. Admin
+2. Admin Models
 
 3. Report Registry
+
+4. Front End
 
 
 System Design
