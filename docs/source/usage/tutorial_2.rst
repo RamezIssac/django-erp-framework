@@ -1,13 +1,130 @@
-Creating Reports (Part2)
-------------------------
+Reporting and Charting
+----------------------
 
-First Let's recap what we did so far.
+We released our reporting engine as a standalone package (so can use it without being tied down to any of this)
 
-1. We created a `Product`, `Client` and `SimpleSales` models, created and registered a *doc_type*;
-2. We created ModelAdmin classes inheriting from `EntityAdmin` and `RaMovement` for our classes;
-3. We created a custom template extending from `RA_THEME|add:'/changeform.html'`, and we used `smartParseFloat` to deal with numbers on front end.
+Django slick reporting
 
-Now let's create some reports!!
+We will talk generally here but for more detailed information, please head to Django Slick Reporting docs
+
+
+Generating test data
+~~~~~~~~~~~~~~~~~~~~
+
+Before we begin, charts and reporting get more fun and interesting the more data available.
+So below, a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.
+This will definitely enhance your experience with this next section. Also we will be using it for benchmarking Ra Performance.
+
+Create and add below code to 'sales/management/commands/generate_data.py'
+
+.. code-block:: python
+
+    import random
+    import datetime
+    import pytz
+    from django.core.management import BaseCommand
+
+
+    class Command(BaseCommand):
+        help = 'Generates data for simple sales app'
+
+        def add_arguments(self, parser):
+            parser.add_argument('--clients', type=int, action='store', help='Number of client to get generated, default 10')
+            parser.add_argument('--product', type=int, action='store',
+                                help='Number of products t0o get generated, default 10')
+            parser.add_argument('--expenses', type=int, action='store',
+                                help='Number of Expense to get generated, default 10')
+
+            parser.add_argument('--expense-transaction', type=int, action='store',
+                                help='Number of records per day,  default 10')
+
+        def handle(self, *args, **options):
+            from ...models import Client, Product, SalesTransaction, SalesLineTransaction, Expense, ExpenseTransaction
+            from django.contrib.auth.models import User
+            user_id = User.objects.first().pk
+            client_count = options.get('clients', 10) or 10
+            product_count = options.get('products', 10) or 10
+            records_per_day = options.get('records', 10) or 10
+
+            expense_count = options.get('expenses', 10) or 10
+            etransaction_per_day = options.get('expense-transaction', 3) or 3
+
+            # Generating clients
+            already_recorded = Client.objects.all().count()
+            clients_needed = client_count - already_recorded
+            if clients_needed > 0:
+                for index in range(already_recorded, already_recorded + clients_needed):
+                    Client.objects.create(title=f'Client {index}', lastmod_user_id=user_id)
+                self.stdout.write(f'{clients_needed} client(s) created')
+
+            # Product
+            already_recorded = Product.objects.all().count()
+            product_needed = product_count - already_recorded
+            if product_needed > 0:
+                for index in range(already_recorded, already_recorded + product_needed):
+                    Product.objects.create(title=f'Product {index}', lastmod_user_id=user_id)
+                self.stdout.write(f'{product_needed} product(s) created')
+
+            already_recorded = Expense.objects.all().count()
+            Expenses_needed = expense_count - already_recorded
+            if Expenses_needed > 0:
+                for index in range(already_recorded, already_recorded + Expenses_needed):
+                    Expense.objects.create(title=f'Expense {index}', lastmod_user_id=user_id)
+                self.stdout.write(f'{Expenses_needed} Expense(s) created')
+
+            # generating sales
+            # we will generate 10 records per day for teh whole current year
+            sdate = datetime.datetime(datetime.date.today().year, 1, 1)
+            edate = datetime.datetime(datetime.date.today().year, 12, 31)
+
+            client_ids = Client.objects.values_list('pk', flat=True)
+            product_ids = Product.objects.values_list('pk', flat=True)
+            expense_ids = Expense.objects.values_list('pk', flat=True)
+
+            delta = edate - sdate  # as timedelta
+            for i in range(delta.days + 1):
+                day = sdate + datetime.timedelta(days=i)
+                day = pytz.utc.localize(day)
+                for z in range(1, records_per_day):
+                    chosen_client = random.choice(client_ids)
+                    SalesLineTransaction.objects.create(
+                        doc_date=day,
+                        sales_transaction=SalesTransaction.objects.create(doc_date=day, client_id=chosen_client,
+                                                                          lastmod_user_id=user_id),
+                        product_id=random.choice(product_ids),
+                        client_id=chosen_client,
+                        quantity=random.randrange(1, 10),
+                        price=random.randrange(1, 10),
+                        lastmod_user_id=user_id
+                    )
+
+                for z in range(1, etransaction_per_day):
+                    ExpenseTransaction.objects.create(
+                        doc_date=day,
+                        expense_id=random.choice(expense_ids),
+                        value=random.randrange(1, 10),
+                        lastmod_user_id=user_id
+                    )
+                self.stdout.write(f'{day} Done')
+                self.stdout.flush()
+
+            self.stdout.write('----')
+            self.stdout.write('Done')
+
+Then let's run the command
+
+.. code-block:: console
+
+    $ python manage.py generate_data
+
+    # and here with the default arguments in case you want to fine tune
+    $ python manage.py generate_data --clients 10 --products 10 --records 10 --expense 10 --expense-transaction 3
+
+
+Now we have some test data to give us a full view on the system once it's functional.
+
+Let's create some reports!!
+
 We would like to know
 
     1. How much each Client bought (in value).
@@ -41,8 +158,7 @@ In our sales app, let's create a `reports.py` file *it can be any name, this is 
         columns = ['slug', 'title', '__balance__']
 
 
-Now we need to import `reports.py` so our code is executed.
-Best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
+Now we need to load `reports.py` during the app life cycle so our code is executed and best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
 
 .. code-block:: python
 
@@ -115,64 +231,6 @@ Basically, to create a report we need:
 For more information about availables checkout the Django Slick Reporting documentation `Here <https://django-slick-reporting.readthedocs.io/en/latest/>`_
 
 Now let's create a 3rd report.
-
-.. _header_report_tutorial:
-How much each client bought of each product ?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-But wait a minute, how will we display this report, so far all reports we created were only 1 level, now we need 2.
-Level 1 would display a list of clients, level 2 display the sum of the sales for each product for that client.
-
-Let's add this code to our `reports.py`
-
-.. code-block:: python
-
-    @register_report_view
-    class ClientList(ReportView):
-        report_title = _('Our Clients')
-
-        base_model = Client
-        report_model = SimpleSales
-
-        # will not appear on the reports menu
-        hidden = True
-
-        group_by = 'client'
-        columns = ['slug', 'title']
-
-
-    @register_report_view
-    class ProductClientSales(ReportView):
-        report_title = _('Client Sales for each product')
-
-        base_model = Client
-        report_model = SimpleSales
-
-        must_exist_filter = 'client_id'
-        header_report = ClientList
-
-        group_by =  'product'
-        columns =  ['slug', 'title', '__balance_quan__', '__balance__']
-
-
-
-Let's run this code and see what it did then we will analyze it.
-
-You should find "Client Sales for each Product" as new report, it should display a list of clients;
-Clicking on the "+" sign, and it should open a popup with the a table of the products displaying a the total value and the total *quantity* sold by each product for the chosen clients.
-
-Let's analyze what we just did:
-
-We created 2 report view classes
-
-* ``ClientList`` ReportView class, creates that first layer, It serves to only displays the list of client from which will select.
-* ``ProductClientSales`` which contain couple of new stuff
-
-    * `must_exists_filter` and `header_report` are what allow this report to display the `ClientList` *the header_report* as long as the *must_exists_filter* is not in the querystring.
-    * The new computation field ``__balance_quan__`` which operate on the `quantity` field, *where `__balance__` operates on the `value` field.
-
-
-Now for the final report in this this section.
 
 A Client Detailed statement.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
