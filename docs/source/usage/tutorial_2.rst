@@ -121,30 +121,31 @@ Then let's run the command
     $ python manage.py generate_data --clients 10 --products 10 --records 10 --expense 10 --expense-transaction 3
 
 
-Now we have some test data to give us a full view on the system once it's functional.
+Now we have some test data to give us a more complete look. Let's create some reports!!
 
-Let's create some reports!!
+Sample Reports
+~~~~~~~~~~~~~~
 
 We would like to know
 
     1. How much each Client bought (in value).
     2. How much each Product is Sold (In value and in quantity)
-    3. For each client, the total bought of each product
-    4. A Client statement
+    3. For each client, how much they bought of each product
+    4. A Client detailed statement
 
 Then we will be adding charts
 
 How much each Client bought (in value)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In our sales app, let's create a `reports.py` file *it can be any name, this is just a convention*
+In our `sample_erp` app, let's create a `reports.py` file *it can be any name, this is just a convention*
 
 .. code-block:: python
 
     from django.utils.translation import ugettext_lazy as _
     from ra.reporting.registry import register_report_view
     from ra.reporting.views import ReportView
-    from .models import Client, SimpleSales
+    from .models import Client, SalesLineTransaction, Product
 
 
     @register_report_view
@@ -152,25 +153,25 @@ In our sales app, let's create a `reports.py` file *it can be any name, this is 
         report_title = _('Clients Balances')
 
         base_model = Client
-        report_model = SimpleSales
+        report_model = SalesLineTransaction
 
         group_by = 'client'
         columns = ['slug', 'title', '__balance__']
 
 
-Now we need to load `reports.py` during the app life cycle so our code is executed and best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
+Now we need to load `reports.py` during the app life cycle so our code is executed. Best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
 
 .. code-block:: python
 
-    # in sales __init__.py
-    default_app_config = 'sales.apps.SalesConfig'
+    # in sample_erp __init__.py
+    default_app_config = 'sample_erp.apps.SampleERPConfig'
 
     # in sales/apps.py
     from django.apps import AppConfig
 
 
-    class SalesConfig(AppConfig):
-        name = 'sales'
+    class SampleErpConfig(AppConfig):
+        name = 'sample_erp'
 
         def ready(self):
             super().ready()
@@ -186,21 +187,17 @@ Click on the Clients menu will open the Client Report List, which will load the 
 We can notice that
 
 1. Report table is sortable and searchable (Thanks to `datatables.net <https://datatables.net/>`_ )
-2. Client's name and slug/refer code are clickable and will direct you to Statistics of that client, *we will be filling this page later in :ref:`adding_charts_widgets`
-3. There is a dedicated sub page for printing (More about Customizing prints later )
-4. Report can also be exported to Excel.
-5. You can filter by *Date* , *Client* and *Product*. For the later two, the widget allow you to select multiple objects.
-6. All filters and calculation are done automatically.
+2. Report can also be exported to Excel, can also be printed with a dedicated html template
+3. You can filter by *Date* , *Client* and *Product*. For the later two, the widget allow you to select multiple objects.
+4. All filters and calculation are done automatically.
 
-Let's create another report that answers the question
+Let's create another report that answers the following question
 
 How much each product was sold?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 .. code-block:: python
-
-    from .models import Product
 
     @register_report_view
     class ProductTotalSales(ReportView):
@@ -211,24 +208,19 @@ How much each product was sold?
         base_model = Product
 
         # What model hold the data that we want to compute.
-        report_model = SimpleSales
+        report_model = SalesLineTransaction
 
         # The meat and potato of the report.
         # We group the records in SimpleSales by Client ,
         # And we display the columns `slug` and `title` (relative to the `base_model` defined above)
         # the magic field `__balance__` computes the balance (of the base model)
         group_by = 'product'
-        columns = ['slug', 'title', '__balance__']
+        columns = ['slug', 'title', '__balance_quantity__']
 
 Did you notice that both class definition are almost the same.
-Only differences are the `base_model` and in `group_by`.
+Main differences are the `base_model` and in `group_by` and we used `__balance_quantity__` which summarize the field "quantity" instead of the field "value".
 
-Basically, to create a report we need:
-
-1. Give it a title (obviously)
-2. Assign ``base_model`` and ``report_model``
-
-For more information about availables checkout the Django Slick Reporting documentation `Here <https://django-slick-reporting.readthedocs.io/en/latest/>`_
+For more information about available options checkout the Django Slick Reporting documentation `Here <https://django-slick-reporting.readthedocs.io/en/latest/>`_
 
 Now let's create a 3rd report.
 
@@ -237,17 +229,13 @@ A Client Detailed statement.
 
 Which is a simple list of the sales transaction
 
-
 .. code-block:: python
 
     @register_report_view
     class ClientDetailedStatement(ReportView):
         report_title = _('client Statement')
         base_model = Client
-        report_model = SimpleSales
-
-        must_exist_filter = 'client_id'
-        header_report = ClientList
+        report_model = SalesLineTransaction
 
 
         columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']

@@ -8,7 +8,7 @@ First let's recap what we did in Part 2
 
 1. We created a `reports.py` in which we organised our ``ReportView`` classes and we made sure to import it in the `AppConfig.ready()`
 2. we explored ``ReportView`` class needed attributes.
-3. we got introduced to the report fields like `__balance__` and `__balance_quan__` , and that they compute the needed values.
+3. we got introduced to the report fields like `__balance__` and `__balance_quantity__` , and that they compute the needed values.
 4. we got introduced to the a 2 layer report, also a report with no group where it displays the records directly.
 5- We created charts using ``chart_settings``
 
@@ -133,7 +133,7 @@ Noticed that ``time_series_fields`` is a list, which means that we can have more
 
 In the above report, we knew the sum of *value* of sales for each product, in each month, We can also know the sum of *quantity* of each product sold each month as well.
 
-Add ``'__balance_quan__'`` to the ``time_series_fields`` list,
+Add ``'__balance_quantity__'`` to the ``time_series_fields`` list,
 
 
 .. code-block::python
@@ -143,7 +143,7 @@ Add ``'__balance_quan__'`` to the ``time_series_fields`` list,
         ...
 
         time_series_pattern = 'monthly'
-        time_series_fields = ['__balance_quan__', '__balance__']
+        time_series_fields = ['__balance_quantity__', '__balance__']
 
         swap_sign = True
 

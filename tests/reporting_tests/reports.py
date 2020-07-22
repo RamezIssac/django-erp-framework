@@ -68,10 +68,10 @@ class ProductTotalSales(ReportView):
     # And we display columns slug and title (relative to the `base_model` defined above)
     # the magic field `__balance__` computes the balance (of the base model)
     form_settings = {'group_by': 'product',
-                     'group_columns': ['slug', 'title', '__balance__', '__balance_quan__'],
+                     'group_columns': ['slug', 'title', '__balance__', '__balance_quantity__'],
                      }
     group_by = 'product'
-    columns = ['slug', 'title', '__balance__', '__balance_quan__']
+    columns = ['slug', 'title', '__balance__', '__balance_quantity__']
 
 
 @register_report_view
@@ -106,10 +106,10 @@ class ProductClientSales(ReportView):
 
     form_settings = {
         'group_by': 'product',
-        'group_columns': ['slug', 'title', '__balance_quan__', '__balance__'],
+        'group_columns': ['slug', 'title', '__balance_quantity__', '__balance__'],
     }
     group_by = 'product'
-    columns = ['slug', 'title', '__balance_quan__', '__balance__']
+    columns = ['slug', 'title', '__balance_quantity__', '__balance__']
 
     chart_settings = [
         {
@@ -120,7 +120,7 @@ class ProductClientSales(ReportView):
             # 'title': _('sales for {product}'),
 
             'sub_title': _('{date_verbose}'),
-            'data_source': ['__balance_quan__'],
+            'data_source': ['__balance_quantity__'],
             'series_names': [_('Sales Qty')],
             # }
         },
@@ -129,7 +129,7 @@ class ProductClientSales(ReportView):
         #     'title': _('sales by client (Bar)'),
         #     'settings': {
         #         'chart_type': 'column',
-        #         'y_sources': ['__balance_quan__'],
+        #         'y_sources': ['__balance_quantity__'],
         #
         #         'title': _('sales for {product}'),
         #         'sub_title': _('{date_verbose}'),
@@ -151,13 +151,13 @@ class ProductSalesMonthlySeries(ReportView):
         'group_columns': ['slug', 'title'],
 
         'time_series_pattern': 'monthly',
-        'time_series_columns': ['__balance_quan__', '__balance__'],
+        'time_series_columns': ['__balance_quantity__', '__balance__'],
     }
 
     group_by = 'product'
     columns = ['slug', 'title']
     time_series_pattern = 'monthly',
-    time_series_columns = ['__balance_quan__', '__balance__']
+    time_series_columns = ['__balance_quantity__', '__balance__']
 
     chart_settings = [
         {
