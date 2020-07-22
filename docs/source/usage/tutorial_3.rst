@@ -17,59 +17,76 @@ Our home page seems little empty, it would be nice if we can have a *report widg
 Let's display total client sales report table directly into our home.
 
 
-Table Report Widget
-~~~~~~~~~~~~~~~~~~~
+A Full Report Widget
+~~~~~~~~~~~~~~~~~~~~
 
 
-First let's create a template ``sales/index.html`` template,
+First let's create a template ``sample_erp/index.html`` template,
 then in our settings.py we set this template to be displayed as the index page
 
 .. code-block:: python
 
-    RA_ADMIN_INDEX_PAGE = 'sales/index.html'
+    RA_ADMIN_INDEX_PAGE = 'sample_erp/index.html'
 
 And in the our template we add code like this
 
 .. code-block:: javascript
 
     {% extends 'ra/base_site.html' %}
-    {% load ra_admin_tags %}
+    {% load ra_admin_tags ra_tags %}
 
     {% block content %}
-        {% get_report base_model='client' report_slug='clienttotalbalance' as client_balances %}
-        <div data-report-widget
-             data-report-url="{{ client_balances.get_url }}">
-
-            <div data-report-table> </div>
+        <div class="col-sm-12">
+            {% get_report base_model='product' report_slug='ProductSalesMonthly' as ProductSalesMonthly %}
+            {% get_html_panel ProductSalesMonthly %}
         </div>
     {% endblock %}
 
 
-Then let's visit our home page, you should see a table with the client balances on our dashboard.
+Then let's visit our home page, you should see a the charts, and the report table of the ProductSalesMonthly report.
 
 Here is what we basically did
 
-1. We loaded the report with ``get_report`` providing the `base model` name and the ``report slug`` (which is basically the report class name).
-2. We created a div with attrs ``data-report-widget`` which tell Ra javascript that we need to load a report in that section/div.
-3. We provided the url to that report ``data-report-url`` via the ``.get_url`` method of the `ReportView`
-4. Finally, we created a child div with attr ``data-report-table`` to load the report table in.
+1. We loaded the report with ``get_report`` providing the `base model` name and the ``report slug`` (default basically to the report class name, unless explicitly changed).
+2. We used ``get_html_panel`` templatetag to generate the needed html. This templatetag template is ``ra/snippets/panel_for_report.html``
+
+``get_html_panel`` is a shortcut. Let's add another report without using it to see how it looks
+
+.. code-block:: django
+
+            <div class="col-sm-12">
+            {% get_report base_model='client' report_slug='ClientTotalBalance' as client_balances %}
+            <h2>{{ client_balances.report_title }}</h2>
+            <div data-report-widget
+                 data-report-url="{{ client_balances.get_url }}">
+
+                <div id="container" data-report-chart style="width:100%; height:400px;"></div>
+
+                <div data-report-table>
+
+                </div>
+            </div>
+
+        </div>
 
 
-Now we can do pretty much the same for Charts. We'll use th pie chart we created in Part 2 of this tutorial :ref:`adding_charts_tutorial`
 
-Chart Widget
-~~~~~~~~~~~~
+Customizations
+~~~~~~~~~~~~~~
 
+* we can display the table only
+* we can display the chart only , and select which chart from the list of available charts.
+* We can receive the report data as json in our own handler and use it however we like.
 
-In our index template, we add add a canvas with `data-report-chart` attr as child to the `[data-report-widget]` div.
+In our index template, we add add a div with `data-report-chart` attr as child to the `[data-report-widget]` div.
 Like this
 
-.. code-block:: html
+.. code-block:: django
 
         <div data-report-widget
              data-report-url="{{ client_balances.get_url }}">
 
-            <canvas data-report-chart height="50"></canvas>  <!--  The new line -->
+            <canvas data-report-chart height="50"></canvas>
             <div data-report-table></div>
         </div>
 
@@ -77,7 +94,7 @@ The above code loaded the first chart as default. If you want to change the char
 just add attribute to  the canvas elem ``data-report-default-chart="YOUR_CHART_ID"``
 
 
-.. code-block:: html
+.. code-block:: django
 
         <div data-report-widget
              data-report-url="{{ client_balances.get_url }}">
@@ -97,28 +114,28 @@ Customizing the View page
 -------------------------
 
 Ra also provide a view page for each EntityModel subclass, registered with `EntityAdmin`.
-If you go to the Clients change list page,for example, you'd find a column called "Stats" which will redirect you to a blank page with the title
+For example: If you go to the Clients change list page, you'd find a column called "Stats" which will redirect you to a blank page with the title
 *Statistics for <Client name>*
 
 Same like what we did with the home page, we can add widgets to be displayed for this specific object.
 Let's see how.
 
-First we need a custom template, so lets create `sales/admin/client_view.html`
+First we need a custom template, so lets create `sample_erp/admin/client_view.html`
 and assign it to the model admin `view_template`
 
 .. hint::
     Template location can also follow django template finding procedure.
 
-in `sales/admin.py`
+in `sample_erp/admin.py`
 
 .. code-block:: python
 
     class ClientAdmin(EntityAdmin):
         ...
-        view_template = 'sales/admin/client_view.html'
+        view_template = 'sample_erp/admin/client_view.html'
 
 
-And in `sales/admin/client_view.html` let's reuse the exact same code we used in the home page, and check the results.
+And in `sample_erp/admin/client_view.html` let's reuse the exact same code we used in the home page, and check the results.
 
 Sure enough, the chart the the table should be displayed, but there is a small problem.
 In this page, we're not interested in *all* the clients data, we're only interested in *one client*.
@@ -127,7 +144,7 @@ To add apply this information, we only need to add ``data-extra-params`` to the 
 
 .. code-block:: javascript
 
-    {% extends 'ra/base.html' %}
+    {% extends 'ra/base_site.html' %}
     {% load ra_admin_tags %}
 
     {% block content %}
@@ -201,7 +218,7 @@ This report makes perfect sense to be displayed here on the client view page.
 
 Let's add it.
 
-.. code-block:: html
+.. code-block:: django
 
     {% get_report base_model='client' report_slug='productclientsales' as client_sales_of_products %}
     <div data-report-widget

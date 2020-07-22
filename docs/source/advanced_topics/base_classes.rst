@@ -1,29 +1,34 @@
 .. _base_classes:
 
-
-*Work in progress*
-
-
 Base Classes
-============
+=============
 
 
-.. _baseinfo:
+.. _entity_model:
 
 EntityModel
---------
+-----------
+.. autoclass:: ra.base.models.EntityModel
+   :members:
 
-BasePersonInfo
---------------
+.. _transaction_model:
+
+TransactionModel
+~~~~~~~~~~~~~~~~
+.. autoclass:: ra.base.models.TransactionModel
+   :members:
 
 
-BaseMovementInfo
-----------------
+.. _transactionitemmodel:
 
-BaseMovementItemInfo
---------------------
+TransactionItemModel
+~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: ra.base.models.TransactionModel
+   :members:
 
+.. _quantitativetransactionitemmodel:
 
 QuantitativeTransactionItemModel
-----------------------
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: ra.base.models.TransactionModel
+   :members:

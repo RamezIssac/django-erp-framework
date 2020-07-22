@@ -8,7 +8,7 @@ First we need to create an app
 
 .. code-block:: console
 
-    $ django-admin startapp sales
+    $ django-admin startapp sample_erp
 
 then add `sales` to your ``INSTALLED_APPS``.
 
@@ -46,8 +46,8 @@ Below are our models to start building the business management application we wa
         expense = models.ForeignKey(Expense, on_delete=models.CASCADE)
 
         class Meta:
-            verbose_name = _('Sale')
-            verbose_name_plural = _('Sales')
+            verbose_name = _('Expense Transaction')
+            verbose_name_plural = _('Expense Transactions')
 
 
     class SalesTransaction(TransactionModel):
@@ -60,36 +60,39 @@ Below are our models to start building the business management application we wa
 
     class SalesLineTransaction(QuantitativeTransactionItemModel):
         product = models.ForeignKey(Product, on_delete=models.CASCADE)
+        client = models.ForeignKey(Client, on_delete=models.CASCADE)
 
         class Meta:
-            verbose_name = _('Sale Transaction Item')
-            verbose_name_plural = _('Sale Transaction Items')
+            verbose_name = _('Sale Transaction Line')
+            verbose_name_plural = _('Sale Transaction Lines')
 
 
 
 
 
-The Base Classes from which we subclassed our models are fairly straight forward , you can read more about :ref:`base_classes`.
-Basically they are there to add common use fields in a standard way which will make the orchestration in the system better.
+
+The Base Classes we inherit from are fairly straight forward , you can read more about :ref:`base_classes` .
+Basically they are there to add common fields in a standard way which will make the orchestration in the system better.
 
 Those fields contains slug field, notes, creator user and creation date, and last modified user and last modified date.
 Transactional base model classes include fields like value, price, quantity.
 
-   | **EntityModel**: is the Base class from which all other base classes are derived.
-   | **QuantitativeTransactionItemModel**: is the base class of a transaction and provide useful fields
-usually needed for any transaction, like `refer_code`, `doc_date` , `quantity` , `price`, `discount` and `value`
+   | **:ref:`entity_model`**: is the Base class from which all other base classes are derived.
+   | **QuantitativeTransactionItemModel**: is the base class of a transaction and provide useful fields usually needed for any transaction, like `refer_code`, `doc_date` , `quantity` , `price`, `discount` and `value`
 
 
-Run ``python manage.py makemigrations sales``, then
-``python manage.py migrate`` to update the database with your model
+Run ``python manage.py makemigrations sample_erp``, ``python manage.py migrate`` to update the database with your models
 
 The Admin
 ----------
 
 Ra makes use of the django admin to leverage the process of authentication, authorization and CRUD operation(s).
-This is done by subclassing the original ModelAdmin into `EntityAdmin` and `TransactionAdmin` with some enhancements.
+This is done by
 
-With this information in mind, let's add this piece of code into `admin.py`
+1. Using a different admin site then the default one
+2. Using subclassing ModelAdmin which offer many enhancements.
+
+With this information in mind, let's add the below piece of code into `admin.py`
 
 .. code-block:: python
 
@@ -117,6 +120,7 @@ With this information in mind, let's add this piece of code into `admin.py`
     class SalesOrderAdmin(TransactionAdmin):
         inlines = [SalesLineAdmin]
         fields = ['slug', 'doc_date', 'client', ]
+        copy_to_formset = ['client']
 
 
     ra_admin_site.register(Client, ClientAdmin)
@@ -131,17 +135,21 @@ Also we register our model with their AdminModel with ``ra_admin_site`` which is
 
 .. note::
 
-    EntityAdmin and TransactionAdmin are just subclasses of admin.ModelAdmin. You can customize it as you'd do normally with any ModelAdmin.
-    You can add list_filter, make the foreign key widget to be Select2, adjust fields and fieldsets on the change_form etc...
+    :ref:`entity_admin` and ``TransactionAdmin`` are just subclasses of `admin.ModelAdmin`. `TransactionItemAdmin` is a subclass of `admin.TabularInline`.
+    You can customize it as you'd do normally with any ModelAdmin.
+    You can add list_filter(s), select_related, adjust fields and fieldsets on the change_form, etc..
 
-Read more about :ref:`ra_admin`
+Read more about Admin options: :ref:`ra_admin`
 
-Let's run and access our Dashboard, enter your username and password already created with `createsuperuser`.
+Let's run and access our Dashboard, enter your username and password created with `createsuperuser`.
 In the left hand menu you'd find a menu, which will contains links to Clients, Products & SimpleSales admin pages as you'd expect.
 
 
 Go to the sales order page, add a couple of sale transaction entries.
-Now, we notice that *value field* is editable,  it should be read only and equal to result of multiplying price and quantity and this should be done automatically.
+Now, we notice that
+
+1. *value field* is editable, while it should be readonly
+2. The Value field should automatically equals the result of price * quantity.
 
 Front End customization
 -----------------------

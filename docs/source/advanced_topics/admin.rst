@@ -1,7 +1,7 @@
 .. _ra_admin:
 
-The Dashboard
-#############
+The Admin
+#########
 
 
 Ra Site
@@ -27,3 +27,8 @@ A subclass of admin.ModelAdmin with various different options
 2. :func:`whole_changeform_validation(self, request, form, formsets, change, **kwargs)`
    Where you'll get a chance to validate the whole page forms and formsets
 
+
+.. _entity_admin:
+
+EntityAdmin
+~~~~~~~~~~~

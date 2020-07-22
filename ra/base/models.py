@@ -7,7 +7,7 @@ from django.db import models
 from django.urls import reverse, NoReverseMatch
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
-from polymorphic.models import PolymorphicModel
+# from polymorphic.models import PolymorphicModel
 
 from . import app_settings, registry
 
@@ -59,7 +59,7 @@ class DiffingMixin(object):
         return result
 
 
-class RAModel(DiffingMixin, PolymorphicModel):
+class RAModel(DiffingMixin, models.Model):
     owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
                               on_delete=models.CASCADE)
     creation_date = models.DateTimeField(_('creation date and time'), default=now)
