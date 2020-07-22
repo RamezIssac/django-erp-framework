@@ -1,284 +1,215 @@
-Tutorial (Part 3) - Creating Time series and Crosstab Reports
--------------------------------------------------------------
+.. _adding_charts_widgets:
+
+Adding charts & report widgets to Homepage and View pages
+=========================================================
+
+First let's recap what we did so far
+
+1. we explored the our base models and their respective ModelAdmins
+2. we explored how to create several kind reports and how to add multiple charts to a report.
+
+Now let's continue.
+
+Customizing the Home page
+-------------------------
+
+Our home page seems little empty, it would be nice if we can have a *report widgets* on it, some tables with relevant data and charts, Yeah ?
+Let's display total client sales report table directly into our home.
 
 
-In this section we will create time series report and crosstab report with charts.
-
-First let's recap what we did in Part 2
-
-1. We created a `reports.py` in which we organised our ``ReportView`` classes and we made sure to import it in the `AppConfig.ready()`
-2. we explored ``ReportView`` class needed attributes.
-3. we got introduced to the report fields like `__balance__` and `__balance_quantity__` , and that they compute the needed values.
-4. we got introduced to the a 2 layer report, also a report with no group where it displays the records directly.
-5- We created charts using ``chart_settings``
+Table Report Widget
+~~~~~~~~~~~~~~~~~~~
 
 
-Generating test data
-~~~~~~~~~~~~~~~~~~~~
-
-Before we begin, charts and reporting get more fun and interesting the more data available.
-So below you can find a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.
-This will definitely enhance your experience with this next section. Also we will be using it for benchmarking Ra Performance.
-
-.. code-block:: python
-
-    import random
-    import datetime
-    import pytz
-    from django.core.management import BaseCommand
-
-
-    class Command(BaseCommand):
-        help = 'Generates data for simple sales app'
-
-        def add_arguments(self, parser):
-            parser.add_argument('--clients', type=int, action='store', help='Number of client to get generated, default 10')
-            parser.add_argument('--product', type=int, action='store',
-                                help='Number of products t0o get generated, default 10')
-            parser.add_argument('--records', type=int, action='store', help='Number of records per day,  default 10')
-
-        def handle(self, *args, **options):
-            from ...models import Client, Product, SimpleSales
-            from django.contrib.auth.models import User
-            user_id = User.objects.first().pk
-            client_count = options.get('clients', 10) or 10
-            product_count = options.get('products', 10) or 10
-            records_per_day = options.get('records', 10) or 10
-
-            # Generating clients
-            already_recorded = Client.objects.all().count()
-            clients_needed = client_count - already_recorded
-            if clients_needed > 0:
-                for index in range(already_recorded, already_recorded + clients_needed):
-                    Client.objects.create(title=f'Client {index}', lastmod_user_id=user_id)
-                self.stdout.write(f'{clients_needed} client(s) created')
-
-            # Product
-            already_recorded = Product.objects.all().count()
-            product_needed = product_count - already_recorded
-            if product_needed > 0:
-                for index in range(already_recorded, already_recorded + product_needed):
-                    Product.objects.create(title=f'Product {index}', lastmod_user_id=user_id)
-                self.stdout.write(f'{product_needed} product(s) created')
-
-            # generating sales
-            # we will generate 10 records per day for teh whole current year
-            sdate = datetime.datetime(datetime.date.today().year, 1, 1)
-            edate = datetime.datetime(datetime.date.today().year, 12, 31)
-
-            client_ids = Client.objects.values_list('pk', flat=True)
-            product_ids = Product.objects.values_list('pk', flat=True)
-
-            delta = edate - sdate  # as timedelta
-            for i in range(delta.days + 1):
-                day = sdate + datetime.timedelta(days=i)
-                day = pytz.utc.localize(day)
-                for z in range(1, records_per_day):
-                    SimpleSales.objects.create(
-                        doc_date=day,
-                        product_id=random.choice(product_ids),
-                        client_id=random.choice(client_ids),
-                        quantity=random.randrange(1, 10),
-                        price=random.randrange(1, 10),
-                        lastmod_user_id=user_id
-                    )
-                self.stdout.write('.', ending='')
-
-            self.stdout.write('')
-            self.stdout.write('Done')
-
-After adding this code to 'sales/management/commands/generate_data.py', you can now run
-
-.. code-block:: console
-
-    $ python manage.py generate_data
-
-Note that this commands accept arguments to decide how many record you want to generate.
-
-
-Time Series
-~~~~~~~~~~~
-
-A time series is a report where the columns represents time unit (year/month/week/day)
-
-Let's see an example
-
+First let's create a template ``sales/index.html`` template,
+then in our settings.py we set this template to be displayed as the index page
 
 .. code-block:: python
 
-    @register_report_view
-    class ProductSalesMonthly(ReportView):
-        report_title = _('Product Sales Monthly')
+    RA_ADMIN_INDEX_PAGE = 'sales/index.html'
 
-        base_model = Product
-        report_model = SimpleSales
+And in the our template we add code like this
 
-        group_by ='product'
-        columns = ['slug', 'title']
+.. code-block:: javascript
 
-            # how we made the report a time series report
-        time_series_pattern = 'monthly'
-        time_series_fields = ['__balance__']
+    {% extends 'ra/base_site.html' %}
+    {% load ra_admin_tags %}
 
+    {% block content %}
+        {% get_report base_model='client' report_slug='clienttotalbalance' as client_balances %}
+        <div data-report-widget
+             data-report-url="{{ client_balances.get_url }}">
 
-
-Reload your development server , go to Product reports, and check the Product Sales Monthly report.
-
-All we did was adding
-
-* ``time_series_pattern`` which describe which pattern you want to compute (daily/monthly/yearly)\
-* ``time_series_fields`` where we indicated on which field to compute in this time series.
-
-Noticed that ``time_series_fields`` is a list, which means that we can have more fields computed in the time series.
-
-In the above report, we knew the sum of *value* of sales for each product, in each month, We can also know the sum of *quantity* of each product sold each month as well.
-
-Add ``'__balance_quantity__'`` to the ``time_series_fields`` list,
+            <div data-report-table> </div>
+        </div>
+    {% endblock %}
 
 
-.. code-block::python
+Then let's visit our home page, you should see a table with the client balances on our dashboard.
 
-    @register_report_view
-    class ProductSalesMonthly(ReportView):
+Here is what we basically did
+
+1. We loaded the report with ``get_report`` providing the `base model` name and the ``report slug`` (which is basically the report class name).
+2. We created a div with attrs ``data-report-widget`` which tell Ra javascript that we need to load a report in that section/div.
+3. We provided the url to that report ``data-report-url`` via the ``.get_url`` method of the `ReportView`
+4. Finally, we created a child div with attr ``data-report-table`` to load the report table in.
+
+
+Now we can do pretty much the same for Charts. We'll use th pie chart we created in Part 2 of this tutorial :ref:`adding_charts_tutorial`
+
+Chart Widget
+~~~~~~~~~~~~
+
+
+In our index template, we add add a canvas with `data-report-chart` attr as child to the `[data-report-widget]` div.
+Like this
+
+.. code-block:: html
+
+        <div data-report-widget
+             data-report-url="{{ client_balances.get_url }}">
+
+            <canvas data-report-chart height="50"></canvas>  <!--  The new line -->
+            <div data-report-table></div>
+        </div>
+
+The above code loaded the first chart as default. If you want to change the chart to another one available,
+just add attribute to  the canvas elem ``data-report-default-chart="YOUR_CHART_ID"``
+
+
+.. code-block:: html
+
+        <div data-report-widget
+             data-report-url="{{ client_balances.get_url }}">
+
+            <canvas data-report-chart height="50" data-report-default-chart="bar_chart"></canvas>
+            <div data-report-table></div>
+        </div>
+
+
+You can explore the different attributes supported to
+control how the widget is displayed and extra query parameters sent to server :ref:`report_loader_api`.
+
+Now, You can organize your template as you see fit, create bootstrap rows and column, use cards, the world is yours. :)
+
+
+Customizing the View page
+-------------------------
+
+Ra also provide a view page for each EntityModel subclass, registered with `EntityAdmin`.
+If you go to the Clients change list page,for example, you'd find a column called "Stats" which will redirect you to a blank page with the title
+*Statistics for <Client name>*
+
+Same like what we did with the home page, we can add widgets to be displayed for this specific object.
+Let's see how.
+
+First we need a custom template, so lets create `sales/admin/client_view.html`
+and assign it to the model admin `view_template`
+
+.. hint::
+    Template location can also follow django template finding procedure.
+
+in `sales/admin.py`
+
+.. code-block:: python
+
+    class ClientAdmin(EntityAdmin):
         ...
-
-        time_series_pattern = 'monthly'
-        time_series_fields = ['__balance_quantity__', '__balance__']
-
-        swap_sign = True
+        view_template = 'sales/admin/client_view.html'
 
 
-* swap_sign will do as the name suggest. Why results are negative in the first place ? Remember `sales` doc_type is registered to "minus" Product and this is *modeling* from accounting.
+And in `sales/admin/client_view.html` let's reuse the exact same code we used in the home page, and check the results.
 
-Reload your app and check the results. You should see that for each month, we have 2 fields "Balance QTY" and "Balance"
+Sure enough, the chart the the table should be displayed, but there is a small problem.
+In this page, we're not interested in *all* the clients data, we're only interested in *one client*.
 
+To add apply this information, we only need to add ``data-extra-params`` to the ``data-report-widget`` html element with the active client id and other parameters too as well if you feel like doing so.
 
-Now let's add some charts, shall we ?
+.. code-block:: javascript
 
-.. code-block:: python
+    {% extends 'ra/base.html' %}
+    {% load ra_admin_tags %}
 
-    # Add chart settings to your ProductSalesMonthlySeries
-    @register_report_view
-    class ProductSalesMonthly(ReportView):
-        ...
-        chart_settings = [
-            {
-                'id': 'movement_column_total',
-                'title': _('comparison - Bar - Total'),
-                'data_source': '__balance__',
-                'title_source': 'title',
-                'type': 'bar',
-                'plot_total': True,
-            },
-            {
-                'id': 'movement_column_ns',
-                'title': _('comparison - Bar'),
-                'data_source': '__balance__',
-                'title_source': 'title',
-                'type': 'bar',
-                'stacked': False,
-            },
-            {
-                'id': 'movement_bar',
-                'title': _('comparison - Bar - Stacked'),
-                'data_source': '__balance__',
-                'title_source': 'title',
-                'type': 'bar',
-                'stacked': True,
-            },
-            {
-                'id': 'movement_line_total',
-                'title': _('comparison - line - Total'),
-                'data_source': '__balance__',
-                'title_source': 'title',
-                'type': 'line',
-                'plot_total': True,
-            },
-            {
-                'id': 'movement_line',
-                'title': _('comparison - line'),
-                'data_source': '__balance__',
-                'title_source': 'title',
-                'type': 'line',
-            },
-            {
-                'id': 'movement_line_stacked',
-                'title': _('comparison - line - Stacked'),
-                'data_source': '__balance__',
-                'title_source': 'title',
-                'type': 'line',
-                'stacked': True,
-            },
-        ]
+    {% block content %}
+        {% get_report base_model='client' report_slug='clienttotalbalance' as client_balances %}
 
-6 charts to highlight the patterns. Reload the development server and *reload the report page* and check the output.
+        <div data-report-widget
+             data-report-url="{{ client_balances.get_url }}"
+             data-extra-params="&client_id={{ original.pk }}">
 
-The charts brings our attention that the slops are always rising ... that's because we're using the ``__balance__`` report field. which is a *compound* total of the sales.
-In fact here, we might be more interested in the *non* compound total, and there is a report field for that which comes by default called ``__total__``
+            <canvas data-report-chart height="50" data-report-default-chart="bar_chart"></canvas>
+            <div data-report-table></div>
+        </div>
 
-Let's change ``__balance__`` with ``__total__`` and check the results.
+    {% endblock %}
+
+Reload the page and you should see only the relevant data.
+
+But the chart here is not very helpful, so we can remove it, slso a table with only one row can be a little overkill as well, don't you think?
+
+We can further enhance our widget by using the `data-success-callback`
+`data-success-callback` take a function name which will be called when server successfully replies with the report data.
+This javascript callback must accept two parameters
+
+* response: The json response sent by the server and contains the results of the report (along with other data).
+* $elem: the report jquery element *(ie the relevant `$('[data-report-widget]')`)*
+
+Let's see how would that look like
+
+.. code-block:: javascript
+
+    {% block content %}
+
+    <h2>Balance is <span class="clientBalance"></span></h2>
+
+    {% get_report base_model='client' report_slug='clienttotalbalance' as client_balances %}
+    <div data-report-widget
+         data-report-url="{{ client_balances.get_url }}"
+         data-extra-params="&client_id={{ original.pk }}"
+         data-success-callback="displayBalance">
+    </div>
+    <div data-report-table></div>
+    {% endblock %}
 
 
-You can now create a time series report for the Client sales per month Yeah ?
+    {% block extra_js %}
+        <script>
+            function displayBalance(response, $elem) {
+                $('.clientBalance').text(response['data'][0]['__balance__']);
+                unblockDiv($elem);
+            }
+        </script>
+    {% endblock %}
 
-It would look like something like this
+So what did we do ?
 
-.. code-block:: python
+1. we used `data-success-callback="displayBalance"` which should be accessible to the javascript context.
+2. we accessed the response sent from the server `data` which is a list of the results, we accessed the first item in that array, and got the `__balance__` property
+3. As now control is delegated to our callback, we're in charge to `unblockDiv`, or else the loader will keep on spinning.
 
-    @register_report_view
-    class ClientSalesMonthlySeries(ReportView):
-        report_title = _('Client Sales Monthly')
-
-        base_model = Client
-        report_model = SimpleSales
-
-
-        group_by = 'client'
-        columns = ['slug', 'title']
-
-        time_series_pattern = 'monthly'
-        time_series_fields = ['__balance__']
-
-
-You can add charts to this report too !
+.. hint::
+    The default success callback `$.ra.report_loader.loadComponents` checks for the existence of elements with attr `[data-report-chart]`
+    if found it calls `$.ra.report_loader..displayChart`.
+    It also check for children elements with attr `[data-report-table]` , if found it calls `$.ra.datatable.buildAdnInitializeDatatable` and pass the response, $elem arguments.
 
 
-Cross-tab report
-~~~~~~~~~~~~~~~~
+Before we finish this section, let's bring up the 2 layer report we did before in :ref:`header_report_tutorial` as displaying this report here makes perfect sense.
 
-A cross tab report is when the column represents another different named data object
+*Refreshment: the report displayed a list of clients (header_report) and choosing a client it opens a popup with the totals of product sales for that client*
 
+This report makes perfect sense to be displayed here on the client view page.
 
-.. code-block:: python
+Let's add it.
 
-    @register_report_view
-    class ProductClientSalescrosstab(ReportView):
-        base_model = Product
-        report_model = SimpleSales
-        report_title = _('Product Client sales Cross-tab')
+.. code-block:: html
 
+    {% get_report base_model='client' report_slug='productclientsales' as client_sales_of_products %}
+    <div data-report-widget
+         data-report-url="{{ client_sales_of_products.get_url }}"
+         data-extra-params="&client_id={{ original.pk }}">
 
-        'group_by' = 'product'
-        'columns' = ['slug', 'title']
+        <div data-report-table></div>
+    </div>
 
-            # cross tab settings
-        'crosstab' = 'client'
-        'crosstab_columns' = ['__total__']
-
-
-
-        # sales decreases our product balance, accounting speaking,
-        # but for reports sometimes we need the value sign reversed.
-        swap_sign = True
-
-Lke with the time series pattern, we added
-
-1- ``crosstab``: the field to use as comparison column
-2. ``crosstab_column`` the report field we want to compare per the crosstab .
-3- we used ``__total__`` report field.
-
-   Example:
-
-   If total Sales are 10, 15, 20 for the months January to March respectively, balance For those 3 month would be 10, 25, 45.
 
 

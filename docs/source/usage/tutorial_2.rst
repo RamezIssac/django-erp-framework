@@ -246,9 +246,7 @@ Which is a simple list of the sales transaction
 Adding Charts
 ~~~~~~~~~~~~~~
 
-Default Charts library used on front end `Charts.js <https://www.chartjs.org/>`_ Open source HTML5 Charts.
-
-To add charts to a report, you'd need to add to ``chart_settings`` .
+To add charts to a report, we'd need to add to ``chart_settings`` .
 Here is an example we will add two charts to teh first report we created `ClientTotalBalance`
 
 .. code-block:: python
@@ -260,14 +258,14 @@ Here is an example we will add two charts to teh first report we created `Client
                 'id': 'pie_chart',
                 'type': 'pie',
                 'title': _('Client Balances'),
-                'data_source': '__balance__',
+                'data_source': ['__balance__'],
                 'title_source': 'title',
             },
             {
                 'id': 'bar_chart',
                 'type': 'bar',
                 'title': _('Client Balances [Bar]'),
-                'data_source': '__balance__',
+                'data_source': ['__balance__'],
                 'title_source': 'title',
             },
         ]
@@ -278,24 +276,185 @@ Neat right ?
 
 So to create a report we need to a dictionary to a ``chart_settings`` list containing
 
-* id: how we would refer to this exact chart in front end (we will use that in :ref:`adding_charts_widgets`
-* type: what kind of chart it is bar , pie, line
-* data_source: Field name of containing the numbers we want to chart,
-* title_source: Field name of containing the labels of those numbers
+* id: (optional) Name used to refer to this exact chart in front end (we will use that in :ref:`adding_charts_widgets`) default is `type-{index}`
+* type: what kind of chart it is bar, pie, line, column
+* data_source: a list of Field name(s) of containing the numbers we want to chart,
+* title_source: a list label(s) respective to the `data_source`
 * title: the chart title
 
-FOr Other settings available, see :ref:`charts_configuration`
+Time Series
+~~~~~~~~~~~
 
-In the next section we will create even more interesting reports types like
+A time series is a report where the columns represents time unit (year/month/week/day)
 
-1. Time Series: We want to know how much each product was sold, per month.
-3. Crosstab product sales to clients (or the opposite).
-
-Keep on reading !
+Let's see an example
 
 
+.. code-block:: python
+
+    @register_report_view
+    class ProductSalesMonthly(ReportView):
+        report_title = _('Product Sales Monthly')
+
+        base_model = Product
+        report_model = SalesLineTransaction
+
+        group_by ='product'
+        columns = ['slug', 'title']
+
+            # how we made the report a time series report
+        time_series_pattern = 'monthly'
+        time_series_columns = ['__balance__']
 
 
+
+Reload your development server , go to Product reports, and check the Product Sales Monthly report.
+
+All we did was adding
+
+* ``time_series_pattern`` which describe which pattern you want to compute (daily/monthly/yearly)\
+* ``time_series_columns`` where we indicated which field to compute for each time series period.
+
+Noticed that ``time_series_columns`` is a list?
+This means that we can have more fields computed fpr each period.
+
+In the above report, we computed the sum of *value* of sales for each product, for each period.
+We can also know the sum of *quantity* of each product for each period as well. Just add ``'__balance_quantity__'`` to the ``time_series_columns`` list.
+
+
+.. code-block::python
+
+    @register_report_view
+    class ProductSalesMonthly(ReportView):
+        ...
+
+        time_series_pattern = 'monthly'
+        time_series_columns = ['__balance_quantity__', '__balance__']
+
+
+Reload your app and check the results. You should see that for each month, we have 2 fields "Balance QTY" and "Balance"
+
+Now let's add some charts, shall we ?
+
+.. code-block:: python
+
+    # Add chart settings to your ProductSalesMonthlySeries
+    @register_report_view
+    class ProductSalesMonthly(ReportView):
+        ...
+        chart_settings = [
+            {
+                'id': 'movement_column_ns',
+                'title': _('comparison - Column'),
+                'data_source': ['__balance__'],
+                'title_source': ['title'],
+                'type': 'column',
+            },
+            {
+                'id': 'movement_bar',
+                'title': _('comparison - Column - Stacked'),
+                'data_source': ['__balance__'],
+                'title_source': ['title'],
+                'type': 'column',
+                # 'stacked': True,
+                'stacking': 'normal',
+            },
+            {
+                'id': 'movement_column_total',
+                'title': _('comparison - Column - Total'),
+                'data_source': ['__balance__', '__balance_quantity__'],
+                'title_source': ['title'],
+                'type': 'column',
+                'plot_total': True,
+            },
+            {
+                'id': 'movement_line',
+                'title': _('comparison - line'),
+                'data_source': ['__balance__'],
+                'title_source': ['title'],
+                'type': 'line',
+            },
+            {
+                'id': 'movement_line_stacked',
+                'title': _('comparison - Area - Stacked-Percent'),
+                'data_source': ['__balance__'],
+                'title_source': ['title'],
+                'type': 'area',
+                'stacking': 'percent',
+            },
+            {
+                'id': 'movement_line_total',
+                'title': _('comparison - line - Total'),
+                'data_source': ['__balance__'],
+                'title_source': ['title'],
+                'type': 'line',
+                'plot_total': True,
+            },
+        ]
+
+6 charts to highlight the patterns. Reload the development server and *reload the report page* and check the output.
+
+The charts brings our attention that the slops are always rising ... that's because we're using the ``__balance__`` report field. which is a *compound* total of the sales.
+In fact, in those reports, we might be more interested in the *non compound* total, and there is a report field for that which comes by default called ``__total__``
+
+Let's change ``__balance__`` to ``__total__`` in `ProductSalesMonthly` and check the results for yourself how is it different.
+
+
+Exercise: I'm confident you can now create a time series report for the Client sales per month, Yeah ?
+
+It would look like something like this
+
+.. code-block:: python
+
+    @register_report_view
+    class ClientSalesMonthlySeries(ReportView):
+        report_title = _('Client Sales Monthly')
+
+        base_model = Client
+        report_model = SalesLineTransaction
+
+
+        group_by = 'client'
+        columns = ['slug', 'title']
+
+        time_series_pattern = 'monthly'
+        time_series_columns = ['__total__']
+
+
+You can add charts to this report too !
+
+
+Cross-tab report
+~~~~~~~~~~~~~~~~
+
+A cross tab report is when the column represents another different named data object
+
+
+.. code-block:: python
+
+    @register_report_view
+    class ProductClientSalescrosstab(ReportView):
+        base_model = Product
+        report_model = SalesLineTransaction
+        report_title = _('Product Client sales Cross-tab')
+
+
+        'group_by' = 'product'
+        'columns' = ['slug', 'title']
+
+            # cross tab settings
+        'crosstab' = 'client'
+        'crosstab_columns' = ['__total__']
+
+Lke with the time series pattern, we added
+
+1- ``crosstab``: the field to use as comparison column
+2. ``crosstab_column`` the report field we want to compare per the crosstab .
+3- we used ``__total__`` report field.
+
+   Example:
+
+   If total Sales are 10, 15, 20 for the months January to March respectively, balance For those 3 month would be 10, 25, 45.
 
 
 

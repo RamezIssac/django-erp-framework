@@ -211,18 +211,14 @@
                 } else if (chart_type === 'area') {
                     highchart_object.chart.type = 'area';
 
-                    var stacking = 'normal';
-                    // if (!enable_percent_stacking) {
-                    //     stacking = 'percent';
-                    // }
                     highchart_object.plotOptions = {
                         area: {
-                            stacking: stacking,
+                            stacking: chartOptions['stacking'] || 'normal',
                             marker: {
                                 enabled: false
                             }
                         }
-                    };
+                    }
                 } else if (chart_type === 'line') {
                     var marker_enabled = true;
                     // disable marker when ticks are more then 12 , relying on the hover of the mouse ;
@@ -261,10 +257,10 @@
                 };
                 return highchart_object;
             } catch (err) {
-                $.ra.highcharts.defaults.notify_error();
-                if ($.ra.defaults.debug) {
-                    console.log(err);
-                }
+                // $.ra.highcharts.defaults.notify_error();
+                // if ($.ra.defaults.debug) {
+                console.log(err);
+                // }
             }
         }
 
