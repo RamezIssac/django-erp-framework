@@ -432,29 +432,53 @@ A cross tab report is when the column represents another different named data ob
 
 .. code-block:: python
 
+
     @register_report_view
-    class ProductClientSalescrosstab(ReportView):
+    class ProductClientSalesCrosstab(ReportView):
         base_model = Product
         report_model = SalesLineTransaction
         report_title = _('Product Client sales Cross-tab')
 
+        group_by = 'product'
+        columns = ['slug', 'title']
 
-        'group_by' = 'product'
-        'columns' = ['slug', 'title']
+        # cross tab settings
+        crosstab_model = 'client'
+        crosstab_columns = ['__total__']
 
-            # cross tab settings
-        'crosstab' = 'client'
-        'crosstab_columns' = ['__total__']
+        chart_settings = [
+            {
+                'type': 'column',
+                'data_source': ['__total__'],
+                'plot_total': False,
+                'title_source': 'title',
+                'title': _('Detailed Columns'),
+
+            },
+            {
+                'type': 'column',
+                'data_source': ['__total__'],
+                'plot_total': False,
+                'title_source': 'title',
+                'stacking': 'normal',
+                'title': _('Stacked Columns'),
+
+            },
+            {
+                'type': 'pie',
+                'data_source': ['__total__'],
+                'plot_total': True,
+                'title_source': 'title',
+                'title': _('Total Pie'),
+
+            }
+        ]
 
 Lke with the time series pattern, we added
 
-1- ``crosstab``: the field to use as comparison column
-2. ``crosstab_column`` the report field we want to compare per the crosstab .
+1- ``crosstab_model``: the field representing the model to use as comparison column.
+2. ``crosstab_columns`` the report field(s) we want to compare upon, in the crosstab .
 3- we used ``__total__`` report field.
-
-   Example:
-
-   If total Sales are 10, 15, 20 for the months January to March respectively, balance For those 3 month would be 10, 25, 45.
 
 
 
