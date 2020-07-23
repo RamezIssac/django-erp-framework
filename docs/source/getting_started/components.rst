@@ -1,9 +1,31 @@
-System Design
-=============
+System Design / Components
+==========================
 
-1. Build on Django admin
-------------------------
+
+Components
+----------
+
+1. **Base Models**
+   There are base abstract models which holds attributes and method that the system expect. Those attributes and fields are very generic.
+   For reference: :ref:`base_classes`
+
+
+
+2. **Admin Site and Models**
+   A custom admin site and admin.ModelAdmin subclasses that holds functionality needed for a smooth framework dashboard experience
+   For reference: :ref:`ra_admin`
+
+
+3. **Report Registry and Views** A Registry for reports created. It's also responsible for report menu generation.
+   `ReportView` is a subclass of slick_reporting.ReportView with many addition like caching and ajax.
+
+
+4. **Front End Report/Widget Loader** A collection of Javascript / jQuery function and wrappers to easily create chart/report widgets and take full control on how they are displayed.
+
+
+
 Why using the admin?
+--------------------
 
 It's much simpler especially around CRUD intensive apps (like ERPs).
 * With just one class you can manage all CRUD operations.
@@ -22,22 +44,14 @@ Well, that's an old phrase that gets passed around which i dont find convincing 
 Maybe it was true in the old days; But now, you dont have to be a `staff` member to be able to log in an admin dashboard.
 Also, Ra dashboard is a custom admin site (independent from your typical admin).
 
-2- Reporting
-------------
 
-Reporting itself was moved from this package to be an independent package.
-However, this package still hold the report organization and menu generation.
+Reporting
+---------
+
+Reporting engine itself was moved from this package to be an independent package `Django Slick Reporting <https://github.com/ra-systems/django-slick-reporting>`_
+
+Ra framework, away from the calculation itself, holds functionality of organizing the reports and create html widgets
+out of those reports, which can be controlled . and by default support showing results in tables, and different kinds of charts, all in speed.
 
 
 
-
-Ra Components
---------------
-
-1. Base Models
-
-2. Admin Models
-
-3. Report Registry
-
-4. Front End Report/Widget Loader

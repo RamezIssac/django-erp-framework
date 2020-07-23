@@ -4,17 +4,10 @@
 Reporting
 ==========
 
-Know more about the different options to create and customize a report.
 
-
-
-Life Cycle
-----------
-
-As you may have seen in the tutorials, you can create a report by creating a subclass of ``ReportView`` class
+As you may have seen in the tutorial Part 2 :ref:`tutorial_2` , you can create a report by creating a subclass of ``ReportView`` class
 and register it with the decorator ``@register_report_view``
 
-ReportView is basically a subclass of FormView. It receives a GET request and return a JSON result
 
 Let's look at a bare minimum report
 
@@ -23,56 +16,39 @@ Let's look at a bare minimum report
     @register_report_view
     class SimpleReport(ReportView):
         base_model = Product
-        report_model = SimpleSales
+        report_model = SalesLineTransaction
         report_title = 'Simple report'
-        form_settings = {}
+        columns = ['slug', 'product__name', 'quantity', 'price', 'value']
 
 
-If you navigate to Reports -> Products, You'll find the new report there, with a form that contains
+The model in which this report must be imported during django load. Preferably on AppConfig.ready()
 
-1. a Date to filter upon
-2. All foreign keys in the ``report_model`` ,  displayed as a SelectMultiple Widget.
+By registering this report, the dashboard have now a new menu item "reports", with a Product sub menu in which you'll find this report FilterForm and results.
 
-However you wont find any report table or charts of course.
+Report View
+------------
 
-Let's walk through the different ways of doing so.
+A view class which represent a report with a default structure..
 
-Report Form Settings
---------------------
-
-This is the main controller of the report, let's discover possible options.
-
-* columns: These are the columns you'd want to display on the report table.
-  They have to be either a report_model field, Or, a ``Report Field``
-
-.. code-block:: python
-
-    @register_report_view
-    class SimpleReport(ReportView):
-        base_model = Product
-        report_model = SimpleSales
-        report_title = 'Simple report'
-        form_settings = {
-            'columns': ['slug', 'doc_date', 'value']
-        }
+_ document hooks , cache _
 
 
+Report Form
+------------
 
+The report form get generated automatically and you can customize it on several levels.
+By default the filter form contains
 
-* group_by: blank or a foreign key name.
-  Setting this key will tell the ReportGenerator to "Group By" the records in the report model by the value of
-  this field.
+1. A Date to filter
+2. All foreign keys found in the ``report_model`` ,  displayed as a SelectMultiple Widget.
+3. In case of a cross tab report, it shows a check "Show the rest".
 
+The report form is responsible for delivering those filters into a queryset filters and hand them to the ReportGenerator
 
+Report JSON Response Structure
+-------------------------------
 
-
-Time Series
-~~~~~~~~~~~
-
-.. _time_series_pattern:
-* Patterns:
-
-* Order
+// todo
 
 
 Javascript

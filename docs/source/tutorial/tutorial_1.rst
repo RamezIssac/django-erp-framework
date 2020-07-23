@@ -15,7 +15,7 @@ then add `sample_erp` to your ``INSTALLED_APPS``.
 Models
 ------
 
-Below are our models to start building the business management application we want.
+To manage a business we would need to track the sales , the clients and the expenses. Here is a sample implementation
 
 .. code-block:: python
 
@@ -71,8 +71,8 @@ Below are our models to start building the business management application we wa
 
 
 
-The Base Classes we inherit from are fairly straight forward , you can read more about :ref:`base_classes` .
-Basically they are there to add common fields in a standard way which will make the orchestration in the system better.
+The Base Classes we inherit from are fairly straight forward , you can read more about them in :ref:`base_classes` .
+Basically they are here to add common fields in a standard way which will make the orchestration in the system better.
 
 Those fields contains slug field, notes, creator user and creation date, and last modified user and last modified date.
 Transactional base model classes include fields like value, price, quantity.

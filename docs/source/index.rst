@@ -6,10 +6,10 @@ A light-weight effective framework to create business application equipped with 
 Features
 --------
 
-- A responsive dashboard built on top of Django's admin.
+- Default Base models to build on your implementation
 - Reporting Engine that filters and compute several types of reports with simple lines of code.
-- A charting capabilities to turn reports into attractive charts.
-- A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
+- Charting capabilities to turn reports into attractive charts.
+- widget system to display reports and its charts on dashboard home , or on object's `view` pages.
 - Tools and goodies to extend and customize the framework behavior from top to bottom.
 - Python 3.6 / 3.7 / 3.8
 - Django 2.2 / 3.0
@@ -18,10 +18,13 @@ Features
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   :titlesonly:
 
    getting_started/index
    tutorial/index
    advanced_topics/index
+   release_notes/index
+   faq
 
 
 

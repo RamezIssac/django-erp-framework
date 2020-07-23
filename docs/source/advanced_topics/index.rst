@@ -7,8 +7,6 @@ Advanced topics
    settings
    admin
    reporting
-   report_fields
-   charting
    base_classes
    customizing_print
    javascript

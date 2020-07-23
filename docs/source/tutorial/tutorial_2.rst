@@ -1,3 +1,5 @@
+.. _`tutorial_2`:
+
 Reporting and Charting
 ----------------------
 
