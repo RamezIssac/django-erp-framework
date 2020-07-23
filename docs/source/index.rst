@@ -17,31 +17,12 @@ Features
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorial:
+   :caption: Contents:
 
-   usage/quickstart
-   usage/tutorial_1
-   usage/tutorial_2
-   usage/tutorial_3
-   usage/integrating_into_django
-   usage/faq
+   getting_started/index
+   tutorial/index
+   advanced_topics/index
 
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API:
-
-   advanced_topics/settings
-   advanced_topics/admin
-   advanced_topics/reporting
-   advanced_topics/report_fields
-   advanced_topics/charting
-   advanced_topics/base_classes
-   advanced_topics/customizing_print
-   advanced_topics/javascript
-   advanced_topics/permissions
-   advanced_topics/themeing
-   advanced_topics/roadmap
 
 
 

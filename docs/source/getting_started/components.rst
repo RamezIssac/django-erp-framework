@@ -1,15 +1,3 @@
-Django Ra Components
-=====================
-
-1. Base Models
-
-2. Admin Models
-
-3. Report Registry
-
-4. Front End
-
-
 System Design
 =============
 
@@ -43,3 +31,13 @@ However, this package still hold the report organization and menu generation.
 
 
 
+Ra Components
+--------------
+
+1. Base Models
+
+2. Admin Models
+
+3. Report Registry
+
+4. Front End Report/Widget Loader

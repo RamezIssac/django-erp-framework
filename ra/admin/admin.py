@@ -34,6 +34,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.csrf import csrf_protect
+from reversion.admin import VersionAdmin
 from tabular_permissions.admin import UserTabularPermissionsMixin, GroupTabularPermissionsMixin
 
 from ra.admin.forms import RaUserChangeForm
@@ -43,7 +44,6 @@ from ra.utils.views import get_typed_reports_for_templates, get_typed_reports_ma
 from .base import RaAdminSiteBase
 from ..base import app_settings
 from ..base.widgets import RaRelatedFieldWidgetWrapper
-from reversion.admin import VersionAdmin
 
 csrf_protect_m = method_decorator(csrf_protect)
 
@@ -921,6 +921,7 @@ class PrepopulatedAdmin(object):
 
 class RaPrePopulatedAdmin(PrepopulatedAdmin, EntityAdmin):
     pass
+
 
 class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
     enable_view_view = False

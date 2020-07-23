@@ -32,3 +32,22 @@ A subclass of admin.ModelAdmin with various different options
 
 EntityAdmin
 ~~~~~~~~~~~
+.. autoclass:: ra.admin.admin.EntityAdmin
+   :members:
+
+
+.. _transactionadmin:
+
+TransactionAdmin
+~~~~~~~~~~~~~~~~
+.. autoclass:: ra.admin.admin.TransactionAdmin
+   :members:
+
+.. _transactionitemadmin:
+
+TransactionItemAdmin
+~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: ra.admin.admin.TransactionItemAdmin
+   :members:
+
+

@@ -1,5 +1,5 @@
-Part 1: Create Simple Business Management Application
-======================================================
+Sample ERP models and admin
+===========================
 
 Let's use the project we just generated in the Quickstart section and build an app that manages a business, records and
 report its product sales, as well as its expenses, and finally its profitability .
@@ -10,7 +10,7 @@ First we need to create an app
 
     $ django-admin startapp sample_erp
 
-then add `sales` to your ``INSTALLED_APPS``.
+then add `sample_erp` to your ``INSTALLED_APPS``.
 
 Models
 ------

@@ -1,7 +1,7 @@
 .. _adding_charts_widgets:
 
-Adding charts & report widgets to Homepage and View pages
-=========================================================
+Adding charts & report widgets
+==============================
 
 First let's recap what we did so far
 
@@ -30,7 +30,7 @@ then in our settings.py we set this template to be displayed as the index page
 
 And in the our template we add code like this
 
-.. code-block:: javascript
+.. code-block:: django
 
     {% extends 'ra/base_site.html' %}
     {% load ra_admin_tags ra_tags %}
@@ -142,7 +142,7 @@ In this page, we're not interested in *all* the clients data, we're only interes
 
 To add apply this information, we only need to add ``data-extra-params`` to the ``data-report-widget`` html element with the active client id and other parameters too as well if you feel like doing so.
 
-.. code-block:: javascript
+.. code-block:: django
 
     {% extends 'ra/base_site.html' %}
     {% load ra_admin_tags %}
@@ -173,7 +173,7 @@ This javascript callback must accept two parameters
 
 Let's see how would that look like
 
-.. code-block:: javascript
+.. code-block:: django
 
     {% block content %}
 
