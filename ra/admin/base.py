@@ -16,7 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 from ra.admin.helpers import get_each_context
 from ra.base import app_settings
 from ra.base.helpers import get_from_list
-from ra.top_search.views import TopSearchView
+# from ra.top_search.views import TopSearchView
 
 logger = logging.getLogger(__name__)
 CACHE_DURATION = 0
@@ -82,7 +82,7 @@ class RaAdminSiteBase(AdminSite):
             url(r'^reports/(?P<base_model>[\w-]+)/$', get_report_list_class, name='report_list'),
             url(r'^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$', get_report_view, name='report'),
             # new from sites
-            path('top-search/', TopSearchView.as_view(), name='top-search'),
+            # path('top-search/', TopSearchView.as_view(), name='top-search'),
             # path('access-denied/', access_denied, name='access-denied'),
         ]
 
