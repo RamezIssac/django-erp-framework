@@ -3,21 +3,16 @@
 Reporting and Charting
 ----------------------
 
-We released our reporting engine as a standalone package (so can use it without being tied down to any of this)
 
-Django slick reporting
-
-We will talk generally here but for more detailed information, please head to Django Slick Reporting docs
-
+Before we begin, charts and reporting get more fun and interesting the more data available.
+So below is a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.
+This will definitely enhance our experience with this section. Also you can use it to benchmarking Ra Performance.
 
 Generating test data
 ~~~~~~~~~~~~~~~~~~~~
 
-Before we begin, charts and reporting get more fun and interesting the more data available.
-So below, a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.
-This will definitely enhance your experience with this next section. Also we will be using it for benchmarking Ra Performance.
 
-Create and add below code to 'sales/management/commands/generate_data.py'
+Create and add below code to 'sample_erp/management/commands/generate_data.py'
 
 .. code-block:: python
 
@@ -125,22 +120,17 @@ Then let's run the command
 
 Now we have some test data to give us a more complete look. Let's create some reports!!
 
-Sample Reports
-~~~~~~~~~~~~~~
+Creating Reports
+-----------------
 
-We would like to know
+In our `sample_erp` app, let's create a `reports.py` file *it can be any name, this is just a convention*. in this file we will be creating our report classes
 
-    1. How much each Client bought (in value).
-    2. How much each Product is Sold (In value and in quantity)
-    3. For each client, how much they bought of each product
-    4. A Client detailed statement
-
-Then we will be adding charts
 
 How much each Client bought (in value)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Below code in a sample report class structure to answer this question
 
-In our `sample_erp` app, let's create a `reports.py` file *it can be any name, this is just a convention*
+Add it to reports.py
 
 .. code-block:: python
 
@@ -161,14 +151,14 @@ In our `sample_erp` app, let's create a `reports.py` file *it can be any name, t
         columns = ['slug', 'title', '__balance__']
 
 
-Now we need to load `reports.py` during the app life cycle so our code is executed. Best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
+Now, we need to load `reports.py` during the app life cycle so our code is executed. Best way to do such action is in `AppConfig.ready <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`_
 
 .. code-block:: python
 
     # in sample_erp __init__.py
     default_app_config = 'sample_erp.apps.SampleERPConfig'
 
-    # in sales/apps.py
+    # in sample_erp/apps.py
     from django.apps import AppConfig
 
 
@@ -178,9 +168,6 @@ Now we need to load `reports.py` during the app life cycle so our code is execut
         def ready(self):
             super().ready()
             from . import reports
-
-
-Above is fairly django standard, you can read more on Apps `on Django's documentation <https://docs.djangoproject.com/en/2.2/ref/applications/#configuring-applications>`_
 
 
 Now re-run `runserver`, go to to the dashboard, You'll find a new menu **Reports** which would contains a *Client* sub menu.
@@ -478,9 +465,11 @@ A cross tab report is when the column represents another different named data ob
 
 Lke with the time series pattern, we added
 
-1- ``crosstab_model``: the field representing the model to use as comparison column.
-2. ``crosstab_columns`` the report field(s) we want to compare upon, in the crosstab .
-3- we used ``__total__`` report field.
+* ``crosstab_model``: the field representing the model to use as comparison column.
+
+* ``crosstab_columns`` the report field(s) we want to compare upon, in the crosstab .
+
+* we used ``__total__`` report field.
 
 
 

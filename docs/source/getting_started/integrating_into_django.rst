@@ -52,6 +52,7 @@ Settings
 * Add the following entries to ``TEMPLATES`` ``context_processors``
 
 .. code-block:: python
+
     TEMPLATES = {
         'context_processors' = [
             #...
@@ -121,8 +122,8 @@ Settings
 
 Various other settings are available to configure Ra's behaviour - see :doc:`/advanced_topics/settings`.
 
-URL configuration
------------------
+URLS configuration
+-------------------
 
 We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
 
@@ -132,9 +133,9 @@ We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
     from ra.admin.admin import ra_admin_site
 
     urlpatterns = [
-        ...
+        # ...
         path('your-url-here', ra_admin_site.urls),
-        ...
+        # ...
     ]
 
 
@@ -151,4 +152,5 @@ Start developing
 
 You're now ready to add a new app to your Django project via ``./manage.py startapp``.
 
-Cheers !
+Follow to the tutorial to create sample erp system which tracks sales and expense and profitability. :ref:`tutorial_root`
+

@@ -1,5 +1,7 @@
-Tutorial
-========
+.. _`tutorial_root`:
+
+Sample ERP System Tutorial
+==========================
 
 In this section we will create a sample erp project using Ra framework.
 

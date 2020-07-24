@@ -1,3 +1,5 @@
+.. _`tutorial_1`:
+
 Sample ERP models and admin
 ===========================
 
@@ -71,15 +73,15 @@ To manage a business we would need to track the sales , the clients and the expe
 
 
 
-The Base Classes we inherit from are fairly straight forward , you can read more about them in :ref:`base_classes` .
-Basically they are here to add common fields in a standard way which will make the orchestration in the system better.
+The Base Classes we inherit from are fairly straight forward, basically they encapsulate some typical needed fields and offer related method that serves the system integrity.
 
-Those fields contains slug field, notes, creator user and creation date, and last modified user and last modified date.
-Transactional base model classes include fields like value, price, quantity.
+Example:
 
-   | **:ref:`entity_model`**: is the Base class from which all other base classes are derived.
-   | **QuantitativeTransactionItemModel**: is the base class of a transaction and provide useful fields usually needed for any transaction, like `refer_code`, `doc_date` , `quantity` , `price`, `discount` and `value`
+* On ``EntityModel`` those extra fields are `slug`, `notes`, creator user and creation date, and last modified user and last modified date.
+* On ``TransactionItemModel`` extra fields are `value` + the above
+* On ``QuantitativeTransactionItemModel`` extra fields are `quantity`, `price` and `discount` + all the above
 
+You can read more in :ref:`base_classes`, but for now, that pretty much what we need to know.
 
 Run ``python manage.py makemigrations sample_erp``, ``python manage.py migrate`` to update the database with your models
 
@@ -89,8 +91,8 @@ The Admin
 Ra makes use of the django admin to leverage the process of authentication, authorization and CRUD operation(s).
 This is done by
 
-1. Using a different admin site then the default one
-2. Using subclassing ModelAdmin which offer many enhancements.
+1. Using a different admin site.
+2. Using subclasses of ModelAdmin which offer more enhancements.
 
 With this information in mind, let's add the below piece of code into `admin.py`
 
@@ -151,13 +153,11 @@ Now, we notice that
 1. *value field* is editable, while it should be readonly
 2. The Value field should automatically equals the result of price * quantity.
 
+
 Front End customization
 -----------------------
 
-Let's enhance our Sales Page and make `value` a read only and compute it on the front end and display it to the user.
-To do that we need to add a little javascript to handle the client side calculation, and to do that we'll need a create our own template.
-
-Let's customize our admin. Set the add/change form templates and set readonly to the value field widget
+Let's enhance our Sales Page and make `value` a read only
 
 .. code-block:: python
 
@@ -174,7 +174,11 @@ Let's customize our admin. Set the add/change form templates and set readonly to
             return formfield
 
 
-Now in you In your `sample_erp` app directory, create a `templates` folder, and inside it you can create
+Now we need and compute the value automatically and display it to the user.
+To do that we need to add a little javascript to handle the client side calculation, and to do that we'll need a create our own template.
+
+
+in you In your `sample_erp` app directory, create a `templates` folder, and inside it you can create
 a template file `admin/sales_change_form.html` and in it we can write:
 
 .. code-block:: Django
@@ -222,5 +226,7 @@ Notice here:
    For list of javascript tools available :ref:`javascript`
 
 
-Now runserver, go to Sales Order and check the outcome, experiment around and add some of sales records, those records will be useful in our next section.
+Now runserver, go to Sales Order and check the outcome, experiment around.
+
+
 Next Section we will create interesting reports about product sales, which product being bought by which clients and client total sales.

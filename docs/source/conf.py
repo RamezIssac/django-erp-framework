@@ -72,11 +72,11 @@ author = 'RA Systems'
 # built documents.
 #
 # The short X.Y version.
-version = '0.0.9'
+version = '1.0.0'
 # The full version, including alpha/beta/rc tags.
 # try:
-#     from ra import __version__
-#     version = __version__
+from ra import __version__
+version = __version__
 # except ImportError:
 #     # The full version, including alpha/beta/rc tags.
 release = version
@@ -113,6 +113,7 @@ html_theme = 'sphinx_rtd_theme'
 #
 # html_theme_options = {}
 
+# html_logo = 'logo.jpg'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".

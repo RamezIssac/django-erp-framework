@@ -1,16 +1,16 @@
-Getting started with Ra
-=======================
+Getting started
+===============
 
 
 Installation
-"""""""""""""
+------------
 
 .. code-block:: bat
 
     $ pip install django-ra-erp
 
-Create your first Ra project
-""""""""""""""""""""""""""""
+Create an empty project form scratch
+------------------------------------
 
 1. Create a virtual environment and install ra-framework from Pypi
 
@@ -27,7 +27,6 @@ Create your first Ra project
     $ ra-admin start project_name
 
 This will create a django project under the directory `project_name`.
-You can always integrate Ra framework to your existing project, refer to :ref:`integrating_into_django`
 
 3. Run the usual commands needed for any django project
 
@@ -40,9 +39,12 @@ You can always integrate Ra framework to your existing project, refer to :ref:`i
 
 4. Done !! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
 
+Integrating into an existing Project
+------------------------------------
+Please follow to the next section :ref:`integrating_into_django`
 
 Running the tests
-"""""""""""""""""
+-----------------
 
 To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
