@@ -17,7 +17,7 @@ Features
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
    :titlesonly:
 
    getting_started/index
