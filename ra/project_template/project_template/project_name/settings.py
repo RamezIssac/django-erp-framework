@@ -38,7 +38,6 @@ INSTALLED_APPS = [
 
     'crequest',
     'crequest',
-    'compressor',
     'crispy_forms',
     'reversion',
     'tabular_permissions',
