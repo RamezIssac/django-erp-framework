@@ -80,23 +80,6 @@ Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
 Please Proceed to the tutorial `Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 
-Demo
-----
-
-Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials are admin/adminpassword
-
-The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
-can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
-
-History
--------
-
-This an open source of the COre of our ERP system.
-The full ERP system with  cen be found at `Online Here <https://erp-demo.rasystems.io/>`_ and Credentials are admin/stpasswd
-
-The framework reporting engine is release as a separate package `django-slick-reporting <https://github.com/ra-systems/django-slick-reporting>`_
-
-
 Testing and contribution
 ------------------------
 
