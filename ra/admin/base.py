@@ -90,7 +90,7 @@ class RaAdminSiteBase(AdminSite):
 
     def service_worker_view(self, request):
 
-        return render(request, f'{app_settings.RA_THEME}/service-worker.js.html', content_type='application/javascript')
+        return render(request, f'ra/service-worker.js.html', content_type='application/javascript')
 
     def manifest_view(self, request):
         json = {

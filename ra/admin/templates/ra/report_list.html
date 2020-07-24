@@ -1,0 +1,157 @@
+{% extends "ra/base_site.html" %}
+{% load ra_tags crispy_forms_tags crispy_forms_field %}
+
+
+{% load i18n admin_urls static admin_modify ra_admin_tags %}
+
+{% block content_title %} {{ title }}{% endblock %}
+{% block breadcrumbs %}
+
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{% url 'admin:index' %}"><i
+                class="fa fa-tachometer-alt"></i> {% trans 'Home' %}</a></li>
+        <li class="breadcrumb-item">{% trans "Reports" %}</li>
+        <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+{% endblock %}
+
+{% block bodyclass %}{% endblock %}
+
+
+{% block pre_content_wrapper %}
+{% endblock %}
+
+{% block content %}
+    <div class="col-sm-12">
+        <div class="card">
+            <div class="card-header" style="border-bottom: none">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    {% for report in reports.reports %}
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab"
+                               role="tab"
+                               href="#{{ report.get_report_slug }}"
+                            >{{ report.get_report_title }}</a>
+                        </li>
+                    {% endfor %}
+
+                </ul>
+            </div>
+            <div class="card-body">
+
+                {% include 'ra/report_list_forms.html' %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extrajs %}
+    {{ block.super }}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
+
+
+    <script>
+        {#$('.select2bs4').select2({#}
+        {#    theme: 'bootstrap4'#}
+        {# });#}
+        $(document).ready(function () {
+            $('input[name="start_date"], [name=end_date]').daterangepicker({
+                    singleDatePicker: true,
+                    showDropdowns: true,
+                    timePicker: true,
+                    {#dateLimit: {years: 3},#}
+                    timePicker24Hour: true,
+                    timePickerIncrement: 10,
+                    autoUpdateInput: true,
+                    autoApply: true,
+
+                    {#buttonClasses: ['btn'],#}
+                    {#applyClass: 'btn-small btn-info btn-block',#}
+                    {#cancelClass: 'btn-small btn-default btn-block',#}
+
+
+                    locale: {
+                        direction: {% if LANGUAGE_BIDI %} 'rtl' {% else %}'ltr'{% endif %},
+                        format: 'YYYY-MM-DD HH:mm',
+                        applyLabel: '{% trans "Apply" %}',
+                        fromLabel: '{% trans "From" %}',
+                        toLabel: '{% trans "To" %}',
+                        startLabel: '{% trans "start date"|capfirst %}:',
+                        endLabel: '{% trans "end date"|capfirst %}:',
+                        cancelLabel: '{% trans "Cancel" %}',
+                        customRangeLabel: '{% trans "choose"|capfirst %}',
+                        firstDay: 1
+                    }
+                }
+            );
+
+            $('.refreshReport').on('click', function (event) {
+                event.preventDefault();
+                let $this = $(this);
+                let $elem = $('[data-report-widget][data-report-url="' + $this.attr('data-report-url') + '"]')
+                let $form = $('.formContainer[data-report-url="' + $this.attr('data-report-url') + '"] form')
+                $.ra.report_loader.refreshReportWidget($elem, $form.serialize())
+            });
+
+            let hash = document.location.hash;
+            let prefix = "tab_";
+
+            if (hash) {
+                let report_slug = hash.replace(prefix, "");
+                $('.nav-tabs a[href="' + report_slug + '"]').tab('show');
+                loadTab(report_slug)
+            } else {
+                let first_report = $('.nav-tabs a:first');
+                first_report.tab('show');
+                loadTab(first_report.attr('href'))
+            }
+
+            // Change hash for page-reload
+            $(".nav-tabs a").on('shown.bs.tab', function (e) {
+                var report_slug = $(this).attr('href')
+                window.location.hash = e.target.hash.replace("#", "#" + prefix);
+                loadTab(report_slug)
+            });
+
+            function loadTab(tab_href, target) {
+                let $tabcontent = $(tab_href);
+                $tabcontent.find('select').select2(
+                    {#{theme: 'bootstrap4'}#}
+                )
+                $tabcontent.find('.refreshReport').first().trigger('click')
+            }
+
+
+            $('.printReport').on('click', function (event) {
+                event.preventDefault();
+                let $this = $(this);
+                var report_slug = $this.attr('data-report-slug');
+                var report_url = $this.attr('data-report-url');
+                var print_theme = $this.attr('print_theme');
+                var formSerialize = $('div[data-report-slug=' + report_slug + '] form').serialize();
+                print_theme = typeof (print_theme) === 'undefined' ? 'default' : print_theme;
+                window.open(report_url + '?&print=true&print_theme=' + print_theme + formSerialize, report_slug);
+            });
+
+            $('.download-csv').on('click', function (event) {
+                event.preventDefault();
+                let $this = $(this);
+
+                var report_slug = $this.attr('data-report-slug');
+                var report_url = $this.attr('data-report-url');
+                var formSerialize = $('div[data-report-slug=' + report_slug + '] form').serialize();
+
+                window.open(report_url + '?&csv=true&download=true&' + formSerialize, report_slug);
+
+
+            });
+
+        })
+
+
+    </script>
+
+
+{% endblock %}

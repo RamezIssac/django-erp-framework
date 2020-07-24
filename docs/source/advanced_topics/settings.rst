@@ -104,18 +104,18 @@ Defaults to ``'adminlte'``
 If you want to create a new Ra theme, You can override the templates in another path and set it here .
 
 ``RA_ADMIN_INDEX_TEMPLATE``
------------------------
+---------------------------
 
 Defaults to ``'f'{RA_THEME}/index.html'``
 
 
 ``RA_ADMIN_APP_INDEX_TEMPLATE``
----------------------------
+-------------------------------
 
 Defaults to ``'f'{RA_THEME}//app_index.html'``
 
 ``RA_ADMIN_LOGIN_TEMPLATE``
------------------------
+---------------------------
 
 Defaults to ``f'{RA_THEME}/login.html'``
 

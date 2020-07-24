@@ -118,9 +118,7 @@ class RaMultiplePermissionsRequiredMixin(AccessMixin):
                     break
 
             if not has_one_perm:
-
                 raise PermissionDenied
-
 
         return super(RaMultiplePermissionsRequiredMixin, self).dispatch(
             request, *args, **kwargs)
@@ -192,7 +190,7 @@ class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
 
 
 class ReportList(ReportListBase):
-    template_name = f'{app_settings.RA_THEME}/report_list.html'
+    template_name = f'ra/report_list.html'
     _bypass = True
 
     def get_order_list(self):
@@ -296,7 +294,7 @@ class ReportView(UserPassesTestMixin, SampleReportView):
 
     report_slug = ''
     page_title = None
-    report_title = None
+    report_title = ''
 
     # default order by for the results.
     # ordering can also be controlled on run time by passing order_by='field_name'
@@ -375,6 +373,14 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         """
         return cls.report_model
 
+    @staticmethod
+    def form_filter_func(fkeys_dict):
+        output = {}
+        for k, v in fkeys_dict.items():
+            if k not in ['owner_id', 'polymorphic_ctype_id', 'lastmod_user_id']:
+                output[k] = v
+        return output
+
     @classmethod
     def get_form_class(cls):
         """
@@ -382,7 +388,9 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         hence this function.
         :return: form_class
         """
-        return cls.form_class or report_form_factory(cls.get_report_model())
+        return cls.form_class or report_form_factory(cls.get_report_model(), crosstab_model=cls.crosstab_model,
+                                                     display_compute_reminder=cls.crosstab_compute_reminder,
+                                                     fkeys_filter_func=cls.form_filter_func)
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)
@@ -399,28 +407,13 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         return self.request.GET.get('print', False)
 
     @classmethod
-    def initialize_form(cls):
-        # todo remove me
+    def get_initialized_form(cls):
+        """
+        Get the form_class initialized.
+        :return:
+        """
         form_class = cls.get_form_class()
-        if hasattr(form_class, 'initial_settings'):
-            settings = form_class.initial_settings.copy()
-        else:
-            settings = {}
-        settings.update(cls.form_settings or {})
-        # settings['from_doc_date'] = cls.get_default_from_date()
-        # settings['to_doc_date'] = cls.get_default_to_date()
-        # return form_class(support_doc_type=True, **{'form_settings': settings})
         return form_class()
-
-    def get_form_settings(self):
-        # todo : Review
-        form_class = self.get_form_class()
-        if hasattr(form_class, 'initial_settings'):
-            settings = form_class.initial_settings.copy()
-        else:
-            settings = {}
-        settings.update(self.form_settings or {})
-        return settings
 
     @classmethod
     def get_all_print_settings(cls):
@@ -567,6 +560,11 @@ class ReportView(UserPassesTestMixin, SampleReportView):
             title = cls.page_title
         return capfirst(title)
 
+    def get_metadata(self, generator):
+        metadata = super().get_metadata(generator)
+        metadata['report_title'] = self.report_title
+        return metadata
+
     def get_report_results(self, for_print=False):
         """
         Gets the reports Data, and, its meta data used by datatables.net and highcharts
@@ -580,7 +578,6 @@ class ReportView(UserPassesTestMixin, SampleReportView):
         data = self.filter_results(data, for_print)
         data = {
             'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
-            'meta': self.form_settings,
             'data': data,
             'columns': self.get_columns_data(report_generator.get_list_display_columns()),
             'metadata': self.get_metadata(generator=report_generator),

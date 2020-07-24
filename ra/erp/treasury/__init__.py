@@ -1,0 +1,1 @@
+default_app_config = 'ra.erp.treasury.apps.TreasuryConfig'

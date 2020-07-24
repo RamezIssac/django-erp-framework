@@ -19,15 +19,11 @@
         return output
     }
 
-    function turnNanToZero(val) {
-        if (isNaN(val)) return 0;
-        return val;
-    }
 
     function getObjFromArray(objList, obj_key, key_value, failToFirst) {
         failToFirst = typeof (failToFirst) !== 'undefined';
         if (key_value !== '') {
-            for (var i = 0; i < objList.length; i++) {
+            for (let i = 0; i < objList.length; i++) {
                 if (objList[i][obj_key] === key_value) {
                     return objList[i];
                 }
@@ -41,7 +37,7 @@
     }
 
     function removeObjFromArray(objList, obj_key, key_value) {
-        for (var i = 0; i < objList.length; i++) {
+        for (let i = 0; i < objList.length; i++) {
             if (objList[i][obj_key] == key_value) {
                 objList.splice(i, 1);
             }
@@ -65,11 +61,11 @@
         var obj_of_intrest = false;
         for (var i = 0; i < objList.length; i++) {
             total = total + objList[i][computation_field];
-            if (objList[i][obj_key] == key_value) {
+            if (objList[i][obj_key] === key_value) {
                 obj_of_intrest = objList[i];
             }
         }
-        if (obj_of_intrest != false) {
+        if (obj_of_intrest !== false) {
             percent_to_total = (obj_of_intrest[computation_field] / total) * 100;
             if (isNaN(percent_to_total)) {
                 percent_to_total = 0
@@ -86,7 +82,6 @@
 
     $.ra.dataComprehension = {
         dataArrayToObject: dataArrayToObject,
-        turnNanToZero: turnNanToZero,
         getObjFromArray: getObjFromArray,
         removeObjFromArray: removeObjFromArray,
         getPercentToTotal: getPercentToTotal,

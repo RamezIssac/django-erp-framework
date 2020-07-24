@@ -1,0 +1,29 @@
+{% extends 'ra/view.html' %}
+{% load ra_admin_tags ra_tags i18n admin_urls %}
+
+
+
+{% block content %}
+
+    <div class="col-sm-12">
+        {#    {% get_report base_model='expense' report_slug='ExpenseDetailedStatement' as transactions %}#}
+        {#    {% with 'expense_id='|addstr:original.pk as id %}#}
+        {#    {% get_html_panel transactions data_extra_param=id %}#}
+        {#    {% endwith %}#}
+
+        {% get_report base_model='expense' report_slug='ExpenseMovementTimeComparison' as client_sales_of_products %}
+        {% with 'expense_id='|addstr:original.pk as id %}
+            {% get_html_panel client_sales_of_products %}
+        {% endwith %}
+    </div>
+{% endblock %}
+{% block extrajs %}
+    {{ block.super }}
+    <script>
+        function displayBalance(response, $elem) {
+            console.log(response);
+            $('.expenseTotal').text(response['data'][0]['__total__']);
+            unblockDiv($elem);
+        }
+    </script>
+{% endblock %}

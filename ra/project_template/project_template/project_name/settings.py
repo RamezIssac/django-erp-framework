@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 
 import os
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,7 +29,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -38,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'crequest',
+    'crequest',
+    'compressor',
     'crispy_forms',
     'reversion',
     'tabular_permissions',
@@ -45,6 +46,9 @@ INSTALLED_APPS = [
     'ra.admin',
     'ra.activity',
     'ra.reporting',
+    'slick_reporting',
+    'jazzmin',
+    'django.contrib.admin', # comes at the end because the theme is replaced
 ]
 
 MIDDLEWARE = [
@@ -123,15 +127,10 @@ STATIC_URL = '/static/'
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-# Hand settings
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -143,3 +142,26 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 
 )
+
+JAZZMIN_SETTINGS = {
+    'navigation_expanded': False,
+    "changeform_format": "single",
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar": "navbar-primary navbar-dark",
+    "no_navbar_border": True,
+    "body_small_text": False,
+    "navbar_small_text": False,
+    "sidebar_nav_small_text": False,
+    "accent": "accent-primary",
+    "sidebar": "sidebar-dark-primary",
+    "brand_colour": "navbar-primary",
+    "brand_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "footer_small_text": False
+}

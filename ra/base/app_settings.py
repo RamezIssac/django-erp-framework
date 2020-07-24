@@ -39,12 +39,6 @@ RA_ENABLE_ADMIN_DELETE_ALL = getattr(settings, 'RA_ENABLE_ADMIN_DELETE_ALL', Fal
 # RA_DEFAULT_TO_DATETIME = lazy(get_end_of_this_year, datetime.datetime)()
 # # models
 
-RA_BASEINFO_MODEL = getattr(settings, 'RA_BASEINFO_MODEL', 'ra.base.models.BaseInfo')
-RA_BASEMOVEMENTINFO_MODEL = getattr(settings, 'RA_BASEINFO_MODEL', 'ra.base.models.BaseMovementInfo')
-RA_QUANVALUEMOVEMENTITEM_MODEL = getattr(settings, 'RA_QUANVALUEMOVEMENTITEM_MODEL',
-                                         'ra.base.models.QuanValueMovementItem')
-
-RA_APP_ICONS = getattr(settings, 'RA_APP_ICONS', {})
 
 RA_ADMIN_SITE_NAME = getattr(settings, 'RA_ADMIN_SITE_NAME', 'ra_admin')
 
@@ -62,7 +56,7 @@ RA_CACHE_REPORTS = getattr(settings, 'RA_CACHE_REPORTS', True)
 RA_CACHE_REPORTS_PER_USER = getattr(settings, 'RA_CACHE_REPORTS_PER_USER', True)
 
 # Style
-RA_THEME = getattr(settings, 'RA_THEME', 'adminlte')
+RA_THEME = getattr(settings, 'RA_THEME', 'admin')
 
 # Admin Looks
 from django.utils.translation import ugettext_lazy as _
@@ -70,7 +64,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 RA_ADMIN_INDEX_TEMPLATE = getattr(settings, 'RA_ADMIN_INDEX_PAGE', f'{RA_THEME}/index.html')
-RA_ADMIN_APP_INDEX_TEMPLATE = getattr(settings, 'RA_ADMIN_APP_INDEX_PAGE', f'{RA_THEME}//app_index.html')
+RA_ADMIN_APP_INDEX_TEMPLATE = getattr(settings, 'RA_ADMIN_APP_INDEX_PAGE', f'{RA_THEME}/app_index.html')
 RA_ADMIN_LOGIN_TEMPLATE = getattr(settings, 'RA_ADMIN_LOGIN_TEMPLATE', f'{RA_THEME}/login.html')
 RA_ADMIN_LOGGED_OUT_TEMPLATE = getattr(settings, 'RA_ADMIN_LOGIN_TEMPLATE', f'{RA_THEME}/logged_out.html')
 

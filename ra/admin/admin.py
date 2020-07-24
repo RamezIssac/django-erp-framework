@@ -34,6 +34,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.csrf import csrf_protect
+from reversion.admin import VersionAdmin
 from tabular_permissions.admin import UserTabularPermissionsMixin, GroupTabularPermissionsMixin
 
 from ra.admin.forms import RaUserChangeForm
@@ -43,7 +44,6 @@ from ra.utils.views import get_typed_reports_for_templates, get_typed_reports_ma
 from .base import RaAdminSiteBase
 from ..base import app_settings
 from ..base.widgets import RaRelatedFieldWidgetWrapper
-from reversion.admin import VersionAdmin
 
 csrf_protect_m = method_decorator(csrf_protect)
 
@@ -134,11 +134,12 @@ class RaThemeMixin:
     delete_selected_confirmation_template = f'{app_settings.RA_THEME}/delete_selected_confirmation.html'
     add_form_template = f'{app_settings.RA_THEME}/change_form.html'
 
-    recover_form_template = f'{app_settings.RA_THEME}/reversion/recover_form.html'
-    revision_form_template = f'{app_settings.RA_THEME}/reversion/revision_form.html'
-    object_history_template = f'{app_settings.RA_THEME}/reversion/object_history.html'
-    recover_list_template = f'{app_settings.RA_THEME}/reversion/recover_list.html'
-    view_template = f'{app_settings.RA_THEME}/view.html'
+    recover_form_template = f'ra/reversion/recover_form.html'
+    revision_form_template = f'ra/reversion/revision_form.html'
+    object_history_template = f'ra/reversion/object_history.html'
+    recover_list_template = f'ra/reversion/recover_list.html'
+
+    view_template = None  # Defaults to f'{app_settings.RA_THEME}/view.html'
 
 
 class EntityAdmin(RaThemeMixin, VersionAdmin):
@@ -310,8 +311,9 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
         request.current_app = self.admin_site.name
         return TemplateResponse(request, self.view_template or [
-            "admin/%s/%s/view.html" % (opts.app_label, opts.model_name),
-            "admin/%s/view.html" % opts.app_label,
+            "ra/%s/%s/view.html" % (opts.app_label, opts.model_name),
+            "ra/%s/view.html" % opts.app_label,
+            'ra/view.html',
             f"{app_settings.RA_THEME}/view.html",
         ], context)
 
@@ -919,8 +921,6 @@ class PrepopulatedAdmin(object):
 
 class RaPrePopulatedAdmin(PrepopulatedAdmin, EntityAdmin):
     pass
-    # change_form_template = 'ra/admin/change_form_prepopulated.html'
-    # add_form_template = 'ra/admin/change_form_prepopulated.html'
 
 
 class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):

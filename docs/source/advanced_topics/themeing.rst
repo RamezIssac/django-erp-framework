@@ -6,10 +6,9 @@ Theming
 Dashboard Theme
 ----------------
 
-Dashboard theme is built with `AdminLTE <https://github.com/ColorlibHQ/AdminLTE>`_
+Dashboard theme is mainly powered by `Django Jazzmin <https://github.com/farridav/django-jazzmin>`_ , built on top of `AdminLTE <https://github.com/farridav/django-jazzmin>`_
 
-You can change the theme for Ra framework by copying the content of `ra/admin/templates/adminlte` and change it as you wish,
-then use the setting `RA_THEME` = 'your/new/location/' in our settings file
+Check out `Django Jazzmin documentation <https://django-jazzmin.readthedocs.io/>`_
 
 Theming Charts colors
 ----------------------

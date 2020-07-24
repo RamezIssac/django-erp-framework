@@ -20,35 +20,18 @@
 Ra Framework
 ============
 
-A light-weight effective Django based framework to create business applications and various resource planing systems (ERP),
-equipped with a reporting engine and a responsive dashboard.
+A light-weight, effective, Django based framework to create various business applications, resource planing and management systems.
 
-Demo
-----
-
-Please visit `Installation Demo <https://demo.raframework.io/>`_, Credentials are admin/adminpassword
-
-The code for the installation demo (which is the tutorial found in the `docs <https://ra-framework.readthedocs.io/en/latest/>`_)
-can be viewed and installed `Here <https://github.com/ra-systems/ra-tutorial>`_
-
-Updates
--------
-
-Release Date is set to July the first 2020.
-
-The Django Ra ERP reporting engine is released in a separate package `django-slick-reporting <https://github.com/ra-systems/django-slick-reporting>`_
-
+If offers a ready made platform where you can start to create data entry pages and attach various reports to them.
 
 Features
 --------
 
-- A responsive dashboard built on top of Django's admin and Bootstrap AdminLte theme.
-- Using Django Slick Reporting for report Engine to compute and chart several types of reports with simple lines of code.
-- A charting capabilities
-- A widget system to display reports and its charts on dashboard home , or on object's `view` pages.
-- Tools and goodies to extend and customize the framework behavior from top to bottom.
-- Python 3.6 / 3.7 / 3.8
-- Django 2.2, 3.0 Compatible
+- A customizable responsive dashboard (built on top of Django's admin).
+- A Reporting Engine to compute and chart various and complex reports like time series and crosstab.
+- A widget system to display various reports in one page.
+- Extendable and customizable
+- Python 3.6 / 3.7 / 3.8/ Django 2.2, 3.0 Compatible
 
 
 
@@ -63,23 +46,23 @@ Installation
 Quick start
 -----------
 
-1. Create a virtual environment and install ra-framework from Pypi
+1. Create a virtual environment and install Django Ra ERP from Pypi
 
     .. code-block:: console
 
-        $ mkvirtualenv ra-env (or `virtualenv` if you dont have mkvirtualenv)
+        $ virtualenv ra-erp
+        $ source ra-erp/bin/activate
         $ pip install django-ra-erp
 
-2. Once Ra installed, it provides a command to generate a new project.
+2. Once installed, Ra provides a command to generate a new project, which would contains all the dependencies needed.
 
     .. code-block:: console
 
-        $ ra-admin start myproject
+        $ ra-admin start my_project_name
 
-    This will create a new project folder `myproject`, based on a template containing everything you need to get started.
-    You can always integrate ra framework to your existing project, please refer to the docs `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
+    You can always integrate Ra to your existing project, it's fairly simple. Here is the guide `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
 
-3. Run the usual commands needed for any django project
+3. Let's run the preparation commands and get started !
 
     .. code-block:: console
 
@@ -87,12 +70,6 @@ Quick start
         $ ./manage.py createsuperuser
         $ ./manage.py runserver
 
-
-4. Voila!! Your site should now up and running at `http://localhost:8000`. Enter your super user credentials and login.
-
-.. image:: https://rasystems.io/static/images/raframework/dashboard.png
-    :target: https://rasystems.io/static/images/raframework/dashboard.png
-    :alt: Landing Ra framework Dashboard
 
 
 Documentation
@@ -110,7 +87,7 @@ To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
     # 1. Clone and install requirements
-    $ git clone git+git@github.com:ra-systems/RA.git
+    $ git clone git+git@github.com:ra-systems/django-ra-erp.git
     $ cd tests
     $ python -m pip install -e ..
     $ python -m pip install -r requirements/py3.txt

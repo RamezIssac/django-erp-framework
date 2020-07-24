@@ -19,28 +19,24 @@ function calculateTotalOnObjectArray(data, columns) {
     // calculateTotalOnObjectArray ([{ value1:500, value2: 70} , {value:200, value2:15} ], ['value'])
     // return {'value1': 700, value2:85}
 
-    var total_container = {};
-    for (var r = 0; r < data.length; r++) {
+    let total_container = {};
+    for (let r = 0; r < data.length; r++) {
 
-        for (var i = 0; i < columns.length; i++) {
-
+        for (let i = 0; i < columns.length; i++) {
             if (typeof total_container[columns[i]] == 'undefined') {
-                //console.log('columns i ', columns[i]);
                 total_container[columns[i]] = 0;
             }
-            var val = data[r][columns[i]];
-            if (val == '-') val = 0;
+            let val = data[r][columns[i]];
+            if (val === '-') val = 0;
 
-            else if (typeof(val) == 'string') {
+            else if (typeof (val) == 'string') {
                 try {
                     val = val.replace(/,/g, '');
-                }
-                catch (err) {
-                    console.log(err, val, typeof(val));
+                } catch (err) {
+                    console.log(err, val, typeof (val));
                 }
             }
             total_container[columns[i]] += parseFloat(val);
-//            {#            console.log(val,parseFloat(val),total_container[columns[i]] )#}
         }
     }
     return total_container;
@@ -50,11 +46,10 @@ function notify_message(message, type, timeout) {
     if (typeof message == 'object') {
         return new Noty(message).show();
 
-    }
-    else {
+    } else {
         timeout = typeof timeout == 'undefined' ? 3000 : timeout;
 
-        var obj = {
+        let obj = {
             text: message,
             type: type,
             dismissQueue: false,
@@ -76,27 +71,6 @@ function notify_message(message, type, timeout) {
 }
 
 
-function partialStringInArray(array, string) {
-    var found = false;
-    $.each(array, function (i, val) {
-
-        if (string.indexOf(val.slice(0, -1)) > -1) {
-            found = true;
-//                    console.log('found ' , val,string );
-            found = val;
-//            return val;
-        }
-
-    });
-    return found;
-}
-
-
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-
 function notify_success(m, timeout, killer) {
     timeout = timeout || 1500;
     killer = killer || true;
@@ -110,8 +84,8 @@ function notify_error(message, timeout) {
     message = typeof message == 'undefined' ? $.ra.defaults.messages.ErrorMessage : message;
     if (typeof message == 'object') {
         $.each(message, function (i, e) {
-            var html = $('<ul>');
-            var li = $('<li>');
+            let html = $('<ul>');
+            let li = $('<li>');
             li.text(i + ': ' + e);
             html.append(li);
             notify_message({text: html.text(), type: 'error', timeout: timeout, killer: true});
@@ -119,21 +93,6 @@ function notify_error(message, timeout) {
         return;
     }
     notify_message({text: message, type: 'error', timeout: timeout, killer: true});
-
-//    $.gritter.add({
-//                // (string | mandatory) the heading of the notification
-//                title: $.fn.ra_client.defaults.ErrorMessage,
-//                // (string | mandatory) the text inside the notification
-//                text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus eget tincidunt velit. Cum sociis natoque penatibus et <a href="#" style="color:#ccc">magnis dis parturient</a> montes, nascetur ridiculus mus.',
-//                // (string | optional) the image to display on the left
-//                image: 'assets/images/avatar-1.jpg',
-//                // (bool | optional) if you want it to fade out on its own or just sit there
-//                sticky: false,
-//                // (int | optional) the time you want it to be alive for before fading out
-//                time: '',
-//                // (string | optional) the class name you want to apply to that specific message
-//                class_name: 'my-sticky-class'
-//            });
 
 }
 
@@ -152,6 +111,7 @@ function blockDiv(div) {
         }
     });
 }
+
 function blockInput($input) {
     $input = typeof $input == 'undefined' ? $('.main-content') : $input;
     $input.block({
@@ -175,10 +135,10 @@ function unblockDiv(div) {
 
 
 function executeFunctionByName(functionName, context /*, args */) {
-    var args = Array.prototype.slice.call(arguments, 2);
-    var namespaces = functionName.split(".");
-    var func = namespaces.pop();
-    for (var i = 0; i < namespaces.length; i++) {
+    let args = Array.prototype.slice.call(arguments, 2);
+    let namespaces = functionName.split(".");
+    let func = namespaces.pop();
+    for (let i = 0; i < namespaces.length; i++) {
         context = context[namespaces[i]];
     }
     try {
@@ -190,131 +150,88 @@ function executeFunctionByName(functionName, context /*, args */) {
     return func.apply(context, args);
 }
 
-function getFunctionByPath(path) {
-    // return the function (don't invoke it)
-    path = path.split('.');
-    var fun;
-    for (var i = 0; i < path.length; i++) {
-        if (i == 0) {
-            func = window[path[0]];
-        }
-        else {
-            func = func[path[i]]
-        }
-    }
-    return func;
-}
-
-
-function smartParseFloat(number, to_fixed) {
-    // Wrapper around parseFloat aimed to deliver only numbers
-
-    var val = parseFloat(number);
-    if (isNaN(val)) return 0;
-    else {
-        if (to_fixed > 0 && to_fixed <= 20) return val.toFixed(to_fixed);
-        else return val
-    }
-
-}
 
 function capfirst(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function isTotalField(field_name, total_fields) {
-    return false ; //todo
-    total_fields = total_fields || [];
-    if (total_fields.indexOf(field_name) != -1) {
-        return true;
-    } else {
-        return field_name.substring(0, 2) == '__';
-    }
 }
 
 
 (function ($) {
 
 
-    $.ra = function (options) {
-        var opts = $.extend({}, $.ra.defaults, options);
+    // let opts = $.extend({}, $.ra.defaults, options);
 
-        function TAB_SUPPORT() {
-            //support for enter key as a navigation
-            var focusables = $(':focusable');
-            $('input').not('[ra_autocomplete_bind="true"]').not('[type="search"]').not('#top_search_box')
-                .on("keydown", function (event) {
-                    if (event.keyCode == 13) {
-                        var current = focusables.index(this);
-                        var check = false;
-                        while (check == false) {
-                            var next = getNext(current);
-                            var readOnly = $(next).attr('readonly');
+    function enable_tab_support() {
+        //support for enter key as a navigation
+        let focusables = $(':focusable');
+        $('input').not('[ra_autocomplete_bind="true"]').not('[type="search"]').not('#top_search_box')
+            .on("keydown", function (event) {
+                if (event.keyCode === 13) {
+                    let current = focusables.index(this);
+                    let check = false;
+                    while (!check) {
+                        let next = getNext(current);
+                        let readOnly = $(next).attr('readonly');
 
-                            if (typeof readOnly == 'undefined') {
-                                check = true;
-                            }
-                            if ($(next).hasClass('delete-row')) {
-                                check = false;
-                            }
-                            current++;
+                        if (typeof readOnly == 'undefined') {
+                            check = true;
                         }
-                        next.focus();
-                        next.select();
-                        event.preventDefault();
+                        if ($(next).hasClass('delete-row')) {
+                            check = false;
+                        }
+                        current++;
                     }
+                    next.focus();
+                    next.select();
+                    event.preventDefault();
+                }
 
-                    function getNext(current) {
-                        return focusables.eq(current + 1).length ? focusables.eq(current + 1) : focusables.eq(0);
-                    }
-                });
+                function getNext(current) {
+                    return focusables.eq(current + 1).length ? focusables.eq(current + 1) : focusables.eq(0);
+                }
+            });
+    }
+
+    function smartParseFloat(number, to_fixed) {
+        // Wrapper around parseFloat aimed to deliver only numbers
+
+        let val = parseFloat(number);
+        if (isNaN(val)) return 0;
+        else {
+            if (to_fixed > 0 && to_fixed <= 20) return val.toFixed(to_fixed);
+            else return val
         }
 
-        function post_document(input, form_data, post_settings) {
-            post_settings = post_settings || '';
-            if (typeof form_data == 'undefined') {
-                form_data = $('form').serialize();
-            }
-            form_data += post_settings + '&partial_html=true';
-            blockDiv();
-            $.post(document.location, form_data, function (data) {
-                if (data['status_code'] == 200) {
-                    applyJSONState(data);
-                    if (typeof data.error != 'undefined') {
-                        notify_error();
-                    } else {
-                        notify_success();
-                    }
-                    focus_first();
-                    unblockDiv();
-                } else if (data['status_code'] == 201) {
-//                    notify_redirection();
-                    if (data['full_page']) {
-                        window.location = data['live_url'];
-                    } else {
-                        load_partial_html(data['live_url']);
-                    }
-                    notify_success();
-//                    window.location = data['live_url'];
-                }
-                else {
-                    unblockDiv();
-                }
+    }
 
-            }).fail(function () {
-                notify_error();
-                unblockDiv();
+    function start_load() {
+
+    }
+
+    function focus_first($div) {
+        $div = $div || $('#ra_page_content');
+        $div.find('input:visible').not(':disabled').not('.hasDatepicker').not('.timeinput').first().select().focus();
+    }
+
+    function adjustNumberWidget() {
+        $('input[type=number]').on('focus', function (e) {
+            $(this).on('mousewheel.disableScroll', function (e) {
+                e.preventDefault();
+                var scrollTo = (e.originalEvent.wheelDelta * -1) + $(document.documentElement).scrollTop();
+                $(document.documentElement).scrollTop(scrollTo);
             })
+        }).on('blur', function (e) {
+            $(this).off('mousewheel.disableScroll')
+        });
+    }
 
-        }
+    $.ra = {
+        enterTabSupport: enable_tab_support,
+        smartParseFloat: smartParseFloat,
+        focus_first: focus_first,
 
-
-        return {
-            enterTabSupport: TAB_SUPPORT,
-            post_document: post_document,
-
-        }
-    };
+    }
+    // };
 
     $.ra.defaults = {
         debug: true,

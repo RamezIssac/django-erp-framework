@@ -13,35 +13,12 @@ from ra.base import app_settings
 register = template.Library()
 
 
-# @register.simple_tag
-# def get_by_index(lst, i):
-#     return lst[i]
-
-
-# @register.simple_tag
-# def get_logentry_url():
-#     return reverse('%s:admin_logentry_changelist' % app_settings.RA_ADMIN_SITE_NAME)
-
-
 @register.simple_tag(takes_context=True)
 def render_navigation_menu(context):
     navigation_class = import_string(app_settings.RA_NAVIGATION_CLASS)
     request = context['request']
     admin_site = context['admin_site']
     return mark_safe(navigation_class.get_menu(context, request, admin_site))
-
-
-DOT = '.'
-
-
-# @register.simple_tag
-# def ra_url(url_name):
-#     """
-#     A helper function to get the url without worrying about the admin url
-#     :param url_name:
-#     :return:
-#     """
-#     return reverse('%s:%s' % (app_settings.RA_ADMIN_SITE_NAME, url_name))
 
 
 @register.simple_tag(takes_context=True)
@@ -56,7 +33,7 @@ def render_reports_menu(context):
     from ra.reporting.registry import report_registry
     classes = report_registry.get_base_models()
     if classes:
-        t = get_template(f'{app_settings.RA_THEME}/reports_menu.html')
+        t = get_template(f'ra/reports_menu.html')
         return mark_safe(
             t.render({'classes': classes, 'is_in_reports': is_in_reports, 'active_base_model': active_base_model}))
     return ''
@@ -66,4 +43,3 @@ def render_reports_menu(context):
 def get_report(context, base_model, report_slug):
     from ra.reporting.registry import report_registry
     return report_registry.get(namespace=base_model, report_slug=report_slug)
-

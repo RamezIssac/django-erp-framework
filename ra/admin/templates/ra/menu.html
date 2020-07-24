@@ -1,0 +1,36 @@
+{% load i18n suit_menu %}
+{% get_menu request as app_list %}
+{% if app_list %}
+    {% for app in app_list %}
+        {% if app.separator %}
+            <li class="separator"></li>
+        {% else %}
+            <li class="{{ app.is_active|yesno:'menu-open,' }} nav-item has-treeview ">
+                <a class="nav-link {{ app.is_active|yesno:'active,' }}"
+                   href="{{ app.url }}"{{ app.blank|yesno:' target=_blank,' }}>
+                    <i class="nav-icon {% firstof app.icon 'fas fa-th' %}"> </i>
+
+                    <p>
+                        {% trans app.label|capfirst %}
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+
+                </a>
+                {% if app.models %}
+                    <ul class="nav nav-treeview">
+                        {% for model in app.models %}
+                            <li class="nav-item ">
+                                <a href="{{ model.url }}"{{ model.blank|yesno:' target=_blank,' }}
+                                   class="nav-link {{ model.is_active|yesno:' active,' }}">
+                                    {#                                    <i class="far fa-circle nav-icon"></i>#}
+                                    <i class="nav-icon fas fa-circle"></i>
+                                    <p>{{ model.label }}</p>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+{% endif %}

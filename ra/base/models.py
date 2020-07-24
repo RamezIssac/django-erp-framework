@@ -7,6 +7,7 @@ from django.db import models
 from django.urls import reverse, NoReverseMatch
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
+# from polymorphic.models import PolymorphicModel
 
 from . import app_settings, registry
 
@@ -70,24 +71,15 @@ class RAModel(DiffingMixin, models.Model):
         abstract = True
 
 
-class RaModelMixin(object):
-    """
-    This is a sample interface for integrating with teh framework
-    """
-
-
 class EntityModel(RAModel):
     """
     The Main base for Ra `static` models
     Example: Client , Expense etc..
     """
-    slug = models.SlugField(_('refer code'), help_text=_('For fast recall'), max_length=50,
+    slug = models.SlugField(_('Identifier slug'), help_text=_('For fast recall'), max_length=50,
                             unique=True, db_index=True, blank=True)
-    title = models.CharField(_('name'), max_length=255, unique=True, db_index=True)
-    notes = models.TextField(_('notes'), null=True, blank=True)
-
-    # fb = models.DecimalField(_('beginning balance'), help_text=_('Opening Balance or initial balance '), max_digits=19,
-    #                          decimal_places=2, default=0)
+    title = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
+    notes = models.TextField(_('Notes'), null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -144,7 +136,7 @@ class EntityModel(RAModel):
     def name(self):
         return self.title
 
-    def get_next_slug(self):
+    def get_next_slug(self, suggestion=None):
         """
         Get the next slug
         If it's a new instance and the slug is not provided, we try and attempt a serial over the already added slugs
@@ -157,7 +149,8 @@ class EntityModel(RAModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.pk is None:
             if not self.slug:
-                self.slug = self.get_next_slug()
+                self.slug = self.get_next_slug(self.title)
+                # print(self.slug)
             if not self.owner_id:
                 try:
                     self.owner = self.lastmod_user
@@ -280,8 +273,9 @@ class TransactionModel(EntityModel):
         Return the doc_type
         :return:
         """
-        raise NotImplementedError(
-            f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
+        return cls.__name__.lower()
+        # raise NotImplementedError(
+        #     f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
 
     def __str__(self):
         return '%s-%s' % (self._meta.verbose_name, self.slug)
