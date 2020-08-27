@@ -61,6 +61,7 @@ To manage a business we would need to track the sales , the clients and the expe
 
 
     class SalesLineTransaction(QuantitativeTransactionItemModel):
+        sales_transaction = models.ForeignKey(SalesTransaction, on_delete=models.CASCADE)
         product = models.ForeignKey(Product, on_delete=models.CASCADE)
         client = models.ForeignKey(Client, on_delete=models.CASCADE)
 

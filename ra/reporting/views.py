@@ -291,6 +291,7 @@ class ReportView(UserPassesTestMixin, SampleReportView):
     chart_settings = None
 
     other_namespaces = None
+    columns = None
 
     report_slug = ''
     page_title = None
