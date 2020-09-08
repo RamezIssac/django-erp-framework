@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'jazzmin',
+
     'crequest',
     'crispy_forms',
     'reversion',
@@ -47,7 +49,6 @@ INSTALLED_APPS = [
     'ra.erp.expense',
     'ra.erp.treasury',
     'slick_reporting',
-    'jazzmin',
     'django.contrib.admin',
 ]
 
