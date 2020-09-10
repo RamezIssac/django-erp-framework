@@ -36,9 +36,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'jazzmin',
+
     'crequest',
-    'crequest',
-    'compressor',
     'crispy_forms',
     'reversion',
     'tabular_permissions',
@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'ra.activity',
     'ra.reporting',
     'slick_reporting',
-    'jazzmin',
     'django.contrib.admin', # comes at the end because the theme is replaced
 ]
 
