@@ -241,14 +241,183 @@ class EntityModel(RAModel):
             app_settings.RA_ADMIN_SITE_NAME, cls._meta.app_label, cls.get_class_name().lower()))
 
 
-# class BasePersonInfo(BaseInfo):
-#     address = models.CharField(_('address'), max_length=260, null=True, blank=True)
-#     telephone = models.CharField(_('telephone'), max_length=130, null=True, blank=True)
-#     email = models.EmailField(_('email'), null=True, blank=True)
-#
-#     class Meta:
-#         abstract = True
-#         # swappable = swapper.swappable_setting('ra', 'BasePersonInfo')
+class BasePersonInfo(BaseInfo):
+    address = models.CharField(_('address'), max_length=260, null=True, blank=True)
+    telephone = models.CharField(_('telephone'), max_length=130, null=True, blank=True)
+    email = models.EmailField(_('email'), null=True, blank=True)
+
+    class Meta:
+        abstract = True
+        # swappable = swapper.swappable_setting('ra', 'BasePersonInfo')
+
+class BaseMovementInfo(DiffingMixin, models.Model):
+    slug = models.SlugField(_('refer code'), max_length=50, db_index=True, validators=[], blank=True)
+    doc_date = models.DateTimeField(_('date'), db_index=True)
+    doc_type = models.CharField(max_length=30, db_index=True)
+    notes = models.TextField(_('notes'), null=True, blank=True)
+    value = models.DecimalField(_('value'), max_digits=19, decimal_places=2, default=0)
+
+    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
+                              on_delete=models.CASCADE)
+    creation_date = models.DateTimeField(_('creation date and time'), default=now)
+    lastmod = models.DateTimeField(_('last modification'), db_index=True)
+    lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
+                                     verbose_name=_('last modification by'), on_delete=models.CASCADE)
+
+
+    def get_value(self):
+        return floatformat(self.value, app_settings.RA_FLOATFORMAT_ARG)
+
+    get_value.short_description = _('value')
+    get_value.admin_order_field = 'value'
+
+    @classmethod
+    def get_doc_type(cls):
+        """
+        Return the doc_type
+        :return:
+        """
+        raise NotImplementedError('Each Transaction should define a *doc_type*')
+
+    @classmethod
+    def get_class_name(cls):
+        """
+        return the class name, useable when a ra model is mimicing
+        another model behaviour.
+        This method is used is get_doc_type_* functions,
+        This method is made to avoid to repeat registered doc_type to make adjustments
+        """
+        return cls.__name__
+
+    @classmethod
+    def simple_query(cls, **kwargs):
+        # date = kwargs.get('date')
+        slug = kwargs.get('slug')
+        if slug:
+            check = cls.objects.filter(slug=slug)
+            if check:
+                return True, check
+            else:
+                return False, None
+
+        return None, None
+
+    def __init__(self, *args, **kwargs):
+        super(BaseMovementInfo, self).__init__(*args, **kwargs)
+        self.send_report_attention_event = True
+        self.children = None
+        self.reporting_models = []
+
+    def __str__(self):
+        return '%s-%s' % (self._meta.verbose_name, self.slug)
+
+    def __repr__(self):
+        return '<%s pk:%s slug:%s doc_type:%s>' % (self.__class__.__name__, self.pk, self.slug, self.doc_type)
+
+    def get_pk_name(self):
+        if hasattr(self, 'pk_name'):
+            return self.pk_name
+        else:
+            return '%s_id' % self.__class__.__name__.lower()
+
+    def get_reporting_models(self):
+        doc_types_map = registry.get_doc_type_settings()
+        if self.doc_type in doc_types_map:
+            doc_type_setting = doc_types_map[self.doc_type]
+            return doc_type_setting['report_models']
+        else:
+            logger.warning('RA: doc_type not found in doc_types_map , Did you register %s' % self.doc_type)
+            return []
+
+    class Meta:
+        abstract = True
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        """
+        Custom save, it assign the user  As owner and the last modifed
+        it sets the doc_type
+        make sure that dlc_date has correct timezone ?!
+        :param force_insert:
+        :param force_update:
+        :param using:
+        :param update_fields:
+        :return:
+        """
+
+        from ra.base.helpers import get_next_serial
+        request = CrequestMiddleware.get_request()
+        self.doc_type = self.get_doc_type()
+        if not self.slug:
+            self.slug = get_next_serial(self.__class__)
+
+        self.slug = slugify(self.slug)
+        self.method = None
+        if self.pk is None:
+            if not self.lastmod_user_id:
+                self.lastmod_user_id = request.user.pk
+            if not self.owner_id:
+                try:
+                    self.owner_id = self.lastmod_user_id
+                except:
+                    self.owner_id = self.lastmod_user_id
+            self.method = 'new'
+        else:
+            if self.is_dirty():
+                self.method = 'update'
+
+        self.lastmod = now()
+        if self.doc_date:
+            if self.doc_date.tzinfo is None:
+                self.doc_date = pytz.utc.localize(self.doc_date)
+
+        super(BaseMovementInfo, self).save(force_insert, force_update, using, update_fields)
+    #
+    # @classmethod
+    # def get_doc_type_verbose_name(cls, doc_type):
+    #     """
+    #     Return the doc_type verbose name , Must be implemented when needed by children
+    #     @param doc_type: the doc_type field value
+    #     @return: the description of the doc_type
+    #     Example: In: get_doc_type_verbose_name('1')
+    #             Out: Purchase
+    #     """
+    #     # Example :
+    #     # if doc_type == '1': return _('purchase')
+    #     raise NotImplemented()
+
+    def get_absolute_url(self):
+        doc_types = registry.get_doc_type_settings()
+        if self.doc_type in doc_types:
+            return '%sslug/%s/' % (doc_types[self.doc_type]['redirect_url_prefix'], self.slug)
+        else:
+            return self.doc_type
+
+    @property
+    def title(self):
+        return self.doc_date.strftime('%Y/%m/%d %H:%M')
+
+class BaseMovementItemInfo(BaseMovementInfo):
+    """
+    Abstract model to identify a movement with a value
+    """
+
+    class Meta:
+        abstract = True
+
+
+class QuanValueMovementItem(BaseMovementItemInfo):
+    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
+    price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
+    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.value = self.quantity * self.price
+        if self.discount:
+            self.value -= self.value * self.discount / 100
+        super(QuanValueMovementItem, self).save(force_insert, force_update, using, update_fields)
+
+    class Meta:
+        abstract = True
 
 
 class TransactionModel(EntityModel):
