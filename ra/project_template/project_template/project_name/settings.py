@@ -36,7 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'crequest',
+    'jazzmin',
+    'compressor',
     'crequest',
     'crispy_forms',
     'reversion',

@@ -22,6 +22,7 @@ Settings
     INSTALLED_APPS = {
         # ...
 
+        'jazzmin',
         'crequest',
         'crispy_forms',
         'reversion',
@@ -32,7 +33,6 @@ Settings
         'ra.reporting',
         'sample_erp',
         'slick_reporting',
-        'jazzmin',
         'django.contrib.admin', # comes at the end because the theme is replaced
 
     }
