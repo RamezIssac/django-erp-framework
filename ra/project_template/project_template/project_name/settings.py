@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'jazzmin',
-
+    'compressor',
     'crequest',
     'crispy_forms',
     'reversion',
