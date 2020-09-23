@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'crequest',
-    'compressor',
     'crispy_forms',
     'reversion',
     'tabular_permissions',

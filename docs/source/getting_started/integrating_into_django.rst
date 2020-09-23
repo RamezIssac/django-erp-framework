@@ -24,7 +24,6 @@ Settings
 
         'jazzmin',
         'crequest',
-        'compressor',
         'crispy_forms',
         'reversion',
         'tabular_permissions',
