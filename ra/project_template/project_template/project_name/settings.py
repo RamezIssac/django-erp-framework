@@ -47,8 +47,7 @@ INSTALLED_APPS = [
     'ra.activity',
     'ra.reporting',
     'slick_reporting',
-    'jazzmin',
-    'django.contrib.admin', # comes at the end because the theme is replaced
+    'django.contrib.admin',  # comes at the end because the theme is replaced
 ]
 
 MIDDLEWARE = [
