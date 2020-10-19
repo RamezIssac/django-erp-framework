@@ -2,7 +2,15 @@
 All notable changes to this project are/will be documented in this file.
 
 
-## [Unreleased]
+## [1.1.1]
+# Updated
+- Fixed duplicated `jazzmin` in installed apps in the project skeleton
+
+## [1.1.0]
+# Updated
+- Fixed issues with documentation and project skeleton.
+
+## [1.0.0]
 #Added
 - Reporting Engine is moved to its own new package [Slick Reporting](https://github.com/ra-systems/django-slick-reporting).   
 - Framework no longer depends Postgres Database specifically.
