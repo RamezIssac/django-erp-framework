@@ -29,10 +29,11 @@
                                         <div class="col-sm-12">
                                             <div class="formContainer" data-report-url="{{ report.get_url }}">
                                                 {#                                                {% csrf_token %}#}
-                                                {% with report.get_initialized_form as form %}
-                                                    {% crispy form form.get_crispy_helper %}
-                                                {% endwith %}
-
+                                                <form>
+                                                    {% with report.get_initialized_form as form %}
+                                                        {% crispy form form.get_crispy_helper %}
+                                                    {% endwith %}
+                                                </form>
                                             </div>
 
                                         </div>
@@ -48,9 +49,9 @@
                                 </div>
                             </div>
                             <div class="card">
-                            <div class="card-header">
-                                <div class="card-title"><h5>Results</h5></div>
-                            </div>
+                                <div class="card-header">
+                                    <div class="card-title"><h5>Results</h5></div>
+                                </div>
                                 <div class="card-body">
                                     <div data-report-widget data-no-auto-load
                                          data-report-url="{{ report.get_url }}"

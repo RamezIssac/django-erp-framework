@@ -254,9 +254,9 @@ function capfirst(s) {
             inverse: 'Inverse',
             apply: 'Apply',
             choiceBeenMade: 'Choice made',
-            total: 'total',
-            availableReports: 'available reports',
-            availableCharts: 'available charts',
+            total: 'Total',
+            availableReports: 'Available Reports',
+            availableCharts: 'Available Charts',
         },
         urls: {
             settings_portal: '/backend/settings/update/',
