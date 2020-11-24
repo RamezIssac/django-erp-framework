@@ -21,6 +21,7 @@ RUN pip install django-compressor==2.4
 RUN ra-admin start project_name
 WORKDIR /code/project_name
 RUN python manage.py migrate
+RUN python manage.py createsuperuser
 RUN ls -al
 EXPOSE 8000
 CMD python manage.py runserver 0.0.0.0:8000
