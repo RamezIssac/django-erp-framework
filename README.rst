@@ -8,10 +8,10 @@
     :target: https://ra-framework.readthedocs.io/
 
 .. image:: https://api.travis-ci.org/ra-systems/RA.svg?branch=master
-    :target: https://travis-ci.org/ra-systems/RA
+    :target: https://travis-ci.org/ra-systems/django-ra-erp
 
-.. image:: https://img.shields.io/codecov/c/github/ra-systems/RA
-    :target: https://codecov.io/gh/ra-systems/RA
+.. image:: https://img.shields.io/codecov/c/github/ra-systems/django-ra-erp
+    :target: https://codecov.io/gh/ra-systems/django-ra-erp
 
 
 
