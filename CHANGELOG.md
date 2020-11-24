@@ -2,6 +2,9 @@
 All notable changes to this project are/will be documented in this file.
 
 
+## [1.2.0] - 2020-11-24
+- Update slick_reporting to version >= 0.4
+
 ## [1.1.1]
 # Updated
 - Fixed duplicated `jazzmin` in installed apps in the project skeleton
