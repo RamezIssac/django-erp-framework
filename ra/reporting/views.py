@@ -8,14 +8,13 @@ from django.contrib.auth.mixins import AccessMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
-# cache = get_cache('default')
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import get_language_bidi, ugettext
 from django.views.generic import TemplateView
 from slick_reporting.form_factory import report_form_factory
 from slick_reporting.generator import ReportGenerator
-from slick_reporting.views import SampleReportView
+from slick_reporting.views import SlickReportViewBase
 
 from ra.base import app_settings, registry
 from ra.base.app_settings import RA_ADMIN_SITE_NAME
@@ -256,7 +255,7 @@ class ReportList(ReportListBase):
         return context
 
 
-class ReportView(UserPassesTestMixin, SampleReportView):
+class ReportView(UserPassesTestMixin, SlickReportViewBase):
     """
     The Base class for reports .
     It handles the report ajax request, load the report form which provides the needed filers,
@@ -296,7 +295,7 @@ class ReportView(UserPassesTestMixin, SampleReportView):
     report_slug = ''
     page_title = None
     report_title = ''
-
+    date_field = 'doc_date'
     # default order by for the results.
     # ordering can also be controlled on run time by passing order_by='field_name'
     # For DESC order supply order_by='-field_name'

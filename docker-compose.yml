@@ -1,0 +1,10 @@
+version: "3.4"
+
+services:
+  web:
+    build: .
+    command: ls -al
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
