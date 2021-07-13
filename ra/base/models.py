@@ -78,7 +78,7 @@ class EntityModel(RAModel):
     """
     slug = models.SlugField(_('Identifier slug'), help_text=_('For fast recall'), max_length=50,
                             unique=True, db_index=True, blank=True)
-    title = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
+    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
     notes = models.TextField(_('Notes'), null=True, blank=True)
 
     class Meta:
@@ -91,7 +91,7 @@ class EntityModel(RAModel):
             self.pk_name = None
 
     def __str__(self):
-        return self.title
+        return self.name
 
     @classmethod
     def get_class_name(cls):
@@ -132,9 +132,9 @@ class EntityModel(RAModel):
                 , args=(self.pk,))
         return url
 
-    @property
-    def name(self):
-        return self.title
+    # @property
+    # def name(self):
+    #     return self.title
 
     def get_next_slug(self, suggestion=None):
         """
@@ -149,7 +149,7 @@ class EntityModel(RAModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.pk is None:
             if not self.slug:
-                self.slug = self.get_next_slug(self.title)
+                self.slug = self.get_next_slug(self.name)
                 # print(self.slug)
             if not self.owner_id:
                 try:
@@ -220,7 +220,7 @@ class EntityModel(RAModel):
         A helper function to get a custom title of the instance if needed
         :return:
         """
-        return self.title
+        return self.name
 
     @classmethod
     def get_report_list_url(cls):
@@ -253,6 +253,7 @@ class EntityModel(RAModel):
 
 class TransactionModel(EntityModel):
     title = None
+    name = None
 
     slug = models.SlugField(_('refer code'), max_length=50, db_index=True, validators=[], blank=True)
     doc_date = models.DateTimeField(_('date'), db_index=True)

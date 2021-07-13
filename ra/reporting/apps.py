@@ -3,7 +3,7 @@ from django.db.models.signals import post_migrate
 
 
 class ReportAppConfig(apps.AppConfig):
-    label = 'Ra Reports'
+    label = 'ra_reporting'
     name = 'ra.reporting'
 
     def ready(self):

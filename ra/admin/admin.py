@@ -47,11 +47,11 @@ from ..base.widgets import RaRelatedFieldWidgetWrapper
 
 csrf_protect_m = method_decorator(csrf_protect)
 
-default_fields = (('title', 'slug'), 'notes')
+default_fields = (('name', 'slug'), 'notes')
 
 default_exclude = ('owner', 'creation_date', 'lastmod', 'lastmod_user')
 
-default_list_display = ('title', 'slug', 'notes')
+default_list_display = ('name', 'slug', 'notes')
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
     # Custom templates
 
     history_latest_first = True
-    search_fields = ['title', 'slug']
+    search_fields = ['name', 'slug']
     formfield_overrides = {
         # DateTimeField: {'widget': AdminSplitDateTime},
         # DecimalField: {'widget': NumberInput},
@@ -199,10 +199,10 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
                             url, capfirst(_('change')))
             links.append(view_link)
             links = "<span class='go-to-change-form'>%s</span>" % ''.join(links) + ''
-            obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.title)
+            obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.name)
             return mark_safe('%s %s' % (obj_link_title, links))
 
-        return obj.title
+        return obj.name
 
     def get_history_link(self, obj):
         info = self.model._meta.app_label, self.model._meta.model_name
@@ -214,8 +214,8 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
     get_history_link.short_description = _('History')
 
-    get_enhanced_obj_title.short_description = _('title')
-    get_enhanced_obj_title.admin_order_field = 'title'
+    get_enhanced_obj_title.short_description = _('Name')
+    get_enhanced_obj_title.admin_order_field = 'name'
 
     def get_stats_icon(self, obj):
         url = reverse('%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, self.model._meta.app_label,
@@ -225,7 +225,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
         view_link = '<a href="%s" data-popup="tooltip" title="%s %s" data-placement="bottom"> ' \
                     '<i class="fas fa-chart-line"></i> </a>' % (
-                        url, capfirst(_('Statistics for')), obj.title)
+                        url, capfirst(_('Statistics for')), obj.name)
         return mark_safe(view_link)
 
     get_stats_icon.short_description = _('Stats')
@@ -650,7 +650,6 @@ class TransactionItemAdmin(admin.TabularInline):
         models.TextField: {'widget': TextInput},
         DecimalField: {'widget': NumberInput},
         # ForeignKey: {'widget': RaBootstrapForeignKeyWidget},
-
     }
     view_on_site = False
 

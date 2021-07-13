@@ -60,7 +60,7 @@ Quick start
 
         $ ra-admin start my_project_name
 
-    You can always integrate Ra to your existing project, it's fairly simple. Here is the guide `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
+    You can always integrate Ra to your existing project, it's fairly simple. Here is the guide `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/getting_started/integrating_into_django.html>`_
 
 3. Let's run the preparation commands and get started !
 
@@ -77,7 +77,7 @@ Documentation
 
 Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
 
-Please Proceed to the tutorial `Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+Please Proceed to the tutorial `Sample ERP System Tutorial <https://ra-framework.readthedocs.io/en/latest/tutorial/index.html>`_
 
 
 Testing and contribution
