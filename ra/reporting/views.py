@@ -565,25 +565,25 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         metadata['report_title'] = self.report_title
         return metadata
 
-    def get_report_results(self, for_print=False):
-        """
-        Gets the reports Data, and, its meta data used by datatables.net and highcharts
-        :return: JsonResponse
-        """
-
-        queryset = self.get_queryset()
-        report_generator = self.get_report_generator(queryset, for_print)
-        data = report_generator.get_report_data()
-        data = self.order_results(data)
-        data = self.filter_results(data, for_print)
-        data = {
-            'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
-            'data': data,
-            'columns': self.get_columns_data(report_generator.get_list_display_columns()),
-            'metadata': self.get_metadata(generator=report_generator),
-            'chart_settings': self.get_chart_settings()
-        }
-        return data
+    # def get_report_results(self, for_print=False):
+    #     """
+    #     Gets the reports Data, and, its meta data used by datatables.net and highcharts
+    #     :return: JsonResponse
+    #     """
+    #
+    #     queryset = self.get_queryset()
+    #     report_generator = self.get_report_generator(queryset, for_print)
+    #     data = report_generator.get_report_data()
+    #     data = self.order_results(data)
+    #     data = self.filter_results(data, for_print)
+    #     data = {
+    #         'report_slug': self.kwargs.get('original_report_slug', self.get_report_slug()),
+    #         'data': data,
+    #         'columns': self.get_columns_data(report_generator.get_list_display_columns()),
+    #         'metadata': self.get_metadata(generator=report_generator),
+    #         'chart_settings': self.get_chart_settings()
+    #     }
+    #     return data
 
     def order_results(self, data):
         """

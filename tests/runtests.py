@@ -56,7 +56,6 @@ SUBDIRS_TO_SKIP = [
 ]
 
 ALWAYS_INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sites',
@@ -64,7 +63,7 @@ ALWAYS_INSTALLED_APPS = [
     'django.contrib.messages',
     # 'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
-
+'jazzmin',
     'crequest',
     'crispy_forms',
     'reversion',
@@ -73,7 +72,8 @@ ALWAYS_INSTALLED_APPS = [
     'ra.admin',
     'ra.activity',
     'ra.reporting',
-    'jazzmin',
+    'django.contrib.admin',
+
 ]
 
 ALWAYS_MIDDLEWARE = [
