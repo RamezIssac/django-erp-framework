@@ -59,7 +59,7 @@ RA_CACHE_REPORTS_PER_USER = getattr(settings, 'RA_CACHE_REPORTS_PER_USER', True)
 RA_THEME = getattr(settings, 'RA_THEME', 'admin')
 
 # Admin Looks
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 

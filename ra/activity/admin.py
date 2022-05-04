@@ -6,11 +6,11 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.template.defaultfilters import dictsort, capfirst, truncatechars, truncatewords
 from django.urls import reverse, NoReverseMatch
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import escape, escapejs
 from django.utils.safestring import mark_safe
 from django.utils.text import get_text_list
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 
 from ra.activity.models import MyActivity
 from ra.base import app_settings
@@ -98,10 +98,10 @@ class RAContentTypeFilter(admin.SimpleListFilter):
             model = c.model_class()
             if model:
                 if not exclude_function(model):
-                    # vals += ((c.pk, force_text(model._meta.verbose_name_plural)),)
+                    # vals += ((c.pk, force_str(model._meta.verbose_name_plural)),)
                     val_list.append({
-                        'name': capfirst(force_text(model._meta.verbose_name_plural)),
-                        'value': ((c.pk, capfirst(force_text(model._meta.verbose_name_plural))),)
+                        'name': capfirst(force_str(model._meta.verbose_name_plural)),
+                        'value': ((c.pk, capfirst(force_str(model._meta.verbose_name_plural))),)
                     })
         ordered_list = dictsort(val_list, 'name')
         for o in ordered_list:

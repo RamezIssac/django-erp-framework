@@ -3,7 +3,7 @@ import re
 
 from django.shortcuts import render
 from django.urls import reverse, NoReverseMatch
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from ra.base import app_settings
 

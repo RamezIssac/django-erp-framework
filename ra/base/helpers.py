@@ -7,7 +7,7 @@ from django.apps import apps
 from django.db.models import Max
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, NoReverseMatch
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ def dictsort(value, arg, desc=False):
 #             continue
 #         if model:
 #             if not exclude_function(model):
-#                 relevant_ct.append((c.pk, force_text(model._meta.verbose_name_plural)))
+#                 relevant_ct.append((c.pk, force_str(model._meta.verbose_name_plural)))
 #
 #     return relevant_ct
 

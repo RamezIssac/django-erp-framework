@@ -4,14 +4,14 @@ import logging
 from functools import update_wrapper
 
 from django.apps import apps
-from django.conf.urls import url, include
+from django.conf.urls import include
 from django.contrib.admin import AdminSite
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils.module_loading import import_string
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from ra.admin.helpers import get_each_context
 from ra.base import app_settings
@@ -70,17 +70,17 @@ class RaAdminSiteBase(AdminSite):
 
         urls = super(RaAdminSiteBase, self).get_urls()
         help_center = [
-            url(r'^i18n/', include('django.conf.urls.i18n')),
+            path(r'^i18n/', include('django.conf.urls.i18n')),
         ]
 
         settings_update = [
-            url(r'^manifest/$', self.manifest_view, name='manifest'),
-            url(r'^sw.js$', self.service_worker_view, name='service-worker'),
+            path(r'^manifest/$', self.manifest_view, name='manifest'),
+            path(r'^sw.js$', self.service_worker_view, name='service-worker'),
         ]
 
         urlpatterns = [
-            url(r'^reports/(?P<base_model>[\w-]+)/$', get_report_list_class, name='report_list'),
-            url(r'^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$', get_report_view, name='report'),
+            path(r'^reports/(?P<base_model>[\w-]+)/$', get_report_list_class, name='report_list'),
+            path(r'^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$', get_report_view, name='report'),
             # new from sites
             # path('top-search/', TopSearchView.as_view(), name='top-search'),
             # path('access-denied/', access_denied, name='access-denied'),
