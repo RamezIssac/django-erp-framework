@@ -336,7 +336,8 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
     def get_urls(self):
         # Override ModelAdmin
-        from django.conf.urls import url
+        from django.urls import re_path as url
+
 
         def wrap(view):
             def wrapper(*args, **kwargs):
@@ -372,7 +373,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
         # ------------------------------------------------------------------------------
 
         my_urls = [
-            path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
+            path('autocomplete/', wrap(self.autocomplete_fields), name='%s_%s_autocomplete' % info),
             url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug),
                 name='%s_%s_get-by-slug' % info),
         ]
