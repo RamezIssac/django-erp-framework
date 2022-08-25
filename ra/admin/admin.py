@@ -27,12 +27,11 @@ from django.template.defaultfilters import capfirst
 from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.utils.decorators import method_decorator
-from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.csrf import csrf_protect
 from reversion.admin import VersionAdmin
 from tabular_permissions.admin import UserTabularPermissionsMixin, GroupTabularPermissionsMixin
@@ -57,7 +56,9 @@ logger = logging.getLogger(__name__)
 
 from django.contrib.admin.views.main import ChangeList
 
-changeform_saved = Signal(providing_args=["instance", "created", 'using'])
+# todo bring back
+# changeform_saved = Signal(providing_args=["instance", "created", 'using'])
+changeform_saved = Signal()
 
 
 def get_reports_map(model_name, user, request, order_list=None):
@@ -87,10 +88,10 @@ class RaChangeList(ChangeList):
                                            list_max_show_all, list_editable, model_admin, sortable_by)
         self.request = request  # Add request to the class
         if self.is_popup:
-            title = ugettext('Select %s')
+            title = gettext('Select %s')
         else:
-            title = ugettext('%s')
-        self.title = title % force_text(self.opts.verbose_name_plural)
+            title = gettext('%s')
+        self.title = title % str(self.opts.verbose_name_plural)
 
         self.no_records_message = model_admin.no_records_message
 
@@ -266,7 +267,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
             if obj is None:
                 raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {
-                    'name': force_text(opts.verbose_name), 'key': escape(object_id)})
+                    'name': str(opts.verbose_name), 'key': escape(object_id)})
 
                 # if request.method == 'POST' and "_saveasnew" in request.POST:
                 #     return self.add_view(request, form_url=reverse('admin:%s_%s_add' % (
@@ -336,7 +337,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
 
     def get_urls(self):
         # Override ModelAdmin
-        from django.conf.urls import url
+        from django.urls import re_path as url
 
         def wrap(view):
             def wrapper(*args, **kwargs):

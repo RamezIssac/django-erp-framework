@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
-from django.utils.translation import get_language_bidi, ugettext
+from django.utils.translation import get_language_bidi, gettext
 from django.views.generic import TemplateView
 from slick_reporting.form_factory import report_form_factory
 from slick_reporting.generator import ReportGenerator
@@ -224,9 +224,9 @@ class ReportList(ReportListBase):
         verbose_name_plural = model._meta.verbose_name_plural
         is_bidi = get_language_bidi()
         if is_bidi:
-            page_title = '%s %s' % (ugettext('reports'), model._meta.verbose_name_plural)
+            page_title = '%s %s' % (gettext('reports'), model._meta.verbose_name_plural)
         else:
-            page_title = '%s %s' % (model._meta.verbose_name_plural, ugettext('reports'))
+            page_title = '%s %s' % (model._meta.verbose_name_plural, gettext('reports'))
         opts = model._meta
         return verbose_name, verbose_name_plural, page_title, opts
 

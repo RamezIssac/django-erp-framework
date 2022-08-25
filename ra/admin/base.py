@@ -4,18 +4,18 @@ import logging
 from functools import update_wrapper
 
 from django.apps import apps
-from django.conf.urls import url, include
 from django.contrib.admin import AdminSite
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.response import TemplateResponse
-from django.urls import path
+from django.urls import re_path as url, include
 from django.utils.module_loading import import_string
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from ra.admin.helpers import get_each_context
 from ra.base import app_settings
 from ra.base.helpers import get_from_list
+
 # from ra.top_search.views import TopSearchView
 
 logger = logging.getLogger(__name__)

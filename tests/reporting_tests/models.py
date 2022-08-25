@@ -3,7 +3,7 @@ from django.urls import reverse_lazy
 
 from ra.base.models import TransactionModel, EntityModel, QuantitativeTransactionItemModel, TransactionItemModel
 from ra.base.registry import register_doc_type
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 
 class Product(EntityModel):

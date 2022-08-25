@@ -1,12 +1,6 @@
 
 import re
 
-from django.shortcuts import render
-from django.urls import reverse, NoReverseMatch
-from django.utils.encoding import force_text
-
-from ra.base import app_settings
-
 eastern_western_map = {1776: 48,  # 0
                       1777: 49,  # 1
                       1778: 50,  # 2

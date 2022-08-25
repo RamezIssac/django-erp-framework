@@ -1,6 +1,5 @@
 from django import template
 from django.template.loader import get_template
-from django.utils.encoding import force_text
 from django.utils.functional import Promise
 from django.utils.safestring import mark_safe
 from logging import getLogger
@@ -25,7 +24,7 @@ def jsonify(object):
         if hasattr(obj, 'isoformat'):
             return obj.isoformat()
         elif isinstance(obj, Promise):
-            return force_text(obj)
+            return str(obj)
 
     if isinstance(object, QuerySet):
         return serialize('json', object)
