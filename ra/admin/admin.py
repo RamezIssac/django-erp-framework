@@ -324,8 +324,9 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
         extra_context['description'] = self.description
         return super(EntityAdmin, self).changelist_view(request, extra_context)
 
-    def get_changelist(self, request, **kwargs):
-        return RaChangeList
+    # todo check and maybe bring back
+    # def get_changelist(self, request, **kwargs):
+    #     return RaChangeList
 
     def save_model(self, request, obj, form, change):
         obj.lastmod_user = request.user
@@ -373,7 +374,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
         # ------------------------------------------------------------------------------
 
         my_urls = [
-            path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
+            # path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),
             url(r'^slug/(?P<slug>[\w-]+)/$', self.admin_site.admin_view(self.get_by_slug),
                 name='%s_%s_get-by-slug' % info),
         ]

@@ -26,9 +26,9 @@
     </style>
 
 {% endblock %}
-{#{% block sidebar %}#}
-{#    {% include 'ra/sidebar.html' %}#}
-{#{% endblock %}#}
+{% block sidebar %}
+    {% include 'ra/sidebar.html' %}
+{% endblock %}
 
 {% block extrajs %}
     <script src="{% static 'adminlte/plugins/moment/moment.min.js' %}"></script>

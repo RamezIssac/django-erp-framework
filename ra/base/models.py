@@ -309,6 +309,7 @@ class TransactionModel(EntityModel):
                 self.lastmod_user_id = request.user.pk
             if not self.owner_id:
                 self.owner_id = self.lastmod_user_id
+            self.doc_date = self.doc_date if self.doc_date else now()
         self.lastmod = now()
         # if self.doc_date:
         #     if self.doc_date.tzinfo is None:
