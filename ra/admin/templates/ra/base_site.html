@@ -1,4 +1,4 @@
-{% extends "ra/base.html" %}
+{% extends "admin/base.html" %}
 {% load i18n static %}
 
 {% block title %}{{ title|capfirst }} | {{ site_title|default:_('RA ERP') }}{% endblock %}
@@ -31,6 +31,8 @@
 {#{% endblock %}#}
 
 {% block extrajs %}
+    <script src="{% static 'limitless_admin/global_assets/js/main/jquery.min.js' %}"></script>
+
     <script src="{% static 'adminlte/plugins/moment/moment.min.js' %}"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}ra/js/ra.js"></script>
 
@@ -59,56 +61,56 @@
 
 
     <script>
-        $.extend($.fn.dataTable.defaults, {
-            "oLanguage": {
-
-                "oAria": {
-                    "sSortDescending": ": activate to sort column descending"
-                },
-                "oPaginate": {
-                    "sFirst": "{% trans "First" %}",
-                    "sLast": "{% trans "Last" %}",
-                    "sNext": "{% trans "Next" %}",
-                    "sPrevious": "{% trans "Previous" %}"
-                },
-                "sEmptyTable": "{% trans "No data available here yet." %}",
-                {% if LANGUAGE_BIDI %}
-                    "sInfo": '',
-                {% else %}
-                    "sInfo": "{% trans "Showing _START_ to _END_ of _TOTAL_ entries" %}",
-                {% endif %}
-                "sInfoEmpty": "{% trans "Nothing found" %}",
-                "sInfoFiltered": "{% trans "(filtered from _MAX_ total entries)" %}",
-                "sInfoPostFix": "",
-                "sInfoThousands": ",",
-                "sLengthMenu": "{% trans "Show _MENU_ entries" %}",
-                "sLoadingRecords": "{% trans "Loading..." %}",
-                "sProcessing": "{% trans "Processing..." %}",
-                "sSearch": "{% trans "Search" %}:",
-                "sUrl": "",
-                "sZeroRecords": "{% trans "No matching records found" %}"
-            },
-
+        {#$.extend($.fn.dataTable.defaults, {#}
+        {#    "oLanguage": {#}
+        {##}
+        {#        "oAria": {#}
+        {#            "sSortDescending": ": activate to sort column descending"#}
+        {#        },#}
+        {#        "oPaginate": {#}
+        {#            "sFirst": "{% trans "First" %}",#}
+        {#            "sLast": "{% trans "Last" %}",#}
+        {#            "sNext": "{% trans "Next" %}",#}
+        {#            "sPrevious": "{% trans "Previous" %}"#}
+        {#        },#}
+        {#        "sEmptyTable": "{% trans "No data available here yet." %}",#}
+        {#        {% if LANGUAGE_BIDI %}#}
+        {#            "sInfo": '',#}
+        {#        {% else %}#}
+        {#            "sInfo": "{% trans "Showing _START_ to _END_ of _TOTAL_ entries" %}",#}
+        {#        {% endif %}#}
+        {#        "sInfoEmpty": "{% trans "Nothing found" %}",#}
+        {#        "sInfoFiltered": "{% trans "(filtered from _MAX_ total entries)" %}",#}
+        {#        "sInfoPostFix": "",#}
+        {#        "sInfoThousands": ",",#}
+        {#        "sLengthMenu": "{% trans "Show _MENU_ entries" %}",#}
+        {#        "sLoadingRecords": "{% trans "Loading..." %}",#}
+        {#        "sProcessing": "{% trans "Processing..." %}",#}
+        {#        "sSearch": "{% trans "Search" %}:",#}
+        {#        "sUrl": "",#}
+        {#        "sZeroRecords": "{% trans "No matching records found" %}"#}
+        {#    },#}
+        {##}
             {#        // added by theme #}
-            autoWidth: false,
-            columnDefs: [{
-                orderable: false,
-                width: '100px',
-            }],
-            dom: '<"datatable-header"fl><"datatable-scroll"t><"datatable-footer"ip>',
-            language: {
-                search: '<span>{% trans 'Filter' %}:</span> _INPUT_',
-                searchPlaceholder: '{% trans "Type to filter" %}...',
-                lengthMenu: '<span>{% trans 'Show' %}:</span> _MENU_',
-                paginate: {'first': 'First', 'last': 'Last', 'next': '&rarr;', 'previous': '&larr;'}
-            },
+        {#    autoWidth: false,#}
+        {#    columnDefs: [{#}
+        {#        orderable: false,#}
+        {#        width: '100px',#}
+        {#    }],#}
+        {#    dom: '<"datatable-header"fl><"datatable-scroll"t><"datatable-footer"ip>',#}
+        {#    language: {#}
+        {#        search: '<span>{% trans 'Filter' %}:</span> _INPUT_',#}
+        {#        searchPlaceholder: '{% trans "Type to filter" %}...',#}
+        {#        lengthMenu: '<span>{% trans 'Show' %}:</span> _MENU_',#}
+        {#        paginate: {'first': 'First', 'last': 'Last', 'next': '&rarr;', 'previous': '&larr;'}#}
+        {#    },#}
             {#drawCallback: function () {#}
             {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').addClass('dropup');#}
             {# },#}
             {#preDrawCallback: function () {#}
             {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').removeClass('dropup');#}
             {# }#}
-        });
+        {#});#}
 
 
         jQuery(document).ready(function () {

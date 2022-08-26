@@ -250,7 +250,7 @@ class ReportList(ReportListBase):
         context['has_detached_sidebar'] = True
         context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
 
-        extra_context = get_each_context(self.request, ra_admin_site)
+        extra_context = ra_admin_site.each_context(self.request)
         context.update(extra_context)
         return context
 
@@ -519,7 +519,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         enable_print = self.is_print_request()
         export_csv = request.GET.get('csv', False)
 
-        if request.is_ajax() or enable_print or export_csv or (request.GET.get('ajax') == 'true' and settings.DEBUG):
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or enable_print or export_csv or (request.GET.get('ajax') == 'true' and settings.DEBUG):
             if self.form.is_valid():
                 must_exist_filter = self.must_exist_filter or ''
                 must_exist_filter = must_exist_filter.replace('_id', '__slug')

@@ -57,7 +57,7 @@ class RaAdminSiteBase(AdminSite):
     app_index_template = app_settings.RA_ADMIN_APP_INDEX_TEMPLATE
     login_template = app_settings.RA_ADMIN_LOGIN_TEMPLATE
 
-    logout_template = app_settings.RA_ADMIN_LOGGED_OUT_TEMPLATE
+    # logout_template = app_settings.RA_ADMIN_LOGGED_OUT_TEMPLATE
 
 
     def get_urls(self):
@@ -86,7 +86,7 @@ class RaAdminSiteBase(AdminSite):
             # path('access-denied/', access_denied, name='access-denied'),
         ]
 
-        return urls + help_center + settings_update + urlpatterns
+        return help_center + settings_update + urlpatterns + urls
 
     def service_worker_view(self, request):
 
