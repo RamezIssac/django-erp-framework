@@ -253,7 +253,7 @@ class EntityModel(RAModel):
 class TransactionModel(EntityModel):
     title = None
 
-    slug = models.SlugField(_('refer code'), max_length=50, db_index=True, validators=[], blank=True)
+    slug = models.SlugField(_('Slug'), max_length=50, db_index=True, validators=[], blank=True)
     doc_date = models.DateTimeField(_('date'), db_index=True)
     doc_type = models.CharField(max_length=30, db_index=True)
     notes = models.TextField(_('notes'), null=True, blank=True)
