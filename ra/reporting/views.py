@@ -7,20 +7,21 @@ from django.conf import settings
 from django.contrib.auth.mixins import AccessMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import get_language_bidi, gettext
 from django.views.generic import TemplateView
-from slick_reporting.form_factory import report_form_factory
-from slick_reporting.generator import ReportGenerator
-from slick_reporting.views import SlickReportViewBase
 
 from ra.base import app_settings, registry
 from ra.base.app_settings import RA_ADMIN_SITE_NAME
 from ra.base.helpers import dictsort
 from ra.reporting.forms import OrderByForm
 from ra.reporting.printing import regroup_data, HTMLPrintingClass, ExportToCSV
+from slick_reporting.form_factory import report_form_factory
+from slick_reporting.generator import ReportGenerator
+from slick_reporting.views import SlickReportViewBase
 
 # from .generator import ReportGenerator
 # from .meta_data import ReportMetaData
@@ -232,7 +233,6 @@ class ReportList(ReportListBase):
 
     def get_context_data(self, **kwargs):
         from ra.admin.admin import ra_admin_site
-        from ra.admin.helpers import get_each_context
 
         context = super(ReportList, self).get_context_data(**kwargs)
 
@@ -323,6 +323,42 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     cache_duration = 300
 
     # V2
+
+    def get_doc_types_q_filters(self):
+        doc_types = registry.get_model_doc_type_map(self.base_model.__name__)
+        return [Q(doc_type__in=doc_types['plus_list'])], [Q(doc_type__in=doc_types['minus_list'])]
+
+    def get_report_generator(self, queryset, for_print):
+        q_filters, kw_filters = self.form.get_filters()
+        if self.crosstab_model:
+            self.crosstab_ids = self.form.get_crosstab_ids()
+
+        crosstab_compute_reminder = self.form.get_crosstab_compute_reminder() if self.request.GET or self.request.POST \
+            else self.crosstab_compute_reminder
+        doc_type_plus_list, doc_type_minus_list = self.get_doc_types_q_filters()
+        return self.report_generator_class(self.get_report_model(),
+                                           start_date=self.form.cleaned_data['start_date'],
+                                           end_date=self.form.cleaned_data['end_date'],
+                                           q_filters=q_filters,
+                                           kwargs_filters=kw_filters,
+                                           date_field=self.date_field,
+                                           main_queryset=queryset,
+                                           print_flag=for_print,
+                                           limit_records=self.limit_records, swap_sign=self.swap_sign,
+                                           columns=self.columns,
+                                           group_by=self.group_by,
+                                           time_series_pattern=self.time_series_pattern,
+                                           time_series_columns=self.time_series_columns,
+
+                                           crosstab_model=self.crosstab_model,
+                                           crosstab_ids=self.crosstab_ids,
+                                           crosstab_columns=self.crosstab_columns,
+                                           crosstab_compute_reminder=crosstab_compute_reminder,
+
+                                           format_row_func=self.format_row,
+                                           doc_type_plus_list=doc_type_plus_list,
+                                           doc_type_minus_list=doc_type_minus_list,
+                                           )
 
     @classmethod
     def get_report_slug(cls):
@@ -431,6 +467,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
             # if the filter exists but the the user choose several entities
             filter_exist = filter_exist.find(',') == -1 and bool(filter_exist)
             if not filter_exist:
+                return JsonResponse({}, status=204)
                 return self.header_report.as_view()(self.request, original_report_slug=self.get_report_slug(),
                                                     as_header=True)
         return None
@@ -473,7 +510,9 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return self.get_printing_class()(self.request, self.form_settings or {}, response, header_report,
                                          must_exist_filter, self).get_response()
 
+    # todo delete
     def cache_and_return(self, results):
+        return results
         status, key = self.get_cache_status_and_key(self.request)
         if key:
             cache.set(key, results, self.cache_duration)
@@ -519,7 +558,8 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         enable_print = self.is_print_request()
         export_csv = request.GET.get('csv', False)
 
-        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or enable_print or export_csv or (request.GET.get('ajax') == 'true' and settings.DEBUG):
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or enable_print or export_csv or (
+                request.GET.get('ajax') == 'true' and settings.DEBUG):
             if self.form.is_valid():
                 must_exist_filter = self.must_exist_filter or ''
                 must_exist_filter = must_exist_filter.replace('_id', '__slug')

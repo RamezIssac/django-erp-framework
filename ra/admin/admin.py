@@ -25,7 +25,7 @@ from django.forms.widgets import TextInput, NumberInput
 from django.http import HttpResponseRedirect, Http404
 from django.template.defaultfilters import capfirst
 from django.template.response import TemplateResponse
-from django.urls import reverse, path
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import escape
 from django.utils.module_loading import import_string
@@ -614,21 +614,31 @@ class TransactionAdmin(EntityAdmin):
     }
     date_hierarchy = 'doc_date'
     doc_type = None
-    copy_to_formset = None
+
+    # Copy values from parent model to child inline models,
+    # If `all-fk` then automatically it will copy all foreign keys included in the fields of the add/change Form
+    # other options are None , or a list of field names
+    copy_to_inlines = 'all-fk'
 
     copy_form_notes_to_formset = False
     search_fields = ['doc_date', 'slug']
-
-    def __init__(self, *args, **kwargs):
-        super(TransactionAdmin, self).__init__(*args, **kwargs)
-        self.copy_to_formset = self.copy_to_formset or []
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         form_field = super(TransactionAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, form_field, request, **kwargs)
         return form_field
 
+    def get_foreign_keys(self):
+        return [field.name for field in self.model._meta.get_fields(include_parents=False) if field.get_internal_type() == 'ForeignKey']
+
+    def get_copy_to_inlines(self, form, formset):
+        if self.copy_to_inlines == 'all-fk':
+            fks = self.get_foreign_keys()
+            return set(fks).intersection(set(form.fields.keys()))
+        return self.copy_to_inlines or []
+
     def save_formset(self, request, form, formset, change):
+        copy_to_inlines = self.get_copy_to_inlines(form, formset)
         for formset_form in formset:
             formset_form.instance.doc_date = form.instance.doc_date
             formset_form.instance.doc_type = form.instance.doc_type
@@ -636,7 +646,7 @@ class TransactionAdmin(EntityAdmin):
             formset_form.instance.lastmod_user = request.user
             if self.copy_form_notes_to_formset:
                 formset_form.instance.notes = form.instance.notes
-            for copy_item in self.copy_to_formset:
+            for copy_item in copy_to_inlines:
                 formset_form.instance.__setattr__(copy_item, form.instance.__getattribute__(copy_item))
                 # print(copy_item, form.instance.__getattribute__(copy_item))
             if formset_form.instance.pk is not None:
@@ -928,7 +938,7 @@ class RaPrePopulatedAdmin(PrepopulatedAdmin, EntityAdmin):
 class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
     enable_view_view = False
     list_per_page = 50
-    copy_to_formset = []
+    copy_to_inlines = []
     copy_form_notes_to_formset = False
 
     def save_formset(self, request, form, formset, change):
@@ -939,7 +949,7 @@ class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
             formset_form.instance.lastmod_user = request.user
             if self.copy_form_notes_to_formset:
                 formset_form.instance.notes = form.instance.notes
-            for copy_item in self.copy_to_formset:
+            for copy_item in self.copy_to_inlines:
                 formset_form.instance.__setattr__(copy_item, form.instance.__getattribute__(copy_item))
 
         formset.save()
