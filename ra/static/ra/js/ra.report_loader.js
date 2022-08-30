@@ -113,7 +113,7 @@
         createChartsUIfromResponse: createChartsUIfromResponse,
         // displayReport: displayReport,
         loadComponents: loadComponents,
-        'chart_handler_func': '$.ra.highcharts.displayChart'
+        'chart_handler_func': '$.slick_reporting.highcharts.displayChart'
 
     }
 })(jQuery);

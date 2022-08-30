@@ -37,9 +37,9 @@ class ReportRegistry(object):
             if not report_class.get_report_model():
                 raise ImproperlyConfigured(
                     'Report %s is missing a `report_model`' % report_class)
-            if report_class.must_exist_filter and not report_class.header_report:
-                raise ImproperlyConfigured('%s: Must specify a view class or function in `header_report` '
-                                           'if `must_exist_filter` is set' % report_class)
+            # if report_class.must_exist_filter and not report_class.header_report:
+            #     raise ImproperlyConfigured('%s: Must specify a view class or function in `header_report` '
+            #                                'if `must_exist_filter` is set' % report_class)
 
             self._register_report(report_class, namespace)
 
