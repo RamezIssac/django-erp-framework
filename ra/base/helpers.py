@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 from collections import OrderedDict
+from collections.abc import Iterable
 
 from django.apps import apps
 from django.db.models import Max
@@ -141,6 +142,7 @@ def dictsort(value, arg, desc=False):
     """
     return sorted(value, key=lambda x: x[arg], reverse=desc)
 
+
 #
 # def get_ra_relevant_content_types():
 #     """
@@ -194,3 +196,11 @@ def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **
     :return: form_field to be used
     """
     return form_field
+
+
+def flatten_list(items):
+    for x in items:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            yield flatten_list(x)
+        else:
+            yield x

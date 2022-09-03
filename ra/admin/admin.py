@@ -36,6 +36,7 @@ from django.views.decorators.csrf import csrf_protect
 from reversion.admin import VersionAdmin
 from tabular_permissions.admin import UserTabularPermissionsMixin, GroupTabularPermissionsMixin
 
+from base.helpers import flatten_list
 from ra.admin.forms import RaUserChangeForm
 from ra.reporting.printing import HTMLPrintingClass
 from ra.utils.views import get_typed_reports_for_templates, get_typed_reports_map, \
@@ -603,7 +604,7 @@ class TransactionAdmin(EntityAdmin):
     enable_view_view = False
     list_per_page = 50
     view_on_site = False
-    list_display = ('slug', 'doc_date', 'get_history_link')
+    list_display = ('slug', 'doc_date', 'vaue', 'get_history_link')
     list_display_links = ('slug', 'doc_date')
     fields = (('slug', 'doc_date'),)
     exclude = ('doc_type',)
@@ -628,14 +629,23 @@ class TransactionAdmin(EntityAdmin):
         form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, form_field, request, **kwargs)
         return form_field
 
-    def get_foreign_keys(self):
-        return [field.name for field in self.model._meta.get_fields(include_parents=False) if field.get_internal_type() == 'ForeignKey']
+    def get_foreign_keys(self, form_fields=None):
+        fks = [field.name for field in self.model._meta.get_fields(include_parents=False) if field.get_internal_type() == 'ForeignKey']
+        if form_fields:
+            fks =set(fks).intersection(set(form_fields))
+        return fks
 
     def get_copy_to_inlines(self, form, formset):
         if self.copy_to_inlines == 'all-fk':
-            fks = self.get_foreign_keys()
-            return set(fks).intersection(set(form.fields.keys()))
+            fks = self.get_foreign_keys(form.fields.keys())
+            return fks
         return self.copy_to_inlines or []
+
+    def get_list_filter(self, request):
+        list_filter = super().get_list_filter(request)
+        if not list_filter:
+            return self.get_foreign_keys(flatten_list(self.get_fields(request)))
+        return list_filter
 
     def save_formset(self, request, form, formset, change):
         copy_to_inlines = self.get_copy_to_inlines(form, formset)

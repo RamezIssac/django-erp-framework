@@ -6,7 +6,7 @@
 
 
             //exporting: {
-            //    allowHTML:true,
+            //    alloloadwHTML:true,
             //    enabled: faelse,
             //},
 
