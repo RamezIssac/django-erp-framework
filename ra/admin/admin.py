@@ -36,7 +36,7 @@ from django.views.decorators.csrf import csrf_protect
 from reversion.admin import VersionAdmin
 from tabular_permissions.admin import UserTabularPermissionsMixin, GroupTabularPermissionsMixin
 
-from base.helpers import flatten_list
+from ra.base.helpers import flatten_list
 from ra.admin.forms import RaUserChangeForm
 from ra.reporting.printing import HTMLPrintingClass
 from ra.utils.views import get_typed_reports_for_templates, get_typed_reports_map, \
