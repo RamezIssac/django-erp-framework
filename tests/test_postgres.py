@@ -32,3 +32,4 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

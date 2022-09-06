@@ -5,7 +5,7 @@ from django.db import models
 class TopSearchBaseModel(models.Model):
     id = models.PositiveIntegerField(primary_key=True)
     slug = models.CharField(max_length=255)
-    title = models.TextField()
+    name = models.TextField()
     blob_text = models.TextField(null=True)
     identifier = models.CharField(max_length=255)
 

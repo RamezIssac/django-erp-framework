@@ -95,7 +95,7 @@
         return $container
     }
 
-    $('body').on('click', '.groupChartController', function (e) {
+    $('body').on('click', '[data-chart-id]', function (e) {
         e.preventDefault();
         let $this = $(this);
         let data = $.ra.cache[$this.attr('data-report-slug')]

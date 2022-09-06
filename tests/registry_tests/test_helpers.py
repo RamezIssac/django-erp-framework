@@ -23,7 +23,7 @@ class TestHelpers(TestCase):
         User = get_user_model()
         self.test_user = User.objects.create_user(username='test', password='test1234', is_staff=True)
 
-        obj = SampleModelA.objects.create(title='Test', lastmod_user=self.test_user, slug='1')
+        obj = SampleModelA.objects.create(name='Test', lastmod_user=self.test_user, slug='1')
         result2 = get_next_serial(SampleModelA)
         self.assertEqual(int(result2), int(obj.slug) + 1)
 
@@ -32,7 +32,7 @@ class TestHelpers(TestCase):
         User = get_user_model()
         self.test_user = User.objects.create_user(username='test', password='test1234', is_staff=True)
 
-        obj = SampleModelA.objects.create(title='Test', lastmod_user=self.test_user, slug='A1')
+        obj = SampleModelA.objects.create(name='Test', lastmod_user=self.test_user, slug='A1')
         result2 = get_next_serial(SampleModelA)
         self.assertTrue(result2.isdigit())
         # self.assertEqual(int(result2), int(obj.slug) + 1)

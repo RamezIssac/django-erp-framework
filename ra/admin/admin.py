@@ -47,11 +47,11 @@ from ..base.widgets import RaRelatedFieldWidgetWrapper
 
 csrf_protect_m = method_decorator(csrf_protect)
 
-default_fields = (('title', 'slug'), 'notes')
+default_fields = (('name', 'slug'), 'notes')
 
 default_exclude = ('owner', 'creation_date', 'lastmod', 'lastmod_user')
 
-default_list_display = ('title', 'slug', 'notes')
+default_list_display = ('name', 'slug', 'notes')
 
 logger = logging.getLogger(__name__)
 
@@ -89,10 +89,10 @@ class RaChangeList(ChangeList):
                                            list_max_show_all, list_editable, model_admin, sortable_by)
         self.request = request  # Add request to the class
         if self.is_popup:
-            title = gettext('Select %s')
+            name = gettext('Select %s')
         else:
-            title = gettext('%s')
-        self.title = title % str(self.opts.verbose_name_plural)
+            name = gettext('%s')
+        self.name = name % str(self.opts.verbose_name_plural)
 
         self.no_records_message = model_admin.no_records_message
 
@@ -158,7 +158,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
     # Custom templates
 
     history_latest_first = True
-    search_fields = ['title', 'slug']
+    search_fields = ['name', 'slug']
     formfield_overrides = {
         # DateTimeField: {'widget': AdminSplitDateTime},
         # DecimalField: {'widget': NumberInput},
@@ -196,28 +196,28 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
                           args=(quote(pk),),
                           current_app=self.admin_site.name)
             if not main_url: main_url = url
-            view_link = '<a href="%s" data-popup="tooltip" title="%s" data-placement="bottom">' \
+            view_link = '<a href="%s" data-popup="tooltip" name="%s" data-placement="bottom">' \
                         ' <i class="fas fa-edit"></i> </a>' % (
                             url, capfirst(_('change')))
             links.append(view_link)
             links = "<span class='go-to-change-form'>%s</span>" % ''.join(links) + ''
-            obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.title)
+            obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.name)
             return mark_safe('%s %s' % (obj_link_title, links))
 
-        return obj.title
+        return obj.name
 
     def get_history_link(self, obj):
         info = self.model._meta.app_label, self.model._meta.model_name
         url = reverse('ra_admin:%s_%s_history' % info, args=(obj.pk,))
 
-        return mark_safe("""<a href="%s" class="legitRipple" data-popup="tooltip" title="%s">
+        return mark_safe("""<a href="%s" class="legitRipple" data-popup="tooltip" name="%s">
                         <i class="fas fa-history text-indigo-800"></i>
                         <span class="legitRipple-ripple"></span></a>""" % (url, _('History')))
 
     get_history_link.short_description = _('History')
 
-    get_enhanced_obj_title.short_description = _('title')
-    get_enhanced_obj_title.admin_order_field = 'title'
+    get_enhanced_obj_title.short_description = _('name')
+    get_enhanced_obj_title.admin_order_field = 'name'
 
     def get_stats_icon(self, obj):
         url = reverse('%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, self.model._meta.app_label,
@@ -225,9 +225,9 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
                       args=(quote(obj.pk),),
                       current_app=self.admin_site.name)
 
-        view_link = '<a href="%s" data-popup="tooltip" title="%s %s" data-placement="bottom"> ' \
+        view_link = '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> ' \
                     '<i class="fas fa-chart-line"></i> </a>' % (
-                        url, capfirst(_('Statistics for')), obj.title)
+                        url, capfirst(_('Statistics for')), obj.name)
         return mark_safe(view_link)
 
     get_stats_icon.short_description = _('Stats')
@@ -274,7 +274,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
                 #     return self.add_view(request, form_url=reverse('admin:%s_%s_add' % (
                 #         opts.app_label, opts.model_name), current_app=self.admin_site.name))
         context = dict(self.admin_site.each_context(request),
-                       title=obj,
+                       name=obj,
                        app_label=opts.app_label,
                        object_id=object_id,
                        original=obj,
@@ -413,13 +413,13 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
                     )
             return app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, formfield, request, **kwargs)
 
-        # if db_field.name == 'doc_date' and db_field.__class__ == DateTimeField:
+        # if db_field.name == 'date' and db_field.__class__ == DateTimeField:
         #     field = forms.SplitDateTimeField(widget=AdminSplitDateTimeNoBr, label=_('Date'))
         # else:
         field = super(EntityAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == 'slug' and self.enable_next_serial:
             field.initial = self.get_next_serial()
-        elif db_field.name == 'doc_date':
+        elif db_field.name == 'date':
 
             field.initial = now()
         return app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(self, db_field, field, request, **kwargs)
@@ -553,14 +553,14 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
             media = media + inline_formset.media
 
         if add:
-            title = _('Add %s')
+            name = _('Add %s')
         elif self.has_change_permission(request, obj):
-            title = _('Change %s')
+            name = _('Change %s')
         else:
-            title = _('View %s')
+            name = _('View %s')
         context = {
             **self.admin_site.each_context(request),
-            'title': title % opts.verbose_name,
+            'name': name % opts.verbose_name,
             'adminform': adminForm,
             'object_id': object_id,
             'original': obj,
@@ -604,17 +604,17 @@ class TransactionAdmin(EntityAdmin):
     enable_view_view = False
     list_per_page = 50
     view_on_site = False
-    list_display = ('slug', 'doc_date', 'vaue', 'get_history_link')
-    list_display_links = ('slug', 'doc_date')
-    fields = (('slug', 'doc_date'),)
-    exclude = ('doc_type',)
+    list_display = ('slug', 'date', 'value', 'get_history_link')
+    list_display_links = ('slug', 'date')
+    fields = (('slug', 'date'),)
+    exclude = ('type',)
     formfield_overrides = {
         # DateTimeField: {'widget': AdminSplitDateTimeNoBr},
         # DecimalField: {'widget': NumberInput},
         # ForeignKey: {'widget': RaBootstrapForeignKeyWidget},
     }
-    date_hierarchy = 'doc_date'
-    doc_type = None
+    date_hierarchy = 'date'
+    type = None
 
     # Copy values from parent model to child inline models,
     # If `all-fk` then automatically it will copy all foreign keys included in the fields of the add/change Form
@@ -622,7 +622,7 @@ class TransactionAdmin(EntityAdmin):
     copy_to_inlines = 'all-fk'
 
     copy_form_notes_to_formset = False
-    search_fields = ['doc_date', 'slug']
+    search_fields = ['date', 'slug']
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         form_field = super(TransactionAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
@@ -650,8 +650,8 @@ class TransactionAdmin(EntityAdmin):
     def save_formset(self, request, form, formset, change):
         copy_to_inlines = self.get_copy_to_inlines(form, formset)
         for formset_form in formset:
-            formset_form.instance.doc_date = form.instance.doc_date
-            formset_form.instance.doc_type = form.instance.doc_type
+            formset_form.instance.date = form.instance.date
+            formset_form.instance.type = form.instance.type
             formset_form.instance.slug = form.instance.slug
             formset_form.instance.lastmod_user = request.user
             if self.copy_form_notes_to_formset:
@@ -667,7 +667,7 @@ class TransactionAdmin(EntityAdmin):
 class TransactionItemAdmin(admin.TabularInline):
     template = f'{app_settings.RA_THEME}/edit_inline/tabular.html'
     extra = 2
-    exclude = ('slug', 'doc_date', 'doc_type', 'lastmod', 'lastmod_user', 'owner', 'creation_date')
+    exclude = ('slug', 'date', 'type', 'lastmod', 'lastmod_user', 'owner', 'creation_date')
     formfield_overrides = {
         models.TextField: {'widget': TextInput},
         DecimalField: {'widget': NumberInput},
@@ -783,7 +783,7 @@ class RaGenericTabularInline(GenericTabularInline):
     Implementation of teh needed methods for Generic Tabular inline with RA
     """
     extra = 1
-    exclude = ('slug', 'doc_date', 'doc_type', 'lastmod', 'lastmod_user', 'owner', 'creation_date')
+    exclude = ('slug', 'date', 'type', 'lastmod', 'lastmod_user', 'owner', 'creation_date')
     formfield_overrides = {
         TextField: {'widget': TextInput},
         DecimalField: {'widget': NumberInput},
@@ -953,8 +953,8 @@ class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
 
     def save_formset(self, request, form, formset, change):
         for formset_form in formset:
-            formset_form.instance.doc_date = form.instance.doc_date
-            formset_form.instance.doc_type = form.instance.doc_type
+            formset_form.instance.date = form.instance.date
+            formset_form.instance.type = form.instance.type
             formset_form.instance.slug = form.instance.slug
             formset_form.instance.lastmod_user = request.user
             if self.copy_form_notes_to_formset:

@@ -7,16 +7,16 @@ class GenericGenerator(ReportGenerator):
     date_field = 'order__date_placed'
 
     # here is the meat and potatos of the report,
-    # we group the sales per client , we display columns slug and title (of the `base_model` defied above
+    # we group the sales per client , we display columns slug and name (of the `base_model` defied above
     # and we add the magic field `__balance__` we compute the client balance.
     group_by = 'client'
-    columns = ['slug', 'title', '__balance__']
+    columns = ['slug', 'name', '__balance__']
 
 
 class GeneratorWithAttrAsColumn(GenericGenerator):
     group_by = 'client'
 
-    columns = ['get_data', 'slug', 'title']
+    columns = ['get_data', 'slug', 'name']
 
     def get_data(self, obj):
         return ''
@@ -26,6 +26,6 @@ class GeneratorWithAttrAsColumn(GenericGenerator):
 
 class CrosstabOnClient(GenericGenerator):
     group_by = 'product'
-    columns = ['title', '__total_quantity__']
+    columns = ['name', '__total_quantity__']
     crosstab_model = 'client'
     crosstab_columns = ['__total_quantity__']

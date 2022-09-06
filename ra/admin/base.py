@@ -170,7 +170,7 @@ class RaAdminSiteBase(AdminSite):
         # extra_context['ra_tour_template'] = 'ra/tours/index_tour.html'
         context = dict(
             self.each_context(request),
-            title=self.index_title,
+            name=self.index_title,
         )
         context.update(extra_context or {})
 

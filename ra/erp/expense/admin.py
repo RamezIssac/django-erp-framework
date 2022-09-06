@@ -7,7 +7,7 @@ class ExpenseAdmin(EntityAdmin):
 
 
 class ExpenseTransactionAdmin(TransactionAdmin):
-    fields = ('slug', 'doc_date', 'treasury', 'expense', 'value', 'notes')
+    fields = ('slug', 'date', 'treasury', 'expense', 'value', 'notes')
 
 
 ra_admin_site.register(Expense, ExpenseAdmin)

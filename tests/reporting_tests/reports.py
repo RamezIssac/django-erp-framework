@@ -21,16 +21,16 @@ class ClientTotalBalance(ReportView):
     # Where is the data to compute
     report_model = SimpleSales
     group_by = 'client'
-    columns = ['slug', 'title', '__balance__', '__total__']
+    columns = ['slug', 'name', '__balance__', '__total__']
     chart_settings = [
         {
             'id': 'pie',
-            'title': _('pie'),
+            'name': _('pie'),
 
             'type': 'pie',
 
             'data_source': ['__balance__'],
-            'title_source': ['title'],
+            'title_source': ['name'],
 
         },
     ]
@@ -65,13 +65,12 @@ class ProductTotalSales(ReportView):
 
     # here is the meat and potato of the report,
     # we group the records in SimpleSales by Client ,
-    # And we display columns slug and title (relative to the `base_model` defined above)
+    # And we display columns slug and name (relative to the `base_model` defined above)
     # the magic field `__balance__` computes the balance (of the base model)
-    form_settings = {'group_by': 'product',
-                     'group_columns': ['slug', 'title', '__balance__', '__balance_quantity__'],
-                     }
+
     group_by = 'product'
-    columns = ['slug', 'title', '__balance__', '__balance_quantity__']
+    columns = ['slug', 'name', '__balance__', '__balance_quantity__']
+    swap_sign = True
 
 
 @register_report_view
@@ -86,11 +85,11 @@ class ClientList(ReportView):
 
     form_settings = {
         'group_by': 'client',
-        'group_columns': ['slug', 'title'],
+        'group_columns': ['slug', 'name'],
         'add_details_control': True,
     }
     group_by = 'client'
-    columns = ['slug', 'title']
+    columns = ['slug', 'name']
 
 
 @register_report_view
@@ -106,18 +105,18 @@ class ProductClientSales(ReportView):
 
     form_settings = {
         'group_by': 'product',
-        'group_columns': ['slug', 'title', '__balance_quantity__', '__balance__'],
+        'group_columns': ['slug', 'name', '__balance_quantity__', '__balance__'],
     }
     group_by = 'product'
-    columns = ['slug', 'title', '__balance_quantity__', '__balance__']
+    columns = ['slug', 'name', '__balance_quantity__', '__balance__']
 
     chart_settings = [
         {
             'id': 'total_pie',
-            'title': _('sales by client'),
+            'name': _('sales by client'),
             # 'settings': {
             'type': 'pie',
-            # 'title': _('sales for {product}'),
+            # 'name': _('sales for {product}'),
 
             'sub_title': _('{date_verbose}'),
             'data_source': ['__balance_quantity__'],
@@ -126,12 +125,12 @@ class ProductClientSales(ReportView):
         },
         # {
         #     'id': 'total_bar',
-        #     'title': _('sales by client (Bar)'),
+        #     'name': _('sales by client (Bar)'),
         #     'settings': {
         #         'chart_type': 'column',
         #         'y_sources': ['__balance_quantity__'],
         #
-        #         'title': _('sales for {product}'),
+        #         'name': _('sales for {product}'),
         #         'sub_title': _('{date_verbose}'),
         #         'series_names': [_('sales Qty')],
         #     }
@@ -148,21 +147,21 @@ class ProductSalesMonthlySeries(ReportView):
 
     form_settings = {
         'group_by': 'product',
-        'group_columns': ['slug', 'title'],
+        'group_columns': ['slug', 'name'],
 
         'time_series_pattern': 'monthly',
         'time_series_columns': ['__balance_quantity__', '__balance__'],
     }
 
     group_by = 'product'
-    columns = ['slug', 'title']
+    columns = ['slug', 'name']
     time_series_pattern = 'monthly',
     time_series_columns = ['__balance_quantity__', '__balance__']
 
     chart_settings = [
         {
             'id': 'movement_column',
-            'title': _('comparison - column'),
+            'name': _('comparison - column'),
             'type': 'column',
 
             'chart_type': 'column',
@@ -171,10 +170,10 @@ class ProductSalesMonthlySeries(ReportView):
         },
         {
             'id': 'movement_line',
-            'title': _('comparison - line'),
+            'name': _('comparison - line'),
             'type': 'line',
             'data_source': ['__balance__'],
-            'title_source': 'title',
+            'title_source': 'name',
 
         },
     ]
@@ -196,14 +195,14 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
 
     form_settings = {
         'group_by': 'client',
-        'group_columns': ['slug', 'title'],
+        'group_columns': ['slug', 'name'],
 
         'time_series_pattern': 'monthly',
         'time_series_columns': ['__debit__', '__credit__', '__balance__', '__total__'],
     }
 
     group_by = 'client'
-    columns = ['slug', 'title']
+    columns = ['slug', 'name']
     time_series_pattern = 'monthly'
     time_series_columns = ['__debit__', '__credit__', '__balance__', '__total__']
 
@@ -221,10 +220,10 @@ class ClientDetailedStatement(ReportView):
 
     form_settings = {
         'group_by': '',
-        'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
+        'group_columns': ['slug', 'date', 'type', 'product__name', 'quantity', 'price', 'value'],
     }
     group_by = None
-    columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
+    columns = ['slug', 'date', 'type', 'product__name', 'quantity', 'price', 'value']
 
 
 @register_report_view
@@ -238,10 +237,10 @@ class ClientDetailedStatement2(ReportView):
 
     form_settings = {
         'group_by': '',
-        'group_columns': ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value'],
+        'group_columns': ['slug', 'date', 'type', 'product__name', 'quantity', 'price', 'value'],
     }
     group_by = None
-    columns = ['slug', 'doc_date', 'doc_type', 'product__title', 'quantity', 'price', 'value']
+    columns = ['slug', 'date', 'type', 'product__name', 'quantity', 'price', 'value']
 
 
 @register_report_view
@@ -252,8 +251,8 @@ class ProductClientSalesMatrix(ReportView):
 
     form_settings = {
         'group_by': 'client',
-        'group_columns': ['slug', 'title'],
-        'group_column_order': ['product__slug', 'product__title',
+        'group_columns': ['slug', 'name'],
+        'group_column_order': ['product__slug', 'product__name',
                                '__total__',
                                '__balance__'],
         'matrix': 'client',
@@ -265,14 +264,14 @@ class ProductClientSalesMatrix(ReportView):
     swap_sign = True
 
     group_by = 'client'
-    columns = ['slug', 'title']
+    columns = ['slug', 'name']
 
     crosstab_model = 'client'
     crosstab_columns = ['__total__']
 
 
 class GeneratorClassWithAttrsAs(ReportGenerator):
-    columns = ['get_icon', 'slug', 'title']
+    columns = ['get_icon', 'slug', 'name']
 
 
 @register_report_view

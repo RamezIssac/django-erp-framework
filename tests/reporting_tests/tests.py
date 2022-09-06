@@ -27,48 +27,48 @@ class BaseTestData:
                                                 password='password')
         cls.user = user
         cls.limited_user = limited_user
-        cls.client1 = Client.objects.create(title='Client 1', lastmod_user=user)
-        cls.client2 = Client.objects.create(title='Client 2', lastmod_user=user)
-        cls.client3 = Client.objects.create(title='Client 3', lastmod_user=user)
-        cls.clientIdle = Client.objects.create(title='Client Idle', lastmod_user=user)
+        cls.client1 = Client.objects.create(name='Client 1', lastmod_user=user)
+        cls.client2 = Client.objects.create(name='Client 2', lastmod_user=user)
+        cls.client3 = Client.objects.create(name='Client 3', lastmod_user=user)
+        cls.clientIdle = Client.objects.create(name='Client Idle', lastmod_user=user)
 
-        cls.product1 = Product.objects.create(title='Product 1', lastmod_user=user)
-        cls.product2 = Product.objects.create(title='Product 2', lastmod_user=user)
-        cls.product3 = Product.objects.create(title='Product 3', lastmod_user=user)
+        cls.product1 = Product.objects.create(name='Product 1', lastmod_user=user)
+        cls.product2 = Product.objects.create(name='Product 2', lastmod_user=user)
+        cls.product3 = Product.objects.create(name='Product 3', lastmod_user=user)
 
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 1, 2), client=cls.client1,
+            slug=1, date=datetime.datetime(year, 1, 2), client=cls.client1,
             product=cls.product1, quantity=10, price=10, lastmod_user=user)
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 2, 2), client=cls.client1,
+            slug=1, date=datetime.datetime(year, 2, 2), client=cls.client1,
             product=cls.product1, quantity=10, price=10, lastmod_user=user)
 
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 3, 2), client=cls.client1,
+            slug=1, date=datetime.datetime(year, 3, 2), client=cls.client1,
             product=cls.product1, quantity=10, price=10, lastmod_user=user)
 
         # client 2
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 1, 2), client=cls.client2,
+            slug=1, date=datetime.datetime(year, 1, 2), client=cls.client2,
             product=cls.product1, quantity=20, price=10, lastmod_user=user)
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 2, 2), client=cls.client2,
+            slug=1, date=datetime.datetime(year, 2, 2), client=cls.client2,
             product=cls.product1, quantity=20, price=10, lastmod_user=user)
 
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 3, 2), client=cls.client2,
+            slug=1, date=datetime.datetime(year, 3, 2), client=cls.client2,
             product=cls.product1, quantity=20, price=10, lastmod_user=user)
 
         # client 3
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 1, 2), client=cls.client3,
+            slug=1, date=datetime.datetime(year, 1, 2), client=cls.client3,
             product=cls.product1, quantity=30, price=10, lastmod_user=user)
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 2, 2), client=cls.client3,
+            slug=1, date=datetime.datetime(year, 2, 2), client=cls.client3,
             product=cls.product1, quantity=30, price=10, lastmod_user=user)
 
         SimpleSales.objects.create(
-            slug=1, doc_date=datetime.datetime(year, 3, 2), client=cls.client3,
+            slug=1, date=datetime.datetime(year, 3, 2), client=cls.client3,
             product=cls.product1, quantity=30, price=10, lastmod_user=user)
 
 
@@ -89,6 +89,7 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
         data = response.json()
+        print(data)
         self.assertEqual(data['data'][0]['__balance__'], 1800)
 
     def test_client_client_sales_monthly(self):
@@ -176,13 +177,13 @@ class ReportTest(BaseTestData, TestCase):
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         data = response.json()
         a_elem = pq(data['data'][0]['slug'])
-        doc_type = data['data'][0]['doc_type']
+        type = data['data'][0]['type']
         url = a_elem.attr('href')
         response = self.client.get(url, follow=True)
         self.assertEqual(response.status_code, 200)
         instance = response.context['original']
         self.assertEqual(instance.slug, a_elem.text())
-        self.assertEqual(instance.doc_type, doc_type)
+        self.assertEqual(instance.type, type)
 
     def test_report_list(self):
         url = Client.get_report_list_url()
@@ -374,7 +375,7 @@ class TestAdmin(BaseTestData, TestCase):
         self.client.login(username='super', password='secret')
         response = self.client.post(reverse('ra_admin:reporting_tests_client_add'), data={
             'slug': 123,
-            'title': 'test client %s' % now(),
+            'name': 'test client %s' % now(),
         })
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Client.objects.filter(slug=123).exists())
@@ -388,12 +389,12 @@ class TestAdmin(BaseTestData, TestCase):
         self.client.login(username='super', password='secret')
         self.client.post(reverse('ra_admin:reporting_tests_client_add'), data={
             'slug': 123,
-            'title': 'test client %s' % now(),
+            'name': 'test client %s' % now(),
         })
         inst = Client.objects.get(slug='123')
         response = self.client.post(reverse('ra_admin:reporting_tests_client_change', args=(inst.pk,)), data={
             'slug': 1232,
-            'title': 'test client %s' % now(),
+            'name': 'test client %s' % now(),
         })
         url = reverse('admin:reporting_tests_client_delete', args=(inst.pk,))
         self.client.post(url, data={'post': 'yes'})
@@ -452,9 +453,9 @@ class TestAdmin(BaseTestData, TestCase):
         response = self.client.post(reverse('ra_admin:reporting_tests_invoice_add'), data={
             'slug': '999',
             'client': self.client1.pk,
-            'doc_date': now(),
-            'doc_date_1': on_date.strftime('%H:%M'),
-            'doc_date_0': on_date.strftime('%Y-%m-%d'),
+            'date': now(),
+            'date_1': on_date.strftime('%H:%M'),
+            'date_0': on_date.strftime('%Y-%m-%d'),
             '%s-0-product' % cash_expense_formsetname: self.product1.pk,
             '%s-0-quantity' % cash_expense_formsetname: 10,
             '%s-0-price' % cash_expense_formsetname: 10,
@@ -471,7 +472,7 @@ class TestAdmin(BaseTestData, TestCase):
 
     def test_get_by_slug_view(self):
         self.client.login(username='super', password='secret')
-        client = Client.objects.create(title='my title', lastmod_user_id=self.user.pk)
+        client = Client.objects.create(name='my name', lastmod_user_id=self.user.pk)
         response = self.client.get(reverse('admin:reporting_tests_client_get-by-slug', args=(client.slug,)))
         self.assertEqual(response.status_code, 302)
         response = self.client.get(reverse('admin:reporting_tests_client_get-by-slug', args=(client.slug,)),
@@ -491,28 +492,28 @@ class TestPrePolutaedAdmin(BaseTestData, TestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.journal = Journal.objects.create(data='journal 1', lastmod_user=cls.user, doc_date=now())
+        cls.journal = Journal.objects.create(data='journal 1', lastmod_user=cls.user, date=now())
 
     # def setUp(self):
     #     # user = User.objects.create(is_superuser=True, is_staff=True, **SUPER_LOGIN)
     #     # self.user = user
-    #     self.client1 = Client.objects.create(title='Client 1', lastmod_user=self.user)
-    #     self.client2 = Client.objects.create(title='Client 2', lastmod_user=user)
-    #     self.client3 = Client.objects.create(title='Client 3', lastmod_user=user)
-    #     self.client11 = Client.objects.create(title='Client special 1', lastmod_user=user, criteria='1')
-    #     self.client12 = Client.objects.create(title='Client special 2', lastmod_user=user, criteria='1')
-    #     self.client13 = Client.objects.create(title='Client special 3', lastmod_user=user, criteria='1')
-    #     self.journal = Journal.objects.create(data='journal 1', lastmod_user=user, doc_date=now())
-    #     JournalItem.objects.create(client_id=self.client1.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
-    #     JournalItem.objects.create(client_id=self.client2.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
-    #     JournalItem.objects.create(client_id=self.client3.pk, journal_id=self.journal.pk, lastmod_user=user, doc_date=now())
+    #     self.client1 = Client.objects.create(name='Client 1', lastmod_user=self.user)
+    #     self.client2 = Client.objects.create(name='Client 2', lastmod_user=user)
+    #     self.client3 = Client.objects.create(name='Client 3', lastmod_user=user)
+    #     self.client11 = Client.objects.create(name='Client special 1', lastmod_user=user, criteria='1')
+    #     self.client12 = Client.objects.create(name='Client special 2', lastmod_user=user, criteria='1')
+    #     self.client13 = Client.objects.create(name='Client special 3', lastmod_user=user, criteria='1')
+    #     self.journal = Journal.objects.create(data='journal 1', lastmod_user=user, date=now())
+    #     JournalItem.objects.create(client_id=self.client1.pk, journal_id=self.journal.pk, lastmod_user=user, date=now())
+    #     JournalItem.objects.create(client_id=self.client2.pk, journal_id=self.journal.pk, lastmod_user=user, date=now())
+    #     JournalItem.objects.create(client_id=self.client3.pk, journal_id=self.journal.pk, lastmod_user=user, date=now())
 
     # @classmethod
     # def setUpTestData(cls):
     #     # pdb.set_trace()
 
     # def test_new_entry_in_prepopulated(self):
-    #     Client.objects.create(title='New Client', lastmod_user=self.user)
+    #     Client.objects.create(name='New Client', lastmod_user=self.user)
     #     # pdb.set_trace()
     #     response = self.client.get(reverse('admin:admin_views_journal_add'))
     #     self.assertEqual(response.status_code, 200)
@@ -538,7 +539,7 @@ class TestPrePolutaedAdmin(BaseTestData, TestCase):
         '''
         self.client.login(username='super', password='secret')
 
-        Client.objects.create(title='New Client Here', lastmod_user=self.user)
+        Client.objects.create(name='New Client Here', lastmod_user=self.user)
 
         response = self.client.get(reverse('ra_admin:reporting_tests_journal_change', args=(self.journal.pk,)))
         self.assertEqual(response.status_code, 200)

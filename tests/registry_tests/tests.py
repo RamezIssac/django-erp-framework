@@ -6,10 +6,10 @@ class TestDocTypeRegistry(SimpleTestCase):
 
     def _test_get_model_doc_type_map(self):
         results = SampleModelA.get_doc_type_full_map()
-        for doc_type in results:
-            if doc_type['name'] == 'transaction':
-                self.assertTrue('SampleModelA' in doc_type['plus_list'])
-                self.assertTrue('SampleModelB' in doc_type['minus_list'])
+        for type in results:
+            if type['name'] == 'transaction':
+                self.assertTrue('SampleModelA' in type['plus_list'])
+                self.assertTrue('SampleModelB' in type['minus_list'])
 
     def test_get_doc_type_minus_list(self):
         results = SampleModelB._get_doc_type_minus_list()

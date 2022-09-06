@@ -22,18 +22,18 @@ class ExpenseTotalReport(ReportView):
     report_model = ExpenseTransaction
 
     group_by = 'expense'
-    columns = ['slug', 'title', '__total__']
+    columns = ['slug', 'name', '__total__']
     chart_settings = [
 
         {
             'type': 'bar',
             'data_source': ['__total__'],
-            'title_source': ['title'],
+            'title_source': ['name'],
         },
         {
             'type': 'pie',
             'data_source': ['__total__'],
-            'title_source': ['title'],
+            'title_source': ['name'],
         },
     ]
 
@@ -44,7 +44,7 @@ class ExpenseDetailedStatement(ReportView):
     report_model = ExpenseTransaction
 
     report_title = _('Expense detailed statement')
-    columns = ['slug', 'doc_date', 'doc_type', 'treasury__title', 'expense__title', 'value']
+    columns = ['slug', 'date', 'type', 'treasury__title', 'expense__title', 'value']
     # if app_settings.RA_SUPPORT_LIABILITY:
     #     columns += ['liability__slug', 'liability__title']
 
@@ -56,7 +56,7 @@ class ExpenseMovementTimeComparison(ReportView):
     report_model = ExpenseTransaction
     group_by = 'expense'
     time_series_pattern = 'monthly'
-    columns = ['slug', 'title']
+    columns = ['slug', 'name']
     time_series_columns = ['__total__']
 
     form_settings = {
@@ -74,7 +74,7 @@ class ExpenseMovementTimeComparison(ReportView):
         'details_columns': ['treasury__slug', 'treasury__title', '__total__'],
         'details_column_order': ['treasury__slug', 'treasury__title', '__time_series__', '__total__'],
 
-        'group_columns': ['slug', 'title', '__total__'],
+        'group_columns': ['slug', 'name', '__total__'],
         'group_column_order': ['treasury__slug', 'treasury__title', '__time_series__', '__total__'],
         'group_column_names': {
             '__total__': _('total expense movement'),
@@ -91,7 +91,7 @@ class ExpenseMovementTimeComparison(ReportView):
         {
             'id': 'total_movement_bar',
             'type': 'column',
-            'title_source': 'title',
+            'title_source': 'name',
             'data_source': ['__total__'],
             'series_names': [_('total movement')],
             'stacking': 'normal',
@@ -99,10 +99,10 @@ class ExpenseMovementTimeComparison(ReportView):
         },
         # {
         #     'id': 'total_pie',
-        #     'title': _('pie - sum'),
+        #     'name': _('pie - sum'),
         #     'settings': {
         #         'chart_type': 'pie',
-        #         'title': _('total movement comparison by month {expense}'),
+        #         'name': _('total movement comparison by month {expense}'),
         #         'sub_title': '{time_series_pattern} {date_verbose}',
         #         'y_sources': ['__total__'],
         #         'series_names': [_('total movement')],
@@ -111,9 +111,9 @@ class ExpenseMovementTimeComparison(ReportView):
         # },
         # {
         #     'id': 'balance_bar',
-        #     'title': _('bar - detailed'),
+        #     'name': _('bar - detailed'),
         #     'settings': {
-        #         'title': _('treasury expense comparison by month {expense}'),
+        #         'name': _('treasury expense comparison by month {expense}'),
         #         'sub_title': '{time_series_pattern} {date_verbose}',
         #         'chart_type': 'column',
         #         'y_sources': ['__total__'],
@@ -132,20 +132,20 @@ class ExpenseMovementMatrixComparison(ReportView):
     group_by = 'treasury'
     crosstab_model = 'expense'
     crosstab_columns = ['__total__']
-    columns = ['title']
+    columns = ['name']
 
     chart_settings = [
         {
             'type': 'column',
             'data_source': ['__total__'],
             'plot_total': False,
-            'title_source': 'title',
+            'title_source': 'name',
         },
         {
             'type': 'column',
             'data_source': ['__total__'],
             'plot_total': False,
-            'title_source': 'title',
+            'title_source': 'name',
             'stacking':'normal'
         },
 
@@ -153,7 +153,7 @@ class ExpenseMovementMatrixComparison(ReportView):
             'type': 'pie',
             'data_source': ['__total__'],
             'plot_total': False,
-            'title_source': 'title',
+            'title_source': 'name',
         }
     ]
 
@@ -173,7 +173,7 @@ class ExpenseMovementMatrixComparison(ReportView):
     #     'details_columns': ['treasury__slug', 'treasury__title', '__total__'],
     #     'details_column_order': ['treasury__slug', 'treasury__title', '__time_series__', '__total__'],
     #
-    #     'group_columns': ['slug', 'title', '__total__'],
+    #     'group_columns': ['slug', 'name', '__total__'],
     #     'group_column_order': ['treasury__slug', 'treasury__title', '__time_series__', '__total__'],
     #     'group_column_names': {
     #         '__total__': _('total expense movement'),

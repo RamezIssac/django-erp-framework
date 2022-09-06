@@ -36,7 +36,7 @@ class MatrixTests(BaseTestData, TestCase):
 
 class GeneratorReportStructureTest(TestCase):
     def test_time_series_columns_inclusion(self):
-        x = ReportGenerator(OrderLine, date_field='order__date_placed', group_by='client', columns=['title'],
+        x = ReportGenerator(OrderLine, date_field='order__date_placed', group_by='client', columns=['name'],
                             time_series_columns=['__total_quantity__'], time_series_pattern='monthly',
                             start_date=datetime(2020, 1, 1, tzinfo=pytz.timezone('utc')),
                             end_date=datetime(2020, 12, 31, tzinfo=pytz.timezone('utc')))
@@ -73,9 +73,9 @@ class GeneratorReportStructureTest(TestCase):
 
     def test_gather_dependencies_for_time_series(self):
         report = ReportGenerator(report_model=SimpleSales, group_by='client',
-                                 columns=['slug', 'title'],
+                                 columns=['slug', 'name'],
                                  time_series_pattern='monthly',
-                                 date_field='doc_date',
+                                 date_field='date',
                                  time_series_columns=['__debit__', '__credit__', '__balance__', '__total__']
                                  )
 

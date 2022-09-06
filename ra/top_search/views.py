@@ -71,7 +71,7 @@ class TopSearchViewBase(LoginRequiredMixin, FormView):
         for suggestion in qs:
             results.append(
                 {'id': suggestion.id,
-                 'title': suggestion.title,
+                 'name': suggestion.name,
                  'slug': suggestion.slug,
                  'url': get_url(suggestion),
                  'origin': '-',

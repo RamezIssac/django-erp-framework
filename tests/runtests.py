@@ -15,10 +15,9 @@ from django.apps import apps
 from django.conf import settings
 from django.db import connection, connections
 from django.test import TestCase, TransactionTestCase
-from django.test.runner import default_test_processes
 from django.test.selenium import SeleniumTestCaseBase
 from django.test.utils import get_runner
-from django.utils.deprecation import RemovedInDjango31Warning
+# from django.utils.deprecation import RemovedInDjango31Warning
 from django.utils.log import DEFAULT_LOGGING
 
 try:
@@ -30,7 +29,7 @@ else:
     warnings.filterwarnings('ignore', r'\(1003, *', category=MySQLdb.Warning)
 
 # Make deprecation warnings errors to ensure no usage of deprecated features.
-warnings.simplefilter('error', RemovedInDjango31Warning)
+# warnings.simplefilter('error', RemovedInDjango31Warning)
 # Make runtime warning errors to ensure no usage of error prone patterns.
 warnings.simplefilter("error", RuntimeWarning)
 # Ignore known warnings in test dependencies.
@@ -129,7 +128,7 @@ def setup(verbosity, test_labels, parallel):
 
     if verbosity >= 1:
         msg = "Testing against Ra installed in '%s'" % os.path.dirname(django.__file__)
-        max_parallel = default_test_processes() if parallel == 0 else parallel
+        max_parallel = 1 # default_test_processes() if parallel == 0 else parallel
         if max_parallel > 1:
             msg += " with up to %d processes" % max_parallel
         print(msg)
@@ -253,8 +252,8 @@ def teardown(state):
     # temporary directory that's already removed by this script's
     # atexit.register(shutil.rmtree, TMPDIR) handler. Prevents
     # FileNotFoundError at the end of a test run on Python 3.6+ (#27890).
-    from multiprocessing.util import _finalizer_registry
-    _finalizer_registry.pop((-100, 0), None)
+    # from multiprocessing.util import _finalizer_registry
+    # _finalizer_registry.pop((-100, 0), None)
 
 
 def actual_test_processes(parallel):
@@ -472,7 +471,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--parallel', nargs='?', default=0, type=int,
-        const=default_test_processes(), metavar='N',
+        metavar='N',
         help='Run tests using up to N parallel processes.',
     )
     parser.add_argument(

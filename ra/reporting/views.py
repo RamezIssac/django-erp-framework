@@ -296,7 +296,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     report_slug = ''
     page_title = None
     report_title = ''
-    date_field = 'doc_date'
+    date_field = 'date'
     # default order by for the results.
     # ordering can also be controlled on run time by passing order_by='field_name'
     # For DESC order supply order_by='-field_name'
@@ -327,7 +327,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     def get_doc_types_q_filters(self):
         doc_types = registry.get_model_doc_type_map(self.base_model.__name__)
-        return [Q(doc_type__in=doc_types['plus_list'])], [Q(doc_type__in=doc_types['minus_list'])]
+        return [Q(type__in=doc_types['plus_list'])], [Q(type__in=doc_types['minus_list'])]
 
     def get_report_generator(self, queryset, for_print):
         q_filters, kw_filters = self.form.get_filters()
@@ -386,7 +386,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
-            if self.request.is_ajax():
+            if self.request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
                 return JsonResponse({}, status=403)
             else:
                 raise PermissionDenied
@@ -427,7 +427,8 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         """
         return cls.form_class or report_form_factory(cls.get_report_model(), crosstab_model=cls.crosstab_model,
                                                      display_compute_reminder=cls.crosstab_compute_reminder,
-                                                     fkeys_filter_func=cls.form_filter_func)
+                                                     fkeys_filter_func=cls.form_filter_func,
+                                                     initial=cls.get_form_initial())
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)
@@ -591,15 +592,15 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     @classmethod
     def get_report_title(cls):
         """
-        :return: The report title
+        :return: The report name
         """
-        # title = 'TITLE'
-        title = ''
+        # name = 'name'
+        name = ''
         if cls.report_title:
-            title = cls.report_title
+            name = cls.report_title
         elif cls.page_title:
-            title = cls.page_title
-        return capfirst(title)
+            name = cls.page_title
+        return capfirst(name)
 
     def get_metadata(self, generator):
         metadata = super().get_metadata(generator)

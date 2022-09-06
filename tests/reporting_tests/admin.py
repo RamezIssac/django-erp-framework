@@ -26,7 +26,7 @@ class InvoiceLineAdmin(TransactionItemAdmin):
 
 
 class InvoiceAdmin(TransactionAdmin):
-    fields = [('slug', 'doc_date'), 'client']
+    fields = [('slug', 'date'), 'client']
     autocomplete_fields = ['client']
     inlines = [InvoiceLineAdmin]
     copy_to_formset = ['client']
@@ -57,7 +57,7 @@ class BaseInfoInlineAdmin(TransactionItemAdmin):
 
 
 class MovementPrepopulatedAdmin(RaPrePopulatedAdmin):
-    fields = ('data', 'doc_date')
+    fields = ('data', 'date')
     date_hierarchy = None
     list_display = []
     inlines = [

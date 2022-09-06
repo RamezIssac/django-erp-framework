@@ -77,7 +77,7 @@ class EntityModel(RAModel):
     """
     slug = models.SlugField(_('Identifier slug'), help_text=_('For fast recall'), max_length=50,
                             unique=True, db_index=True, blank=True)
-    title = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
+    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
     notes = models.TextField(_('Notes'), null=True, blank=True)
 
     class Meta:
@@ -90,7 +90,7 @@ class EntityModel(RAModel):
             self.pk_name = None
 
     def __str__(self):
-        return self.title
+        return self.name
 
     @classmethod
     def get_class_name(cls):
@@ -98,7 +98,7 @@ class EntityModel(RAModel):
         return the class name, usable when a ra model is mimicking (ie:proxying)
         another model.
         This method is used is get_doc_type_* functions,
-        This method is made to avoid to repeat registered doc_type to make adjustments
+        This method is made to avoid to repeat registered type to make adjustments
         """
         return cls.__name__
 
@@ -131,9 +131,6 @@ class EntityModel(RAModel):
                 , args=(self.pk,))
         return url
 
-    @property
-    def name(self):
-        return self.title
 
     def get_next_slug(self, suggestion=None):
         """
@@ -148,7 +145,7 @@ class EntityModel(RAModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.pk is None:
             if not self.slug:
-                self.slug = self.get_next_slug(self.title)
+                self.slug = self.get_next_slug(self.name)
                 # print(self.slug)
             if not self.owner_id:
                 try:
@@ -188,9 +185,9 @@ class EntityModel(RAModel):
     #
     #     doc_types_unfiltered = model_doc_type_full_map.get(cls.get_class_name(), [])
     #     doc_typed_filtered = []
-    #     for doc_type in doc_types_unfiltered:
-    #         if not doc_type.get('hidden', False):
-    #             doc_typed_filtered.append(doc_type)
+    #     for type in doc_types_unfiltered:
+    #         if not type.get('hidden', False):
+    #             doc_typed_filtered.append(type)
     #
     #     return doc_typed_filtered
 
@@ -216,10 +213,10 @@ class EntityModel(RAModel):
 
     def get_title(self):
         """
-        A helper function to get a custom title of the instance if needed
+        A helper function to get a custom name of the instance if needed
         :return:
         """
-        return self.title
+        return self.name
 
     @classmethod
     def get_report_list_url(cls):
@@ -251,36 +248,36 @@ class EntityModel(RAModel):
 
 
 class TransactionModel(EntityModel):
-    title = None
+    name = None
 
     slug = models.SlugField(_('Slug'), max_length=50, db_index=True, validators=[], blank=True)
-    doc_date = models.DateTimeField(_('date'), db_index=True)
-    doc_type = models.CharField(max_length=30, db_index=True)
-    notes = models.TextField(_('notes'), null=True, blank=True)
-    value = models.DecimalField(_('value'), max_digits=19, decimal_places=2, default=0)
+    date = models.DateTimeField(_('Date'), db_index=True)
+    type = models.CharField(max_length=30, db_index=True)
+    notes = models.TextField(_('Notes'), null=True, blank=True)
+    value = models.DecimalField(_('Value'), max_digits=19, decimal_places=2, default=0)
 
-    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
+    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('Created By'),
                               on_delete=models.CASCADE)
-    creation_date = models.DateTimeField(_('creation date and time'), default=now)
-    lastmod = models.DateTimeField(_('last modification'), db_index=True)
+    creation_date = models.DateTimeField(_('Creation timestamp'), default=now)
+    lastmod = models.DateTimeField(_('Last modification'), db_index=True)
     lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
-                                     verbose_name=_('last modification by'), on_delete=models.CASCADE)
+                                     verbose_name=_('Last modification by'), on_delete=models.CASCADE)
 
     @classmethod
     def get_doc_type(cls):
         """
-        Return the doc_type
+        Return the type
         :return:
         """
         return cls.__name__.lower()
         # raise NotImplementedError(
-        #     f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *doc_type*')
+        #     f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *type*')
 
     def __str__(self):
         return '%s-%s' % (self._meta.verbose_name, self.slug)
 
     def __repr__(self):
-        return '<%s pk:%s slug:%s doc_type:%s>' % (self.__class__.__name__, self.pk, self.slug, self.doc_type)
+        return '<%s pk:%s slug:%s type:%s>' % (self.__class__.__name__, self.pk, self.slug, self.type)
 
     class Meta:
         abstract = True
@@ -288,7 +285,7 @@ class TransactionModel(EntityModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         """
         Custom save, it assign the user  As owner and the last modifed
-        it sets the doc_type
+        it sets the type
         make sure that dlc_date has correct timezone ?!
         :param force_insert:
         :param force_update:
@@ -299,7 +296,7 @@ class TransactionModel(EntityModel):
 
         from ra.base.helpers import get_next_serial
         request = CrequestMiddleware.get_request()
-        self.doc_type = self.get_doc_type()
+        self.type = self.get_doc_type()
         if not self.slug:
             self.slug = get_next_serial(self.__class__)
 
@@ -309,38 +306,38 @@ class TransactionModel(EntityModel):
                 self.lastmod_user_id = request.user.pk
             if not self.owner_id:
                 self.owner_id = self.lastmod_user_id
-            self.doc_date = self.doc_date if self.doc_date else now()
+            self.date = self.date if self.date else now()
         self.lastmod = now()
-        # if self.doc_date:
-        #     if self.doc_date.tzinfo is None:
-        #         self.doc_date = pytz.utc.localize(self.doc_date)
+        # if self.date:
+        #     if self.date.tzinfo is None:
+        #         self.date = pytz.utc.localize(self.date)
 
         super(EntityModel, self).save(force_insert, force_update, using, update_fields)
 
     #
     # @classmethod
-    # def get_doc_type_verbose_name(cls, doc_type):
+    # def get_doc_type_verbose_name(cls, type):
     #     """
-    #     Return the doc_type verbose name , Must be implemented when needed by children
-    #     @param doc_type: the doc_type field value
-    #     @return: the description of the doc_type
+    #     Return the type verbose name , Must be implemented when needed by children
+    #     @param type: the type field value
+    #     @return: the description of the type
     #     Example: In: get_doc_type_verbose_name('1')
     #             Out: Purchase
     #     """
     #     # Example :
-    #     # if doc_type == '1': return _('purchase')
+    #     # if type == '1': return _('purchase')
     #     raise NotImplemented()
 
     def get_absolute_url(self):
         doc_types = registry.get_doc_type_settings()
-        if self.doc_type in doc_types:
-            return '%sslug/%s/' % (doc_types[self.doc_type]['redirect_url_prefix'], self.slug)
+        if self.type in doc_types:
+            return '%sslug/%s/' % (doc_types[self.type]['redirect_url_prefix'], self.slug)
         else:
-            return self.doc_type
+            return self.type
 
     @property
-    def title(self):
-        return self.doc_date.strftime('%Y/%m/%d %H:%M')
+    def name(self):
+        return self.date.strftime('%Y/%m/%d %H:%M')
 
 
 class TransactionItemModel(TransactionModel):
@@ -353,9 +350,9 @@ class TransactionItemModel(TransactionModel):
 
 
 class QuantitativeTransactionItemModel(TransactionItemModel):
-    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
-    price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
-    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
+    quantity = models.DecimalField(_('Quantity'), max_digits=19, decimal_places=2, default=0)
+    price = models.DecimalField(_('Price'), max_digits=19, decimal_places=2, default=0)
+    discount = models.DecimalField(_('Discount'), max_digits=19, decimal_places=2, default=0)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.value = self.quantity * self.price
@@ -368,18 +365,18 @@ class QuantitativeTransactionItemModel(TransactionItemModel):
 
 
 class BaseReportModel(DiffingMixin, models.Model):
-    slug = models.SlugField(_('refer code'), max_length=50, db_index=True, validators=[], blank=True)
-    doc_date = models.DateTimeField(_('date'), db_index=True)
-    doc_type = models.CharField(max_length=30, db_index=True)
-    notes = models.TextField(_('notes'), null=True, blank=True)
-    value = models.DecimalField(_('value'), max_digits=19, decimal_places=2, default=0)
+    slug = models.SlugField(_('Slug'), max_length=50, db_index=True, validators=[], blank=True)
+    date = models.DateTimeField(_('Date'), db_index=True)
+    type = models.CharField(max_length=30, db_index=True, verbose_name=_("Type"))
+    notes = models.TextField(_('Notes'), null=True, blank=True)
+    value = models.DecimalField(_('Value'), max_digits=19, decimal_places=2, default=0)
 
-    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
+    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('Created By'),
                               on_delete=models.DO_NOTHING)
-    creation_date = models.DateTimeField(_('creation date and time'), default=now)
-    lastmod = models.DateTimeField(_('last modification'), db_index=True)
+    creation_date = models.DateTimeField(_('Creation Timestamp'), default=now)
+    lastmod = models.DateTimeField(_('Last modified'), db_index=True)
     lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
-                                     verbose_name=_('last modification by'), on_delete=models.DO_NOTHING)
+                                     verbose_name=_('Last modification by'), on_delete=models.DO_NOTHING)
 
     @classmethod
     def get_doc_type_plus_list(cls):
@@ -440,7 +437,7 @@ class QuanValueReport(BaseReportModel):
 
 class ProxyMovementManager(models.Manager):
     def get_queryset(self):
-        return super(ProxyMovementManager, self).get_queryset().filter(doc_type=self.model.get_doc_type())
+        return super(ProxyMovementManager, self).get_queryset().filter(type=self.model.get_doc_type())
 
 
 class ProxyMovement(object):
@@ -451,8 +448,8 @@ class ProxyMovement(object):
         """
         Get the doc-type of the row.
         This method is called internally during save to ensure that the record in the
-        proxy model always have the right doc_type
-        :return: string (doc_type)
+        proxy model always have the right type
+        :return: string (type)
         """
         return ''
 
@@ -461,7 +458,7 @@ class ProxyMovement(object):
         self._doc_type = ''
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.doc_type = self.__class__.get_doc_type()
+        self.type = self.__class__.get_doc_type()
         super(ProxyMovement, self).save(force_insert, force_update, using, update_fields)
 
     class Meta:
