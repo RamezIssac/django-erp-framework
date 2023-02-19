@@ -47,7 +47,7 @@ def addstr(arg1, arg2):
 
 
 @register.simple_tag
-def get_html_panel(report, object=None, **kwargs):
+def get_html_panel(report, template='', **kwargs):
     kwargs['report'] = report
     if not report:
         raise ValueError("report argument is empty. Are you sure you're using the correct report name")
@@ -55,5 +55,5 @@ def get_html_panel(report, object=None, **kwargs):
     # No chart argument default to True if no charts in reports
     kwargs.setdefault('no_chart', not bool(report.chart_settings))
 
-    template = get_template('ra/snippets/panel_for_report.html')
+    template = get_template(template or 'ra/report_widget_template.html')
     return template.render(context=kwargs)
