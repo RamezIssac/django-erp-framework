@@ -25,7 +25,7 @@ from django.forms.widgets import TextInput, NumberInput
 from django.http import HttpResponseRedirect, Http404
 from django.template.defaultfilters import capfirst
 from django.template.response import TemplateResponse
-from django.urls import reverse
+from django.urls import reverse, path
 from django.utils.decorators import method_decorator
 from django.utils.html import escape
 from django.utils.module_loading import import_string
@@ -142,6 +142,115 @@ class RaThemeMixin:
     recover_list_template = f'ra/reversion/recover_list.html'
 
     view_template = None  # Defaults to f'{app_settings.RA_THEME}/view.html'
+
+
+class AdminViewMixin(admin.ModelAdmin):
+    enable_view_view = True
+    view_fields = ()
+    view_template = 'ra/view.html'
+
+    def get_view_fields(self, request, obj=None):
+        return self.view_fields or self.fields
+
+    def get_view_title(self, request, obj=None):
+        return _('View %s') % str(obj)
+        # return self.get_title(request, obj)
+
+
+    def get_urls(self):
+        urls = super().get_urls()
+        info = self.model._meta.app_label, self.model._meta.model_name
+
+        my_urls = [
+            path(
+                "<path:object_id>/view/", self.admin_site.admin_view(self.view_view), name="%s_%s_change" % info,
+            ),
+        ]
+        return my_urls + urls
+
+    def has_view_permission(self, request, obj=None):
+        if not self.enable_view_view:
+            return False
+        opts = self.opts
+        codename = get_permission_codename('view', opts)
+        return request.user.has_perm("%s.%s" % (opts.app_label, codename))
+
+    def view_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['has_add_permission'] = self.has_add_permission(request)
+
+        to_field = request.POST.get(TO_FIELD_VAR, request.GET.get(TO_FIELD_VAR))
+        if to_field and not self.to_field_allowed(request, to_field):
+            raise DisallowedModelAdminToField("The field %s cannot be referenced." % to_field)
+
+        model = self.model
+        opts = model._meta
+
+        obj = self.get_object(request, unquote(object_id), to_field)
+
+        if not self.has_view_permission(request, obj):
+            raise PermissionDenied
+
+        if obj is None:
+            return self._get_obj_does_not_exist_redirect(request, opts, object_id)
+
+        data = []
+        view_fields = self.get_view_fields(request, obj)
+        for field_name in view_fields:
+            # field = self.get_field(request, obj, field_name)
+            field = model._meta.get_field(field_name)
+            if field:
+                data.append((field.verbose_name, field.value_from_object(obj)))
+
+
+        context = dict(self.admin_site.each_context(request),
+                       name=obj,
+                       app_label=opts.app_label,
+                       object_id=object_id,
+                       original=obj,
+                       is_popup=(IS_POPUP_VAR in request.POST or
+                                 IS_POPUP_VAR in request.GET),
+                       to_field=to_field,
+                       # media=media,
+                       title=self.get_view_title(request, obj),
+                       data=data,
+                       preserved_filters=self.get_preserved_filters(request),
+                       )
+
+        context.update(extra_context or {})
+
+        opts = self.model._meta
+        app_label = opts.app_label
+        preserved_filters = self.get_preserved_filters(request)
+        form_url = add_preserved_filters({'preserved_filters': preserved_filters, 'opts': opts}, form_url)
+        view_on_site_url = self.get_view_on_site_url(obj)
+        context.update({
+            # 'add': add,
+            # 'change': not add,
+            'has_add_permission': self.has_add_permission(request),
+            'has_change_permission': self.has_change_permission(request, obj),
+            'has_delete_permission': self.has_delete_permission(request, obj),
+            'has_file_field': True,
+            'has_absolute_url': view_on_site_url is not None,
+            'absolute_url': view_on_site_url,
+            'form_url': form_url,
+            'opts': opts,
+            'content_type_id': get_content_type_for_model(self.model).pk,
+            'save_as': self.save_as,
+            'save_on_top': self.save_on_top,
+            'to_field_var': TO_FIELD_VAR,
+            'is_popup_var': IS_POPUP_VAR,
+            'app_label': app_label,
+        })
+
+        request.current_app = self.admin_site.name
+        return TemplateResponse(request, self.view_template or [
+            "ra/%s/%s/view.html" % (opts.app_label, opts.model_name),
+            "ra/%s/view.html" % opts.app_label,
+            'ra/view.html',
+            f"{app_settings.RA_THEME}/view.html",
+        ], context)
+
 
 
 class EntityAdmin(RaThemeMixin, VersionAdmin):
@@ -630,9 +739,10 @@ class TransactionAdmin(EntityAdmin):
         return form_field
 
     def get_foreign_keys(self, form_fields=None):
-        fks = [field.name for field in self.model._meta.get_fields(include_parents=False) if field.get_internal_type() == 'ForeignKey']
+        fks = [field.name for field in self.model._meta.get_fields(include_parents=False) if
+               field.get_internal_type() == 'ForeignKey']
         if form_fields:
-            fks =set(fks).intersection(set(form_fields))
+            fks = set(fks).intersection(set(form_fields))
         return fks
 
     def get_copy_to_inlines(self, form, formset):
