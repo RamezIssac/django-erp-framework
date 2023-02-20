@@ -322,6 +322,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     # control the caching
     cache = True
     cache_duration = 300
+    with_type = True
 
     # V2
 
@@ -336,7 +337,11 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
         crosstab_compute_reminder = self.form.get_crosstab_compute_reminder() if self.request.GET or self.request.POST \
             else self.crosstab_compute_reminder
-        doc_type_plus_list, doc_type_minus_list = self.get_doc_types_q_filters()
+        doc_type_plus_list, doc_type_minus_list = [], []
+
+        if self.with_type:
+            doc_type_plus_list, doc_type_minus_list = self.get_doc_types_q_filters()
+
         return self.report_generator_class(self.get_report_model(),
                                            start_date=self.form.cleaned_data['start_date'],
                                            end_date=self.form.cleaned_data['end_date'],

@@ -1,5 +1,5 @@
-{#{% extends 'ra/base_site.html' %}#}
-{% extends "admin/base_site.html" %}
+{% extends 'ra/base_site.html' %}
+{#{% extends "admin/base_site.html" %}#}
 {% load ra_admin_tags ra_tags i18n admin_urls %}
 
 {% block content_title %} {{ title }}{% endblock %}
@@ -30,8 +30,8 @@
         <table class="table">
         {% for line in data %}
             <tr>
-                <th>{{ line.0 }}</th>
-                <td>{{ line.1 }}</td>
+                <th>{{ line.0|capfirst }}</th>
+                <td>{{ line.1|default:'-' }}</td>
             </tr>
         {% endfor %}
     </table>

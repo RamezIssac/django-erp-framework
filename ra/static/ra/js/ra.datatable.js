@@ -20,6 +20,8 @@
         let footer_th = '';
         let footer_colspan = 0;
         let stop_colspan_detection = false;
+        let footer = '';
+
         let totals_container = calculateTotalOnObjectArray(data, total_fields);
         for (let i = 0; i < cols.length; i++) {
             let col_name = cols[i].name;
@@ -33,8 +35,8 @@
                 footer_th += `<th data-id=${col_name}">${totals_container[col_name]}</th>`;
             }
         }
-        let footer = '';
-        if (add_footer && stop_colspan_detection) {
+
+        if (add_footer && stop_colspan_detection && data.length !== 0) {
             footer = '<tfoot><tr class="tr-totals active"><th colspan="' + footer_colspan + '" style="text-align:left">' + total_verbose + '</th>' + footer_th + '</tr></tfoot>';
         }
         return_val = return_val + header_th + `</tr> </thead>${footer}</table>`;
