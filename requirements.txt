@@ -2,14 +2,15 @@ pytz
 django>=3.2
 psycopg2-binary
 simplejson
-django-crequest==2018.5.11
+django-crequest>=2018.5.11
 django-tabular-permissions>=2.9.1
-django-crispy-forms==1.14.0
-dateutils==0.6.7
+django-crispy-forms<2.0
+dateutils
 unicodecsv==0.14.1
-swapper==1.1.1
+# swapper==1.1.1
 django-reversion>=3.0.5
 python-memcached
 django-slick-reporting
 django-polymorphic
 django-jazzmin>=2.5.0
+django-compressor>=2.4
