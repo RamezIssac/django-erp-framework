@@ -1,4 +1,5 @@
 <div class="card">
+{% if no_title == True %}
     <div class="card-header">
         <h5 class="card-title">{{ report.get_report_title }}</h5>
 
@@ -6,6 +7,7 @@
         {#            {% include 'ra/snippets/chart_list_wrapper.html' with report=monthly_movement default_chart='total_movement_bar' %}#}
         {#        </div>#}
     </div>
+    {% endif %}
     <div class="card-body">
         <div data-report-widget
              data-report-url="{{ report.get_url }}"

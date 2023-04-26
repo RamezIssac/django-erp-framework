@@ -164,8 +164,8 @@ class AdminViewMixin(admin.ModelAdmin):
     get_stats_icon.short_description = _('Stats')
 
     def get_view_fields(self, request, obj=None):
-        # todo get all fields if view_fields and fields are empty
-        return self.view_fields or self.fields or []
+
+        return self.view_fields or [x for x in flatten_list(self.fields)] or self.get_fields(request, obj)
 
     def get_view_title(self, request, obj=None):
         return _('View %s') % str(obj)
@@ -266,7 +266,7 @@ class AdminViewMixin(admin.ModelAdmin):
         ], context)
 
 
-class EntityAdmin(RaThemeMixin, VersionAdmin):
+class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     # ModelAdmin Attributes
     view_on_site = False
     list_per_page = 25
@@ -467,14 +467,7 @@ class EntityAdmin(RaThemeMixin, VersionAdmin):
                 name='%s_%s_revision' % info),
         ]
 
-        urlpatterns = [
-            url(r'^$', wrap(self.changelist_view), name='%s_%s_changelist' % info),
-            url(r'^add/$', wrap(self.add_view), name='%s_%s_add' % info),
-            url(r'^(.+)/history/$', wrap(self.history_view), name='%s_%s_history' % info),
-            url(r'^(.+)/delete/$', wrap(self.delete_view), name='%s_%s_delete' % info),
-            url(r'^(.+)/change/$', wrap(self.change_view), name='%s_%s_change' % info),
-        ]
-        # url(r'^(.+)/$', wrap(self.view_view), name='%s_%s_view' % info),
+        urlpatterns = super(EntityAdmin, self).get_urls()
 
         my_urls = [
             # path('autocomplete/', wrap(self.autocomplete_view), name='%s_%s_autocomplete' % info),

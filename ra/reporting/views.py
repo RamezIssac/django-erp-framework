@@ -249,6 +249,9 @@ class ReportList(ReportListBase):
         context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
         context['has_detached_sidebar'] = True
         context['RA_ADMIN_SITE_NAME'] = app_settings.RA_ADMIN_SITE_NAME
+        context['is_report'] = True
+        context['base_model'] = self.kwargs['base_model'].lower()
+        context['report_slug'] = ''
 
         extra_context = ra_admin_site.each_context(self.request)
         context.update(extra_context)
@@ -324,7 +327,20 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     cache_duration = 300
     with_type = True
 
-    # V2
+    admin_site_name = 'ra_admin'
+    template_name = 'ra/report.html'
+
+    def get_context_data(self, **kwargs):
+        from ra.admin.admin import ra_admin_site
+        context = super().get_context_data(**kwargs)
+        extra_context = ra_admin_site.each_context(self.request)
+        context.update(extra_context)
+        context['is_report'] = True
+        context['current_base_model_name'] = self.base_model.__name__.lower()
+        context['base_model'] = self.base_model
+        context['report_slug'] = self.get_report_slug()
+
+        return context
 
     def get_doc_types_q_filters(self):
         doc_types = registry.get_model_doc_type_map(self.base_model.__name__)
@@ -400,10 +416,9 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return HttpResponseRedirect(reverse('ra_admin:login'))
 
     @classmethod
-    def get_absolute_url(cls):
-        href = reverse('admin:report_list', args=(cls.get_base_model_name(),))
-        href = '%s#tab_%s' % (href, cls.get_report_slug())
-        return href
+    def get_absolute_url(self):
+        return reverse('admin:report', args=(self.base_model.get_model_name(), self.get_report_slug()),
+                       current_app=self.admin_site_name)
 
     @classmethod
     def get_report_model(cls):
@@ -550,7 +565,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return self.csv_export_class(self.request, self.form_settings or {}, response, header_report,
                                      must_exist_filter, self).get_response()
 
-    def get(self, request, *args, **kwargs):
+    def _get(self, request, *args, **kwargs):
 
         cache_status, cache_key = self.get_cache_status_and_key(request)
         if cache_status and cache_key:
@@ -565,34 +580,34 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         enable_print = self.is_print_request()
         export_csv = request.GET.get('csv', False)
 
-        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or enable_print or export_csv or (
-                request.GET.get('ajax') == 'true' and settings.DEBUG):
-            if self.form.is_valid():
-                must_exist_filter = self.must_exist_filter or ''
-                must_exist_filter = must_exist_filter.replace('_id', '__slug')
-                header_report = self.return_header_report_or_none()
-                # Case of a report that needs a specific filter to run,
-                # in case it doesn't exist, we return the `header_report`
-                if header_report and not enable_print:
-                    return self.cache_and_return(header_report)
-                as_header = self.kwargs.get('as_header', False)
+        # if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or enable_print or export_csv or (
+        #         request.GET.get('ajax') == 'true' and settings.DEBUG):
+        if request.GET and self.form.is_valid():
+            must_exist_filter = self.must_exist_filter or ''
+            must_exist_filter = must_exist_filter.replace('_id', '__slug')
+            header_report = self.return_header_report_or_none()
+            # Case of a report that needs a specific filter to run,
+            # in case it doesn't exist, we return the `header_report`
+            if header_report and not enable_print:
+                return self.cache_and_return(header_report)
+            as_header = self.kwargs.get('as_header', False)
 
-                response = self.get_report_results(enable_print or export_csv)
+            response = self.get_report_results(enable_print or export_csv)
 
-                if (export_csv or enable_print) and not as_header:
-                    response = self.prepare_results_for_printing(response)
-                    if export_csv:
-                        return self.get_export_response(response, header_report, must_exist_filter)
+            if (export_csv or enable_print) and not as_header:
+                response = self.prepare_results_for_printing(response)
+                if export_csv:
+                    return self.get_export_response(response, header_report, must_exist_filter)
 
-                    return self.get_print_response(response, header_report, must_exist_filter)
-                return self.cache_and_return(HttpResponse(self.serialize_to_json(response),
-                                                          content_type="application/json"))
-            else:
-                return self.form_invalid(self.form)
+                return self.get_print_response(response, header_report, must_exist_filter)
+            return self.cache_and_return(HttpResponse(self.serialize_to_json(response),
+                                                      content_type="application/json"))
         else:
-            # Accessing the report page directly is not allowed
-            return HttpResponseRedirect(
-                reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
+            return self.form_invalid(self.form)
+        # else:
+        #     # Accessing the report page directly is not allowed
+        #     return HttpResponseRedirect(
+        #         reverse(f'{RA_ADMIN_SITE_NAME}:report_list', args=(self.get_base_model_name(),)))
 
     @classmethod
     def get_report_title(cls):
@@ -633,6 +648,8 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     def form_invalid(self, form):
         return JsonResponse(form.errors, status=400)
+
+
 
     # @classmethod
     # def get_default_from_date(cls, **kwargs):

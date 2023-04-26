@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.core.exceptions import ImproperlyConfigured
 
@@ -7,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 class ReportRegistry(object):
     def __init__(self):
         super(ReportRegistry, self).__init__()
-        self._registry = {}  # holds
+        self._registry = OrderedDict()
         self._slugs_registry = []
         self._store = {}
         self._base_models = []
@@ -21,7 +23,7 @@ class ReportRegistry(object):
         if not report_class.hidden:
 
             try:
-                namespace = report_class.base_model._meta.model_name
+                namespace = report_class.base_model.get_model_name()
             except AttributeError:
                 raise ImproperlyConfigured("Can not access base_model, is it set on class %s?" % report_class)
             try:
@@ -90,7 +92,7 @@ class ReportRegistry(object):
             self._registry[namespace].remove(report_class)
             slug_id = '%s_%s' % (report_class.namespace, report_class.get_report_slug())
             self._slugs_registry.remove(slug_id)
-            self._base_models.append(report_class.base_model)
+            self._base_models.remove(report_class.base_model)
 
     def get_report_classes_by_namespace(self, namespace):
         if namespace in self._registry:
@@ -116,6 +118,13 @@ class ReportRegistry(object):
 
     def get_base_models(self):
         return self._base_models
+
+    def get_base_models_with_reports(self):
+        output = []
+        for i, k in enumerate(self._registry.keys()):
+            v = self._registry[k]
+            output.append((self._base_models[i], v))
+        return output
 
 
 report_registry = ReportRegistry()

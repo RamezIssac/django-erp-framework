@@ -201,6 +201,6 @@ def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **
 def flatten_list(items):
     for x in items:
         if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
-            yield flatten_list(x)
+            yield from flatten_list(x)
         else:
             yield x

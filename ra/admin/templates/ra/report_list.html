@@ -57,35 +57,35 @@
         {#    theme: 'bootstrap4'#}
         {# });#}
         $(document).ready(function () {
-            $('input[name="start_date"], [name=end_date]').daterangepicker({
-                    singleDatePicker: true,
-                    showDropdowns: true,
-                    timePicker: true,
+            {#$('input[name="start_date"], [name=end_date]').daterangepicker({#}
+            {#        singleDatePicker: true,#}
+            {#        showDropdowns: true,#}
+            {#        timePicker: true,#}
                     {#dateLimit: {years: 3},#}
-                    timePicker24Hour: true,
-                    timePickerIncrement: 10,
-                    autoUpdateInput: true,
-                    autoApply: true,
-
+            {#        timePicker24Hour: true,#}
+            {#        timePickerIncrement: 10,#}
+            {#        autoUpdateInput: true,#}
+            {#        autoApply: true,#}
+            {##}
                     {#buttonClasses: ['btn'],#}
                     {#applyClass: 'btn-small btn-info btn-block',#}
                     {#cancelClass: 'btn-small btn-default btn-block',#}
-
-
-                    locale: {
-                        direction: {% if LANGUAGE_BIDI %} 'rtl' {% else %}'ltr'{% endif %},
-                        format: 'YYYY-MM-DD HH:mm',
-                        applyLabel: '{% trans "Apply" %}',
-                        fromLabel: '{% trans "From" %}',
-                        toLabel: '{% trans "To" %}',
-                        startLabel: '{% trans "start date"|capfirst %}:',
-                        endLabel: '{% trans "end date"|capfirst %}:',
-                        cancelLabel: '{% trans "Cancel" %}',
-                        customRangeLabel: '{% trans "choose"|capfirst %}',
-                        firstDay: 1
-                    }
-                }
-            );
+            {##}
+            {##}
+            {#        locale: {#}
+            {#            direction: {% if LANGUAGE_BIDI %} 'rtl' {% else %}'ltr'{% endif %},#}
+            {#            format: 'YYYY-MM-DD HH:mm',#}
+            {#            applyLabel: '{% trans "Apply" %}',#}
+            {#            fromLabel: '{% trans "From" %}',#}
+            {#            toLabel: '{% trans "To" %}',#}
+            {#            startLabel: '{% trans "start date"|capfirst %}:',#}
+            {#            endLabel: '{% trans "end date"|capfirst %}:',#}
+            {#            cancelLabel: '{% trans "Cancel" %}',#}
+            {#            customRangeLabel: '{% trans "choose"|capfirst %}',#}
+            {#            firstDay: 1#}
+            {#        }#}
+            {#    }#}
+            {#);#}
 
             $('.refreshReport').on('click', function (event) {
                 event.preventDefault();

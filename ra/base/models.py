@@ -142,7 +142,7 @@ class EntityModel(RAModel):
         from .helpers import get_next_serial
         return get_next_serial(self.__class__)  # repr(time.time()).replace('.', '')
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, *args, **kwargs):
         if self.pk is None:
             if not self.slug:
                 self.slug = self.get_next_slug(self.name)
@@ -156,7 +156,7 @@ class EntityModel(RAModel):
 
         self.lastmod = now()
 
-        super(EntityModel, self).save(force_insert, force_update, using, update_fields)
+        super(EntityModel, self).save(*args, **kwargs)
 
     @classmethod
     def _get_doc_type_plus_list(cls):
@@ -282,7 +282,7 @@ class TransactionModel(EntityModel):
     class Meta:
         abstract = True
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, *args, **kwargs):
         """
         Custom save, it assign the user  As owner and the last modifed
         it sets the type
@@ -305,14 +305,11 @@ class TransactionModel(EntityModel):
             if not self.lastmod_user_id:
                 self.lastmod_user_id = request.user.pk
             if not self.owner_id:
-                self.owner_id = self.lastmod_user_id
+                self.owner_id = request.user.pk
             self.date = self.date if self.date else now()
         self.lastmod = now()
-        # if self.date:
-        #     if self.date.tzinfo is None:
-        #         self.date = pytz.utc.localize(self.date)
 
-        super(EntityModel, self).save(force_insert, force_update, using, update_fields)
+        super(EntityModel, self).save(*args, **kwargs)
 
     #
     # @classmethod
@@ -328,12 +325,12 @@ class TransactionModel(EntityModel):
     #     # if type == '1': return _('purchase')
     #     raise NotImplemented()
 
-    def get_absolute_url(self):
-        doc_types = registry.get_doc_type_settings()
-        if self.type in doc_types:
-            return '%sslug/%s/' % (doc_types[self.type]['redirect_url_prefix'], self.slug)
-        else:
-            return self.type
+    # def get_absolute_url(self):
+    #     doc_types = registry.get_doc_type_settings()
+    #     if self.type in doc_types:
+    #         return '%sslug/%s/' % (doc_types[self.type]['redirect_url_prefix'], self.slug)
+    #     else:
+    #         return self.type
 
     @property
     def name(self):
@@ -354,11 +351,11 @@ class QuantitativeTransactionItemModel(TransactionItemModel):
     price = models.DecimalField(_('Price'), max_digits=19, decimal_places=2, default=0)
     discount = models.DecimalField(_('Discount'), max_digits=19, decimal_places=2, default=0)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self,*args, **kwargs):
         self.value = self.quantity * self.price
         if self.discount:
             self.value -= self.value * self.discount / 100
-        super(QuantitativeTransactionItemModel, self).save(force_insert, force_update, using, update_fields)
+        super(QuantitativeTransactionItemModel, self).save(*args, **kwargs)
 
     class Meta:
         abstract = True
@@ -457,9 +454,9 @@ class ProxyMovement(object):
         super(ProxyMovement, self).__init__(*args, **kwargs)
         self._doc_type = ''
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self,*args, **kwargs):
         self.type = self.__class__.get_doc_type()
-        super(ProxyMovement, self).save(force_insert, force_update, using, update_fields)
+        super(ProxyMovement, self).save(*args, **kwargs)
 
     class Meta:
         proxy = True

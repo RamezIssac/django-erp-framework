@@ -1,10 +1,7 @@
 from __future__ import unicode_literals
 
 from django import template
-from django.contrib.admin.templatetags.admin_list import result_headers, result_hidden_fields, results
-from django.template import loader
-from django.template.loader import get_template
-from django.urls import reverse
+from django.template.loader import get_template, render_to_string
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 
@@ -31,11 +28,16 @@ def render_reports_menu(context):
         active_base_model = [x for x in request.path.split('/') if x][1]
 
     from ra.reporting.registry import report_registry
-    classes = report_registry.get_base_models()
-    if classes:
+    base_models = report_registry.get_base_models_with_reports()
+    if base_models:
         t = get_template(f'ra/reports_menu.html')
-        return mark_safe(
-            t.render({'classes': classes, 'is_in_reports': is_in_reports, 'active_base_model': active_base_model}))
+        output = render_to_string('ra/reports_menu.html', {'base_models_reports_tuple': base_models,
+                                                           'is_report': context.get('is_report', False),
+                                                           'base_model': context.get('base_model', False),
+                                                           'report_slug': context.get('report_slug', False),
+                                                           'current_base_model_name': context.get('current_base_model_name', False),
+                                                           }, request)
+        return mark_safe(output)
     return ''
 
 

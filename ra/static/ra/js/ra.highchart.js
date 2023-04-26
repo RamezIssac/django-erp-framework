@@ -2,11 +2,44 @@
  * Created by ramez on 11/20/14.
  */
 (function ($) {
+
+        function dataArrayToObject(data, key) {
+            // Turn a data array to an object
+            // Example:
+            // in: [
+            // {'key': key , 'value': 0},
+            // {'key': key , 'value': 1},
+            // {'key': key , 'value': 2},
+            // ]
+            // out: {'key':key , 'value':[0,1,2]}
+            var output = {};
+            for (var r = 0; r < data.length; r++) {
+                output[data[r][key]] = data[r];
+            }
+            return output
+        }
+
+        function getObjFromArray(objList, obj_key, key_value, failToFirst) {
+            failToFirst = typeof (failToFirst) !== 'undefined';
+            if (key_value !== '') {
+                for (let i = 0; i < objList.length; i++) {
+                    if (objList[i][obj_key] === key_value) {
+                        return objList[i];
+                    }
+                }
+            }
+            if (failToFirst && objList.length > 0) {
+                return objList[0]
+            }
+
+            return false;
+        }
+
         var ra_chart_settings = {
 
 
             //exporting: {
-            //    alloloadwHTML:true,
+            //    allowHTML:true,
             //    enabled: faelse,
             //},
 
@@ -29,7 +62,7 @@
                 '<tr><td> {Total}:</td><td style="text-align: right"><b>' + this.point.stackTotal + '<b></td></tr>' +
                 '</table>';
 //style="color: '+ this.series.color+'"
-            tooltip = tooltip.format($.ra.defaults.messages);
+            tooltip = tooltip.format($.slick_reporting.highcharts.defaults.messages);
             return tooltip
 
         }
@@ -49,11 +82,12 @@
             }
         }
 
-        function createChartObject(response, chartOptions) {
+        function createChartObject(response, chart_id, extraOptions) {
             // Create the chart Object
             // First specifying the global default
             // second, Get the data from the serponse
             // Adjust the Chart Object accordingly
+            let chartOptions = getObjFromArray(response.chart_settings, 'id', chart_id, true)
 
             try {
 
@@ -71,6 +105,8 @@
                 let chart_type = chartOptions.type;
                 var enable3d = false;
                 let chart_data = {};
+
+                let rtl = false; // $.slick_reporting.highcharts.defaults.rtl;
 
                 if (is_time_series) {
                     chart_data = get_time_series_data(response, chartOptions)
@@ -99,12 +135,12 @@
                     },
                     yAxis: {
                         // title: {text: chartyAxisTitle},
-                        opposite: $.ra.rtl,
+                        opposite: rtl,
                     },
                     xAxis: {
                         // title: {text: chartxAxisTitle},
                         labels: {enabled: true},
-                        reversed: $.ra.rtl,
+                        reversed: rtl,
                     },
                     tooltip: {
                         useHTML: Highcharts.hasBidiBug
@@ -113,7 +149,7 @@
                     exporting: {
                         allowHTML: true,
 
-                        enabled: true, //!$.ra.rtl,
+                        enabled: true,
                         //scale:2,
                     }
                 };
@@ -251,16 +287,13 @@
                     highchart_object.xAxis.categories = chart_data.titles
                 }
 
-                highchart_object.credits = $.ra.highcharts.defaults.credits;
+                highchart_object.credits = $.slick_reporting.highcharts.defaults.credits;
                 highchart_object.lang = {
-                    noData: $.ra.highcharts.defaults.messages.noData
+                    noData: $.slick_reporting.highcharts.defaults.messages.noData
                 };
                 return highchart_object;
             } catch (err) {
-                // $.ra.highcharts.defaults.notify_error();
-                // if ($.ra.defaults.debug) {
                 console.log(err);
-                // }
             }
         }
 
@@ -322,21 +355,22 @@
                 Object.keys(data_sources).forEach(function (series_cols, index) {
                     all_column_to_be_summed = all_column_to_be_summed.concat(data_sources[series_cols]);
                 })
-                let totalValues = calculateTotalOnObjectArray(response.data, all_column_to_be_summed)
+                let totalValues = $.slick_reporting.calculateTotalOnObjectArray(response.data, all_column_to_be_summed)
 
                 Object.keys(data_sources).forEach(function (series_cols, index) {
                     let data = []
                     data_sources[series_cols].forEach(function (col, index) {
-                        data.push(totalValues[col])
+
+                        series.push({
+                            'name': response.metadata.time_series_column_verbose_names[index],
+                            data: [totalValues[col]]
+                        })
                     })
-                    series.push({
-                        'name': 'Total', //todo
-                        'data': data
-                    })
+
                 })
             }
             return {
-                // 'categories': response.metadata.time_series_column_verbose_names,
+                'categories': response.metadata.time_series_column_verbose_names,
                 'titles': response.metadata.time_series_column_verbose_names,
                 'series': series,
             }
@@ -346,7 +380,7 @@
 
             let series = []
             let data_sources = {};
-            let col_dict = $.ra.dataComprehension.dataArrayToObject(response.columns, 'name')
+            let col_dict = dataArrayToObject(response.columns, 'name')
             chartOptions.data_source.forEach(function (elem, key) {
                 data_sources[elem] = [];
                 response.columns.forEach(function (col, key) {
@@ -373,16 +407,13 @@
                 Object.keys(data_sources).forEach(function (series_cols, index) {
                     all_column_to_be_summed = all_column_to_be_summed.concat(data_sources[series_cols]);
                 })
-                let totalValues = calculateTotalOnObjectArray(response.data, all_column_to_be_summed)
+                let totalValues = $.slick_reporting.calculateTotalOnObjectArray(response.data, all_column_to_be_summed)
 
                 Object.keys(data_sources).forEach(function (series_cols, index) {
-                    let data = []
-
                     data_sources[series_cols].forEach(function (col, index) {
-                        data.push(totalValues[col])
                         series.push({
                             'name': col_dict[col].verbose_name,
-                            'data': data
+                            'data': [totalValues[col]]
                         })
 
                     })
@@ -399,6 +430,7 @@
 
 
         function is_timeseries_support(response, chartOptions) {
+            if (chartOptions.time_series_support === false) return false;
             return response.metadata.time_series_pattern || ''
         }
 
@@ -409,10 +441,10 @@
         function displayChart(data, $elem, chart_id) {
             chart_id = chart_id || $elem.attr('data-report-default-chart') || '';
             let chart = $elem;
-            let chartObject = $.ra.dataComprehension.getObjFromArray(data.chart_settings, 'id', chart_id, true);
-
+            // let chartObject = getObjFromArray(data.chart_settings, 'id', chart_id, true);
+            let cache_key = data.report_slug + ':' + chart_id
             try {
-                let existing_chart = _chart_cache[data.report_slug];
+                let existing_chart = _chart_cache[cache_key];
                 if (typeof (existing_chart) !== 'undefined') {
                     existing_chart.highcharts().destroy()
                 }
@@ -420,12 +452,12 @@
                 console.error(e)
             }
 
-            chartObject = $.ra.highcharts.createChartObject(data, chartObject);
-            _chart_cache[data.report_slug] = chart.highcharts(chartObject);
+            chartObject = $.slick_reporting.highcharts.createChartObject(data, chart_id);
+            _chart_cache[cache_key] = chart.highcharts(chartObject);
 
         }
 
-        $.ra.highcharts = {
+        $.slick_reporting.highcharts = {
             createChartObject: createChartObject,
             displayChart: displayChart,
             defaults: {
@@ -439,7 +471,7 @@
                     text: 'RaSystems.io',
                     href: 'https://rasystems.io'
                 },
-                notify_error: notify_error,
+                // notify_error: notify_error,
                 enable3d: false,
 
             }
