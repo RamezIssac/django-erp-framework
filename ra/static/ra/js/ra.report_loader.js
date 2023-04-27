@@ -32,24 +32,31 @@
 
 
     function refreshReportWidget($elem, extra_params) {
-
         let successFunctionName = $elem.attr('data-success-callback');
         successFunctionName = successFunctionName || "$.ra.report_loader.loadComponents";
         let failFunctionName = $elem.attr('data-fail-callback');
         failFunctionName = failFunctionName || "$.ra.report_loader.failFunction";
 
+        let data = {};
+
         let url = $elem.attr('data-report-url');
         extra_params = extra_params || ''
         let extraParams = extra_params + ($elem.attr('data-extra-params') || '');
 
-        if (url === '#') return; // there is no actual url, probably not enough permissions
-        else url = url + '?';
+        let formSelector = $elem.attr('report-form-selector');
+        if (formSelector) {
+            data = $(formSelector).serialize();
+        } else {
+            if (url === '#') return; // there is no actual url, probably not enough permissions
+            else url = url + '?';
 
-        if (extraParams !== '') {
-            url = url + extraParams;
+            if (extraParams !== '') {
+                url = url + extraParams;
+            }
+
         }
 
-        $.get(url, function (data) {
+        $.get(url, data , function (data) {
             $.ra.cache[data['report_slug']] = jQuery.extend(true, {}, data);
             executeFunctionByName(successFunctionName, window, data, $elem);
         }).fail(function (data) {

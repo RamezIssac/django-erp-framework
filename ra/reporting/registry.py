@@ -23,7 +23,7 @@ class ReportRegistry(object):
         if not report_class.hidden:
 
             try:
-                namespace = report_class.base_model.get_model_name()
+                namespace = report_class.base_model._meta.model_name
             except AttributeError:
                 raise ImproperlyConfigured("Can not access base_model, is it set on class %s?" % report_class)
             try:

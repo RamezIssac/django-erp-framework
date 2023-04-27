@@ -339,12 +339,15 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         context['current_base_model_name'] = self.base_model.__name__.lower()
         context['base_model'] = self.base_model
         context['report_slug'] = self.get_report_slug()
+        context['report'] = self
 
         return context
 
     def get_doc_types_q_filters(self):
-        doc_types = registry.get_model_doc_type_map(self.base_model.__name__)
-        return [Q(type__in=doc_types['plus_list'])], [Q(type__in=doc_types['minus_list'])]
+        return [], []
+
+        # doc_types = registry.get_model_doc_type_map(self.base_model.__name__)
+        # return [Q(type__in=doc_types['plus_list'])], [Q(type__in=doc_types['minus_list'])]
 
     def get_report_generator(self, queryset, for_print):
         q_filters, kw_filters = self.form.get_filters()
@@ -378,6 +381,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
                                            crosstab_compute_reminder=crosstab_compute_reminder,
 
                                            format_row_func=self.format_row,
+
                                            doc_type_plus_list=doc_type_plus_list,
                                            doc_type_minus_list=doc_type_minus_list,
                                            )
@@ -417,7 +421,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     @classmethod
     def get_absolute_url(self):
-        return reverse('admin:report', args=(self.base_model.get_model_name(), self.get_report_slug()),
+        return reverse('admin:report', args=(self.base_model._meta.model_name, self.get_report_slug()),
                        current_app=self.admin_site_name)
 
     @classmethod
