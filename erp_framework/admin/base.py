@@ -98,13 +98,15 @@ class RaAdminSiteBase(AdminSite):
 
     def service_worker_view(self, request):
         return render(
-            request, f"ra/service-worker.js.html", content_type="application/javascript"
+            request,
+            f"erp_framework/service-worker.js.html",
+            content_type="application/javascript",
         )
 
     def manifest_view(self, request):
         json = {
-            "short_name": "Ra Systems ERP",
-            "name": "Ra Systems ERP",
+            "short_name": "ERP Framework System",
+            "name": "ERP Framework System",
             "icons": [
                 {
                     "src": "/static/ra/images/ra_systems.png",
@@ -176,11 +178,9 @@ class RaAdminSiteBase(AdminSite):
 
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
-        # extra_context['typed_reports'] = app_settings.RA_HOME_REPORTS_GETTER(request)
         extra_context["opts"] = {"app_name": "home"}
         extra_context["is_index"] = True
         extra_context["sidebar_status"] = "expanded"
-        # extra_context['ra_tour_template'] = 'ra/tours/index_tour.html'
         context = dict(
             self.each_context(request),
             name=self.index_title,
@@ -211,5 +211,5 @@ class RaAdminSiteBase(AdminSite):
 
     def login(self, request, extra_context=None):
         extra_context = extra_context or {}
-        extra_context["SHOW_LANGUAGE_SELECTOR"] = True
+        # extra_context["SHOW_LANGUAGE_SELECTOR"] = True
         return super(RaAdminSiteBase, self).login(request, extra_context)

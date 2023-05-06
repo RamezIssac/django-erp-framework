@@ -17,21 +17,21 @@
 
 
 
-Ra Framework
-============
+Djagno ERP Framework
+====================
 
 A light-weight, effective, Django based framework to create various business applications, resource planing and management systems.
 
-If offers a ready made platform where you can start to create data entry pages and attach various reports to them.
+Offers a ready made platform where you can start to create data entry pages and attach various reports to them.
 
 Features
 --------
 
-- A customizable responsive dashboard (built on top of Django's admin).
-- A Reporting Engine to compute and chart various and complex reports like time series and crosstab.
-- A widget system to display various reports in one page.
+- Admin theme jazzmin support
+- A widget system to display various reports on a page.
 - Extendable and customizable
 - Python 3.6 / 3.7 / 3.8/ Django 2.2, 3.0 Compatible
+- Slick reporting integration for time series reports anf other
 
 
 
@@ -40,7 +40,7 @@ Installation
 
 .. code-block:: console
 
-    $ pip install django-ra-erp
+    $ pip install django-erp-framework
 
 
 Quick start

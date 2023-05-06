@@ -62,7 +62,7 @@ class HTMLPrintingClass(object):
             if getattr(report_view, "get_report_title", False)
             else ""
         )
-        self.template_name = f"ra/print_base.html"
+        self.template_name = f"erp_framework/print_base.html"
 
     def get_response(self, template_name=None, extra_context=None):
         template_name = template_name or self.template_name

@@ -59,5 +59,5 @@ def get_html_panel(report, template="", **kwargs):
     # No chart argument default to True if no charts in reports
     kwargs.setdefault("no_chart", not bool(report.chart_settings))
 
-    template = get_template(template or "ra/report_widget_template.html")
+    template = get_template(template or "erp_framework/report_widget_template.html")
     return template.render(context=kwargs)

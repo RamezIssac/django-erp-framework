@@ -17,9 +17,10 @@
             margin: 5px;
             text-align: center;
         }
-    .nav-charts{
-                    display: inline-flex;
-    }
+
+        .nav-charts {
+            display: inline-flex;
+        }
 
     </style>
 
@@ -32,8 +33,8 @@
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
 
     <script type="text/javascript" src="{% static "ra/js/ra.js" %}"></script>
 
@@ -41,13 +42,13 @@
         $.ra.rtl = {% if LANGUAGE_BIDI %} true ;{% else %} false; {% endif %}
     </script>
 
-<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.20/datatables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.20/datatables.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.20/datatables.min.css"/>
 
     {#<script type="text/javascript" charset="utf8"#}
     {#        src="{{ STATIC_URL }}ra/js/vendor/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>#}
     {#<script type="text/javascript" src="{{ STATIC_URL }}ra/js/vendor/daterangepicker.js"></script>#}
-    <script src="{% static 'ra/plugins/chartsjs/src/Chart.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.highcharts.com/highcharts.js"></script>
 
     <script src="{% static 'slick_reporting/ra.chartsjs.js' %}"></script>
@@ -94,7 +95,7 @@
         {#        "sZeroRecords": "{% trans "No matching records found" %}"#}
         {#    },#}
         {##}
-            {#        // added by theme #}
+        {#        // added by theme #}
         {#    autoWidth: false,#}
         {#    columnDefs: [{#}
         {#        orderable: false,#}
@@ -107,12 +108,12 @@
         {#        lengthMenu: '<span>{% trans 'Show' %}:</span> _MENU_',#}
         {#        paginate: {'first': 'First', 'last': 'Last', 'next': '&rarr;', 'previous': '&larr;'}#}
         {#    },#}
-            {#drawCallback: function () {#}
-            {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').addClass('dropup');#}
-            {# },#}
-            {#preDrawCallback: function () {#}
-            {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').removeClass('dropup');#}
-            {# }#}
+        {#drawCallback: function () {#}
+        {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').addClass('dropup');#}
+        {# },#}
+        {#preDrawCallback: function () {#}
+        {#    $(this).find('tbody tr').slice(-3).find('.dropdown, .btn-group').removeClass('dropup');#}
+        {# }#}
         {# });#}
 
 
@@ -200,6 +201,7 @@
                                         {% for model in app.models %}
                                             <li class="nav-item">
                                                 <a href="
+
                                                         {% if model.url %}{{ model.url }}{% else %}javascript:void(0){% endif %}"
                                                    class="nav-link">
                                                     <i class="nav-icon {{ model.icon }}"></i>
@@ -212,7 +214,7 @@
                             {% endfor %}
                         {% endif %}
 
-                    {% render_reports_menu %}
+                        {% render_reports_menu %}
                     </ul>
 
                 </nav>

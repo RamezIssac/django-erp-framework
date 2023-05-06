@@ -200,7 +200,7 @@ class ReportListBase(RaMultiplePermissionsRequiredMixin, TemplateView):
 
 
 class ReportList(ReportListBase):
-    template_name = f"ra/report_list.html"
+    template_name = f"erp_framework/report_list.html"
     _bypass = True
 
     def get_order_list(self):
@@ -339,7 +339,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     with_type = True
 
     admin_site_name = "erp_admin"
-    template_name = "ra/report.html"
+    template_name = "erp_framework/report.html"
 
     def get_context_data(self, **kwargs):
         from erp_framework.admin.admin import erp_admin_site

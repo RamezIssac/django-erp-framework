@@ -174,10 +174,10 @@ class RaThemeMixin:
     )
     add_form_template = f"{app_settings.RA_THEME}/change_form.html"
 
-    recover_form_template = f"ra/reversion/recover_form.html"
-    revision_form_template = f"ra/reversion/revision_form.html"
-    object_history_template = f"ra/reversion/object_history.html"
-    recover_list_template = f"ra/reversion/recover_list.html"
+    recover_form_template = f"erp_framework/reversion/recover_form.html"
+    revision_form_template = f"erp_framework/reversion/revision_form.html"
+    object_history_template = f"erp_framework/reversion/object_history.html"
+    recover_list_template = f"erp_framework/reversion/recover_list.html"
 
     view_template = None  # Defaults to f'{app_settings.RA_THEME}/view.html'
 
@@ -185,7 +185,7 @@ class RaThemeMixin:
 class AdminViewMixin(admin.ModelAdmin):
     enable_view_view = True
     view_fields = ()
-    view_template = "ra/view.html"
+    view_template = "erp_framework/view.html"
 
     def get_stats_icon(self, obj):
         url = reverse(
@@ -315,9 +315,9 @@ class AdminViewMixin(admin.ModelAdmin):
             request,
             self.view_template
             or [
-                "ra/%s/%s/view.html" % (opts.app_label, opts.model_name),
-                "ra/%s/view.html" % opts.app_label,
-                "ra/view.html",
+                "erp_framework/%s/%s/view.html" % (opts.app_label, opts.model_name),
+                "erp_framework/%s/view.html" % opts.app_label,
+                "erp_framework/view.html",
                 f"{app_settings.RA_THEME}/view.html",
             ],
             context,
