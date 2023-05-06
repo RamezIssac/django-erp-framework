@@ -265,8 +265,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     Load the report generator class , csv_export_class and the printing class.
 
     """
-    # the class responsible for exporting to CSV
-    csv_export_class = ExportToCSV
+
 
     # class responsible for generating the report, applying the filter and computing
     report_generator_class = ReportGenerator
@@ -361,6 +360,11 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         if self.with_type:
             doc_type_plus_list, doc_type_minus_list = self.get_doc_types_q_filters()
 
+        time_series_pattern = self.time_series_pattern
+        if self.time_series_selector:
+
+            time_series_pattern = self.form.cleaned_data['time_series_pattern']
+
         return self.report_generator_class(self.get_report_model(),
                                            start_date=self.form.cleaned_data['start_date'],
                                            end_date=self.form.cleaned_data['end_date'],
@@ -372,7 +376,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
                                            limit_records=self.limit_records, swap_sign=self.swap_sign,
                                            columns=self.columns,
                                            group_by=self.group_by,
-                                           time_series_pattern=self.time_series_pattern,
+                                           time_series_pattern=time_series_pattern,
                                            time_series_columns=self.time_series_columns,
 
                                            crosstab_model=self.crosstab_model,
@@ -452,7 +456,12 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return cls.form_class or report_form_factory(cls.get_report_model(), crosstab_model=cls.crosstab_model,
                                                      display_compute_reminder=cls.crosstab_compute_reminder,
                                                      fkeys_filter_func=cls.form_filter_func,
-                                                     initial=cls.get_form_initial())
+                                                     initial=cls.get_form_initial(),
+                                                     show_time_series_selector=cls.time_series_selector,
+                                                     time_series_selector_choices=cls.time_series_selector_choices,
+                                                     time_series_selector_default=cls.time_series_selector_default,
+                                                     time_series_selector_allow_empty=cls.time_series_selector_allow_empty,
+                                                     )
 
     def dispatch(self, request, *args, **kwargs):
         report_slug = kwargs.get('report_slug', False)
@@ -653,8 +662,6 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     def form_invalid(self, form):
         return JsonResponse(form.errors, status=400)
 
-
-
     # @classmethod
     # def get_default_from_date(cls, **kwargs):
     #     return app_settings.RA_DEFAULT_FROM_DATETIME
@@ -662,3 +669,26 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     # @classmethod
     # def get_default_to_date(cls, **kwargs):
     #     return app_settings.RA_DEFAULT_TO_DATETIME
+
+
+class TimeSeriesSelectorReportView(UserPassesTestMixin, SlickReportViewBase):
+
+    @staticmethod
+    def form_filter_func(fkeys_dict):
+        output = {}
+        for k, v in fkeys_dict.items():
+            if k not in ['owner_id', 'polymorphic_ctype_id', 'lastmod_user_id']:
+                output[k] = v
+        return output
+
+    @classmethod
+    def get_form_class(cls):
+        """
+        As Report Model might be swapped, form_class cant be accurately generated on model load,
+        hence this function.
+        :return: form_class
+        """
+        return cls.form_class or report_form_factory(cls.get_report_model(), crosstab_model=cls.crosstab_model,
+                                                     display_compute_reminder=cls.crosstab_compute_reminder,
+                                                     fkeys_filter_func=cls.form_filter_func,
+                                                     initial=cls.get_form_initial())

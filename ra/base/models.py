@@ -22,7 +22,7 @@ class DiffingMixin(object):
 
     def save(self, *args, **kwargs):
         state = dict(self.__dict__)
-        del state['_original_state']
+        del state["_original_state"]
         super(DiffingMixin, self).save(*args, **kwargs)
         self.pre_current_state = self._original_state
         self._original_state = state
@@ -52,46 +52,33 @@ class DiffingMixin(object):
         for key, value in self._original_state.items():
             try:
                 if value != self.__dict__.get(key, missing):
-                    result[key] = {'old': value, 'new': self.__dict__.get(key, missing)}
+                    result[key] = {"old": value, "new": self.__dict__.get(key, missing)}
             except TypeError:
-                result[key] = {'old': value, 'new': self.__dict__.get(key, missing)}
+                result[key] = {"old": value, "new": self.__dict__.get(key, missing)}
         return result
 
 
 class RAModel(DiffingMixin, models.Model):
-    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('owner'),
-                              on_delete=models.CASCADE)
-    creation_date = models.DateTimeField(_('creation date and time'), default=now)
-    lastmod = models.DateTimeField(_('last modification'), db_index=True)
-    lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
-                                     verbose_name=_('last modification by'), on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s_related",
+        verbose_name=_("owner"),
+        on_delete=models.CASCADE,
+    )
+    creation_date = models.DateTimeField(_("creation date and time"), default=now)
+    lastmod = models.DateTimeField(_("last modification"), db_index=True)
+    lastmod_user = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s_lastmod_related",
+        verbose_name=_("last modification by"),
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         abstract = True
 
 
-class EntityModel(RAModel):
-    """
-    The Main base for Ra `static` models
-    Example: Client , Expense etc..
-    """
-    slug = models.SlugField(_('Identifier slug'), help_text=_('For fast recall'), max_length=50,
-                            unique=True, db_index=True, blank=True)
-    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
-    notes = models.TextField(_('Notes'), null=True, blank=True)
-
-    class Meta:
-        abstract = True
-
-    def __init__(self, *args, **kwargs):
-        super(EntityModel, self).__init__(*args, **kwargs)
-        # self.reporting_model = None
-        if not getattr(self, 'pk_name', False):
-            self.pk_name = None
-
-    def __str__(self):
-        return self.name
-
+class ERPMixin:
     @classmethod
     def get_class_name(cls):
         """
@@ -119,18 +106,55 @@ class EntityModel(RAModel):
         """
         return cls._meta.verbose_name_plural
 
+
+class EntityModel(ERPMixin, RAModel):
+    """
+    The Main base for Ra `static` models
+    Example: Client , Expense etc..
+    """
+
+    slug = models.SlugField(
+        _("Identifier slug"),
+        help_text=_("For fast recall"),
+        max_length=50,
+        unique=True,
+        db_index=True,
+        blank=True,
+    )
+    name = models.CharField(_("Name"), max_length=255, unique=True, db_index=True)
+    notes = models.TextField(_("Notes"), null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def __init__(self, *args, **kwargs):
+        super(EntityModel, self).__init__(*args, **kwargs)
+        # self.reporting_model = None
+        if not getattr(self, "pk_name", False):
+            self.pk_name = None
+
+    def __str__(self):
+        return self.name
+
     def get_absolute_url(self):
         model_name = self._meta.model_name.lower()
         try:
-            url = reverse('%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, self._meta.app_label, model_name)
-                          , args=(self.pk,))
+            url = reverse(
+                "%s:%s_%s_view"
+                % (app_settings.RA_ADMIN_SITE_NAME, self._meta.app_label, model_name),
+                args=(self.pk,),
+            )
         except NoReverseMatch:
             url = reverse(
-                '%s:%s_%s_change' % (
-                    app_settings.RA_ADMIN_SITE_NAME, self._meta.app_label, self.get_class_name().lower())
-                , args=(self.pk,))
+                "%s:%s_%s_change"
+                % (
+                    app_settings.RA_ADMIN_SITE_NAME,
+                    self._meta.app_label,
+                    self.get_class_name().lower(),
+                ),
+                args=(self.pk,),
+            )
         return url
-
 
     def get_next_slug(self, suggestion=None):
         """
@@ -140,6 +164,7 @@ class EntityModel(RAModel):
         :return:
         """
         from .helpers import get_next_serial
+
         return get_next_serial(self.__class__)  # repr(time.time()).replace('.', '')
 
     def save(self, *args, **kwargs):
@@ -152,7 +177,9 @@ class EntityModel(RAModel):
                     self.owner = self.lastmod_user
                 except:
                     self.owner_id = self.lastmod_user_id
-                    logger.info('lastmod_user_id is used instead of lastmod_user object')
+                    logger.info(
+                        "lastmod_user_id is used instead of lastmod_user object"
+                    )
 
         self.lastmod = now()
 
@@ -160,21 +187,25 @@ class EntityModel(RAModel):
 
     @classmethod
     def _get_doc_type_plus_list(cls):
-        '''
+        """
 
         Returns List of Identified doctype that a plus effect on the entity
-        '''
-        return ['fb'] + registry.get_model_doc_type_map(cls.get_class_name()).get('plus_list', [])
+        """
+        return ["fb"] + registry.get_model_doc_type_map(cls.get_class_name()).get(
+            "plus_list", []
+        )
 
     @classmethod
     def _get_doc_type_minus_list(cls):
-        """ Returns List of Identified doctype that a minus effect on the entity"""
+        """Returns List of Identified doctype that a minus effect on the entity"""
 
-        return registry.get_model_doc_type_map(cls.get_class_name()).get('minus_list', [])
+        return registry.get_model_doc_type_map(cls.get_class_name()).get(
+            "minus_list", []
+        )
 
     @classmethod
     def get_doc_type_neuter_list(cls):
-        """ Returns List of Identified doctype that have a neuttral effect on the entity"""
+        """Returns List of Identified doctype that have a neuttral effect on the entity"""
 
         return []
 
@@ -209,7 +240,7 @@ class EntityModel(RAModel):
             return self.pk_name
         else:
             # return self._meta.pk.column #not now
-            return '%s_id' % self.__class__.__name__.lower()
+            return "%s_id" % self.__class__.__name__.lower()
 
     def get_title(self):
         """
@@ -225,7 +256,10 @@ class EntityModel(RAModel):
         :return: a string url
         """
 
-        return reverse('%s:report_list' % app_settings.RA_ADMIN_SITE_NAME, args=(cls.get_class_name().lower(),))
+        return reverse(
+            "%s:report_list" % app_settings.RA_ADMIN_SITE_NAME,
+            args=(cls.get_class_name().lower(),),
+        )
 
     @classmethod
     def get_redirect_url_prefix(cls):
@@ -233,8 +267,14 @@ class EntityModel(RAModel):
         Get the url for the change list of this model
         :return: a string url
         """
-        return reverse('%s:%s_%s_changelist' % (
-            app_settings.RA_ADMIN_SITE_NAME, cls._meta.app_label, cls.get_class_name().lower()))
+        return reverse(
+            "%s:%s_%s_changelist"
+            % (
+                app_settings.RA_ADMIN_SITE_NAME,
+                cls._meta.app_label,
+                cls.get_class_name().lower(),
+            )
+        )
 
 
 # class BasePersonInfo(BaseInfo):
@@ -250,18 +290,28 @@ class EntityModel(RAModel):
 class TransactionModel(EntityModel):
     name = None
 
-    slug = models.SlugField(_('Slug'), max_length=50, db_index=True, validators=[], blank=True)
-    date = models.DateTimeField(_('Date'), db_index=True)
+    slug = models.SlugField(
+        _("Slug"), max_length=50, db_index=True, validators=[], blank=True
+    )
+    date = models.DateTimeField(_("Date"), db_index=True)
     type = models.CharField(max_length=30, db_index=True)
-    notes = models.TextField(_('Notes'), null=True, blank=True)
-    value = models.DecimalField(_('Value'), max_digits=19, decimal_places=2, default=0)
+    notes = models.TextField(_("Notes"), null=True, blank=True)
+    value = models.DecimalField(_("Value"), max_digits=19, decimal_places=2, default=0)
 
-    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('Created By'),
-                              on_delete=models.CASCADE)
-    creation_date = models.DateTimeField(_('Creation timestamp'), default=now)
-    lastmod = models.DateTimeField(_('Last modification'), db_index=True)
-    lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
-                                     verbose_name=_('Last modification by'), on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s_related",
+        verbose_name=_("Created By"),
+        on_delete=models.CASCADE,
+    )
+    creation_date = models.DateTimeField(_("Creation timestamp"), default=now)
+    lastmod = models.DateTimeField(_("Last modification"), db_index=True)
+    lastmod_user = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s_lastmod_related",
+        verbose_name=_("Last modification by"),
+        on_delete=models.CASCADE,
+    )
 
     @classmethod
     def get_doc_type(cls):
@@ -274,10 +324,15 @@ class TransactionModel(EntityModel):
         #     f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *type*')
 
     def __str__(self):
-        return '%s-%s' % (self._meta.verbose_name, self.slug)
+        return "%s-%s" % (self._meta.verbose_name, self.slug)
 
     def __repr__(self):
-        return '<%s pk:%s slug:%s type:%s>' % (self.__class__.__name__, self.pk, self.slug, self.type)
+        return "<%s pk:%s slug:%s type:%s>" % (
+            self.__class__.__name__,
+            self.pk,
+            self.slug,
+            self.type,
+        )
 
     class Meta:
         abstract = True
@@ -295,6 +350,7 @@ class TransactionModel(EntityModel):
         """
 
         from ra.base.helpers import get_next_serial
+
         request = CrequestMiddleware.get_request()
         self.type = self.get_doc_type()
         if not self.slug:
@@ -334,7 +390,7 @@ class TransactionModel(EntityModel):
 
     @property
     def name(self):
-        return self.date.strftime('%Y/%m/%d %H:%M')
+        return self.date.strftime("%Y/%m/%d %H:%M")
 
 
 class TransactionItemModel(TransactionModel):
@@ -347,11 +403,15 @@ class TransactionItemModel(TransactionModel):
 
 
 class QuantitativeTransactionItemModel(TransactionItemModel):
-    quantity = models.DecimalField(_('Quantity'), max_digits=19, decimal_places=2, default=0)
-    price = models.DecimalField(_('Price'), max_digits=19, decimal_places=2, default=0)
-    discount = models.DecimalField(_('Discount'), max_digits=19, decimal_places=2, default=0)
+    quantity = models.DecimalField(
+        _("Quantity"), max_digits=19, decimal_places=2, default=0
+    )
+    price = models.DecimalField(_("Price"), max_digits=19, decimal_places=2, default=0)
+    discount = models.DecimalField(
+        _("Discount"), max_digits=19, decimal_places=2, default=0
+    )
 
-    def save(self,*args, **kwargs):
+    def save(self, *args, **kwargs):
         self.value = self.quantity * self.price
         if self.discount:
             self.value -= self.value * self.discount / 100
@@ -362,30 +422,40 @@ class QuantitativeTransactionItemModel(TransactionItemModel):
 
 
 class BaseReportModel(DiffingMixin, models.Model):
-    slug = models.SlugField(_('Slug'), max_length=50, db_index=True, validators=[], blank=True)
-    date = models.DateTimeField(_('Date'), db_index=True)
+    slug = models.SlugField(
+        _("Slug"), max_length=50, db_index=True, validators=[], blank=True
+    )
+    date = models.DateTimeField(_("Date"), db_index=True)
     type = models.CharField(max_length=30, db_index=True, verbose_name=_("Type"))
-    notes = models.TextField(_('Notes'), null=True, blank=True)
-    value = models.DecimalField(_('Value'), max_digits=19, decimal_places=2, default=0)
+    notes = models.TextField(_("Notes"), null=True, blank=True)
+    value = models.DecimalField(_("Value"), max_digits=19, decimal_places=2, default=0)
 
-    owner = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_related', verbose_name=_('Created By'),
-                              on_delete=models.DO_NOTHING)
-    creation_date = models.DateTimeField(_('Creation Timestamp'), default=now)
-    lastmod = models.DateTimeField(_('Last modified'), db_index=True)
-    lastmod_user = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_lastmod_related',
-                                     verbose_name=_('Last modification by'), on_delete=models.DO_NOTHING)
+    owner = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s_related",
+        verbose_name=_("Created By"),
+        on_delete=models.DO_NOTHING,
+    )
+    creation_date = models.DateTimeField(_("Creation Timestamp"), default=now)
+    lastmod = models.DateTimeField(_("Last modified"), db_index=True)
+    lastmod_user = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s_lastmod_related",
+        verbose_name=_("Last modification by"),
+        on_delete=models.DO_NOTHING,
+    )
 
     @classmethod
     def get_doc_type_plus_list(cls):
-        '''
+        """
 
         Returns List of Identified doctype that a plus effect on the entity
-        '''
+        """
         return []  # ['0','3' , 'client-cash-in','supplier-cash-in']
 
     @classmethod
     def get_doc_type_minus_list(cls):
-        ''' Returns List of Identified doctype that a minus effect on the entity'''
+        """Returns List of Identified doctype that a minus effect on the entity"""
 
         return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
 
@@ -402,21 +472,25 @@ class BaseReportModel(DiffingMixin, models.Model):
 
 
 class QuanValueReport(BaseReportModel):
-    quantity = models.DecimalField(_('quantity'), max_digits=19, decimal_places=2, default=0)
-    price = models.DecimalField(_('price'), max_digits=19, decimal_places=2, default=0)
-    discount = models.DecimalField(_('discount'), max_digits=19, decimal_places=2, default=0)
+    quantity = models.DecimalField(
+        _("quantity"), max_digits=19, decimal_places=2, default=0
+    )
+    price = models.DecimalField(_("price"), max_digits=19, decimal_places=2, default=0)
+    discount = models.DecimalField(
+        _("discount"), max_digits=19, decimal_places=2, default=0
+    )
 
     @classmethod
     def get_doc_type_plus_list(cls):
-        '''
+        """
 
         Returns List of Identified doctype that a plus effect on the entity
-        '''
+        """
         return []  # ['0','3' , 'client-cash-in','supplier-cash-in']
 
     @classmethod
     def get_doc_type_minus_list(cls):
-        ''' Returns List of Identified doctype that a minus effect on the entity'''
+        """Returns List of Identified doctype that a minus effect on the entity"""
 
         return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
 
@@ -434,7 +508,11 @@ class QuanValueReport(BaseReportModel):
 
 class ProxyMovementManager(models.Manager):
     def get_queryset(self):
-        return super(ProxyMovementManager, self).get_queryset().filter(type=self.model.get_doc_type())
+        return (
+            super(ProxyMovementManager, self)
+            .get_queryset()
+            .filter(type=self.model.get_doc_type())
+        )
 
 
 class ProxyMovement(object):
@@ -448,13 +526,13 @@ class ProxyMovement(object):
         proxy model always have the right type
         :return: string (type)
         """
-        return ''
+        return ""
 
     def __init__(self, *args, **kwargs):
         super(ProxyMovement, self).__init__(*args, **kwargs)
-        self._doc_type = ''
+        self._doc_type = ""
 
-    def save(self,*args, **kwargs):
+    def save(self, *args, **kwargs):
         self.type = self.__class__.get_doc_type()
         super(ProxyMovement, self).save(*args, **kwargs)
 

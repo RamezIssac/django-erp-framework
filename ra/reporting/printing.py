@@ -1,7 +1,7 @@
 # from __future__ import unicode_literals
 import logging
 
-import unicodecsv as csv
+import csv
 from django.http import HttpResponse
 from django.shortcuts import render
 
