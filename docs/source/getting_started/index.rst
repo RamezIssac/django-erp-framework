@@ -12,7 +12,7 @@ Installation
 Create an empty project form scratch
 ------------------------------------
 
-1. Create a virtual environment and install ra-framework from Pypi
+1. Create a virtual environment and install django-erp-framework from Pypi
 
 .. code-block:: bat
 

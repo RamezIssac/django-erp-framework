@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Ra documentation build configuration file, created by
+# Django ERP Framework documentation build configuration file, created by
 # sphinx-quickstart on Fri Nov 15 09:49:07 2019.
 #
 # This file is execfile()d with the current directory set to its

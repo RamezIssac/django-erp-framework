@@ -17,7 +17,7 @@
 
 
 
-Djagno ERP Framework
+Django ERP Framework
 ====================
 
 A light-weight, effective, Django based framework to create various business applications, resource planing and management systems.
