@@ -135,8 +135,8 @@ Add it to reports.py
 .. code-block:: python
 
     from django.utils.translation import gettext_lazy as _
-    from ra.reporting.registry import register_report_view
-    from ra.reporting.views import ReportView
+    from erp_framework.reporting.registry import register_report_view
+    from erp_framework.reporting.views import ReportView
     from .models import Client, SalesLineTransaction, Product
 
 

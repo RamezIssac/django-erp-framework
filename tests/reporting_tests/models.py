@@ -1,23 +1,28 @@
 from django.db import models
 from django.urls import reverse_lazy
 
-from ra.base.models import TransactionModel, EntityModel, QuantitativeTransactionItemModel, TransactionItemModel
-from ra.base.registry import register_doc_type
+from erp_framework.base.models import (
+    TransactionModel,
+    EntityModel,
+    QuantitativeTransactionItemModel,
+    TransactionItemModel,
+)
+from erp_framework.base.registry import register_doc_type
 from django.utils.translation import gettext_lazy as _
 
 
 class Product(EntityModel):
     class Meta:
-        verbose_name = _('Product')
-        verbose_name_plural = _('Products')
+        verbose_name = _("Product")
+        verbose_name_plural = _("Products")
 
 
 class Client(EntityModel):
     criteria = models.CharField(max_length=1, null=True)
 
     class Meta:
-        verbose_name = _('Client')
-        verbose_name_plural = _('Clients')
+        verbose_name = _("Client")
+        verbose_name_plural = _("Clients")
 
 
 class SimpleSales(QuantitativeTransactionItemModel):
@@ -26,15 +31,21 @@ class SimpleSales(QuantitativeTransactionItemModel):
 
     @classmethod
     def get_doc_type(cls):
-        return 'sales'
+        return "sales"
 
     class Meta:
-        verbose_name = _('Sale')
-        verbose_name_plural = _('Sales')
+        verbose_name = _("Sale")
+        verbose_name_plural = _("Sales")
 
 
-sales = {'name': 'sales', 'plus_list': ['Client'], 'minus_list': ['Product'],
-         'redirect_url_prefix': reverse_lazy('ra_admin:reporting_tests_simplesales_changelist')}
+sales = {
+    "name": "sales",
+    "plus_list": ["Client"],
+    "minus_list": ["Product"],
+    "redirect_url_prefix": reverse_lazy(
+        "erp_admin::reporting_tests_simplesales_changelist"
+    ),
+}
 
 register_doc_type(sales)
 
@@ -44,7 +55,7 @@ class Invoice(TransactionModel):
 
     @classmethod
     def get_doc_type(cls):
-        return 'sales'
+        return "sales"
 
 
 class InvoiceLine(QuantitativeTransactionItemModel):
@@ -55,7 +66,7 @@ class InvoiceLine(QuantitativeTransactionItemModel):
 
     @classmethod
     def get_doc_type(cls):
-        return 'sales'
+        return "sales"
 
 
 class Journal(TransactionModel):
@@ -63,7 +74,7 @@ class Journal(TransactionModel):
 
     @classmethod
     def get_doc_type(cls):
-        return 'journal-sales'
+        return "journal-sales"
 
 
 class JournalItem(TransactionItemModel):
@@ -73,7 +84,7 @@ class JournalItem(TransactionItemModel):
 
     @classmethod
     def get_doc_type(cls):
-        return 'journal-sales'
+        return "journal-sales"
 
 
 class JournalWithCriteria(Journal):
@@ -82,6 +93,7 @@ class JournalWithCriteria(Journal):
 
 
 # Vanilla models
+
 
 class Order(models.Model):
     date_placed = models.DateTimeField(auto_created=True)

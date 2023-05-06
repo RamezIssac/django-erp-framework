@@ -27,11 +27,10 @@ Settings
         'crispy_forms',
         'reversion',
         'tabular_permissions',
-        'ra',
-        'ra.admin',
-        'ra.activity',
-        'ra.reporting',
-        'sample_erp',
+        'erp_framework',
+        'erp_framework.admin',
+        'erp_framework.activity',
+        'erp_framework.reporting',
         'slick_reporting',
         'django.contrib.admin', # comes at the end because the theme is replaced
 
@@ -129,7 +128,7 @@ We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
 .. code-block:: python
 
     from django.urls import path
-    from ra.admin.admin import ra_admin_site
+    from erp_framework.admin.admin import ra_admin_site
 
     urlpatterns = [
         # ...

@@ -40,13 +40,13 @@ INSTALLED_APPS = [
     'crispy_forms',
     'reversion',
     'tabular_permissions',
-    'ra',
-    'ra.admin',
-    'ra.activity',
-    'ra.reporting',
+    'erp_framework',
+    'erp_framework.admin',
+    'erp_framework.activity',
+    'erp_framework.reporting',
     # 'sample_erp',
-    # 'ra.erp.expense',
-    # 'ra.erp.treasury',
+    # 'erp_framework.erp.expense',
+    # 'erp_framework.erp.treasury',
     'slick_reporting',
     'jazzmin',
     'django.contrib.admin',
@@ -81,7 +81,7 @@ TEMPLATES = [
 
                 'django.template.context_processors.i18n',
                 'django.template.context_processors.static',
-                'ra.base.context_processors.global_info',
+                'erp_framework.base.context_processors.global_info',
             ],
         },
     },
@@ -141,7 +141,7 @@ RA_ADMIN_SITE_TITLE = 'my demo '
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'ra.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'erp_framework.sqlite3'),
     }
 }
 

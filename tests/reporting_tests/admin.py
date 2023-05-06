@@ -1,9 +1,23 @@
-from ra.admin.admin import EntityAdmin, ra_admin_site, TransactionAdmin, TransactionItemAdmin, RaPrePopulatedAdmin
-from .models import Client, Product, SimpleSales, Invoice, InvoiceLine, JournalItem, Journal
+from erp_framework.admin.admin import (
+    EntityAdmin,
+    erp_admin_site,
+    TransactionAdmin,
+    TransactionItemAdmin,
+    RaPrePopulatedAdmin,
+)
+from .models import (
+    Client,
+    Product,
+    SimpleSales,
+    Invoice,
+    InvoiceLine,
+    JournalItem,
+    Journal,
+)
 
 
 class ClientAdmin(EntityAdmin):
-    view_template = 'client_view.html'
+    view_template = "client_view.html"
 
 
 class ProductAdmin(EntityAdmin):
@@ -14,27 +28,30 @@ class SimpleSalesAdmin(TransactionAdmin):
     pass
 
 
-ra_admin_site.register(Client, ClientAdmin)
-ra_admin_site.register(Product, ProductAdmin)
-ra_admin_site.register(SimpleSales, SimpleSalesAdmin)
+erp_admin_site.register(Client, ClientAdmin)
+erp_admin_site.register(Product, ProductAdmin)
+erp_admin_site.register(SimpleSales, SimpleSalesAdmin)
 
 
 class InvoiceLineAdmin(TransactionItemAdmin):
-    fields = ['product', 'quantity', 'discount', 'value']
+    fields = ["product", "quantity", "discount", "value"]
     model = InvoiceLine
-    autocomplete_fields = ['product']
+    autocomplete_fields = ["product"]
 
 
 class InvoiceAdmin(TransactionAdmin):
-    fields = [('slug', 'date'), 'client']
-    autocomplete_fields = ['client']
+    fields = [("slug", "date"), "client"]
+    autocomplete_fields = ["client"]
     inlines = [InvoiceLineAdmin]
-    copy_to_formset = ['client']
+    copy_to_formset = ["client"]
 
-ra_admin_site.register(Invoice, InvoiceAdmin)
+
+erp_admin_site.register(Invoice, InvoiceAdmin)
+
 
 class BaseInfoInlineAdmin(TransactionItemAdmin):
     model = JournalItem
+
 
 #
 # class Journal2Admin(RaPrePopulatedAdmin):
@@ -57,18 +74,12 @@ class BaseInfoInlineAdmin(TransactionItemAdmin):
 
 
 class MovementPrepopulatedAdmin(RaPrePopulatedAdmin):
-    fields = ('data', 'date')
+    fields = ("data", "date")
     date_hierarchy = None
     list_display = []
-    inlines = [
-        BaseInfoInlineAdmin
-    ]
-    prepopulation_fields = {
-        BaseInfoInlineAdmin: 'client'
-    }
-    prepopulation_querysets = {
-        BaseInfoInlineAdmin: Client.objects.all()
-    }
+    inlines = [BaseInfoInlineAdmin]
+    prepopulation_fields = {BaseInfoInlineAdmin: "client"}
+    prepopulation_querysets = {BaseInfoInlineAdmin: Client.objects.all()}
 
 
-ra_admin_site.register(Journal, MovementPrepopulatedAdmin)
+erp_admin_site.register(Journal, MovementPrepopulatedAdmin)

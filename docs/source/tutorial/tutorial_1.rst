@@ -22,8 +22,8 @@ To manage a business we would need to track the sales , the clients and the expe
 .. code-block:: python
 
     from django.db import models
-    from ra.base.models import EntityModel, TransactionModel, TransactionItemModel, QuantitativeTransactionItemModel
-    from ra.base.registry import register_doc_type
+    from erp_framework.base.models import EntityModel, TransactionModel, TransactionItemModel, QuantitativeTransactionItemModel
+    from erp_framework.base.registry import register_doc_type
     from django.utils.translation import gettext_lazy as _
 
 
@@ -100,7 +100,7 @@ With this information in mind, let's add the below piece of code into `admin.py`
 .. code-block:: python
 
     from .models import Client, Product, Expense, ExpenseTransaction, SalesLineTransaction, SalesTransaction
-    from ra.admin.admin import ra_admin_site, EntityAdmin, TransactionAdmin, TransactionItemAdmin
+    from erp_framework.admin.admin import ra_admin_site, EntityAdmin, TransactionAdmin, TransactionItemAdmin
 
 
     class ExpenseAdmin(EntityAdmin):
@@ -142,7 +142,7 @@ Also we register our model with their AdminModel with ``ra_admin_site`` which is
     You can customize it as you'd do normally with any ModelAdmin.
     You can add list_filter(s), select_related, adjust fields and fieldsets on the change_form, etc..
 
-Read more about Admin options: :ref:`ra_admin`
+Read more about Admin options: :ref:`erp_admin`
 
 Let's run and access our Dashboard, enter your username and password created with `createsuperuser`.
 In the left hand menu you'd find a menu, which will contains links to Clients, Products & SimpleSales admin pages as you'd expect.

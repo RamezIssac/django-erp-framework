@@ -1,4 +1,4 @@
-"""URL Configuration
+"""{{ project_name }} URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.2/topics/http/urls/
@@ -17,6 +17,8 @@ Including another URLconf
 from django.urls import path
 from erp_framework.admin.admin import erp_admin_site
 
+# handler500 = 'erp_framework.utils.views.server_error'
+# handler404 = 'erp_framework.utils.views.not_found_error'
 
 urlpatterns = [
     path("", erp_admin_site.urls),

@@ -13,7 +13,7 @@ Components
 
 2. **Admin Site and Models**
    A custom admin site and admin.ModelAdmin subclasses that holds functionality needed for a smooth framework dashboard experience
-   For reference: :ref:`ra_admin`
+   For reference: :ref:`erp_admin`
 
 
 3. **Report Registry and Views** A Registry for reports created. It's also responsible for report menu generation.
