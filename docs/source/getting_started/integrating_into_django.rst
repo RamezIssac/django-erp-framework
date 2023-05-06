@@ -3,11 +3,11 @@
 Integrating Ra into an existing project
 =======================================
 
-First, install the ``django-ra-erp`` package from PyPI:
+First, install the ``django-erp-framework`` package from PyPI:
 
 .. code-block:: console
 
-    $ pip install django-ra-erp
+    $ pip install django-erp-framework
 
 and/or add the package to your existing requirements file.
 
@@ -22,16 +22,21 @@ Settings
     INSTALLED_APPS = {
         # ...
 
-        'jazzmin',
+
         'crequest',
         'crispy_forms',
+        'crispy_bootstrap4',
+
         'reversion',
         'tabular_permissions',
+
         'erp_framework',
         'erp_framework.admin',
         'erp_framework.activity',
         'erp_framework.reporting',
+
         'slick_reporting',
+        'jazzmin',
         'django.contrib.admin', # comes at the end because the theme is replaced
 
     }
@@ -47,18 +52,6 @@ Settings
         }
 
 
-* Add the following entries to ``TEMPLATES`` ``context_processors``
-
-.. code-block:: python
-
-    TEMPLATES = {
-        'context_processors' = [
-            #...
-            'django.template.context_processors.i18n',
-            'django.template.context_processors.static',
-            'ra.base.context_processors.global_info',
-        ]
-    }
 
 
 * Add a ``STATIC_ROOT`` setting, if your project does not have one already:
@@ -115,7 +108,13 @@ Settings
 
 .. code-block:: python
 
-    RA_SITE_TITLE = 'My Example Site'
+
+    ERP_FRAMEWORK_SETTING_DEFAULT = {
+        "site_name": "ERP Framework System",
+        "site_header": "ERP Framework System",
+        "index_title": "ERP Framework Dashboard",
+
+    }
 
 
 Various other settings are available to configure Ra's behaviour - see :doc:`/advanced_topics/settings`.
@@ -128,11 +127,11 @@ We need to hook the dashboard / Ra admin site in ``urls.py``, like so:
 .. code-block:: python
 
     from django.urls import path
-    from erp_framework.admin.admin import ra_admin_site
+    from erp_framework.admin.admin import erp_admin_site
 
     urlpatterns = [
         # ...
-        path('your-url-here', ra_admin_site.urls),
+        path('erp-system/', erp_admin_site.urls),
         # ...
     ]
 

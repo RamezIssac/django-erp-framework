@@ -4,7 +4,6 @@ from django.conf import settings
 from django.urls import get_callable
 from django.utils.functional import lazy
 
-
 # def get_first_of_this_year():
 #     d = datetime.datetime.today()
 #     return datetime.datetime(d.year, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
@@ -16,6 +15,17 @@ from django.utils.functional import lazy
 
 
 import datetime
+
+ERP_FRAMEWORK_SETTING_DEFAULT = {
+    "site_name": "ERP Framework System",
+    "site_header": "ERP Framework System",
+    "index_title": "ERP Framework Dashboard",
+}
+
+ERP_FRAMEWORK_SETTINGS = getattr(
+    settings, "ERP_FRAMEWORK_SETTINGS", ERP_FRAMEWORK_SETTING_DEFAULT
+)
+
 
 """
 Documented
@@ -66,7 +76,6 @@ RA_THEME = getattr(settings, "RA_THEME", "admin")
 # Admin Looks
 from django.utils.translation import gettext_lazy as _
 
-
 RA_ADMIN_INDEX_TEMPLATE = getattr(
     settings, "RA_ADMIN_INDEX_PAGE", f"{RA_THEME}/index.html"
 )
@@ -84,8 +93,10 @@ RA_ADMIN_SITE_CLASS = getattr(
     settings, "RA_ADMIN_SITE_CLASS", "erp_framework.admin.admin.RaAdminSite"
 )
 
-RA_ADMIN_SITE_TITLE = getattr(settings, "RA_ADMIN_SITE_TITLE", _("Ra Framework"))
-RA_ADMIN_SITE_HEADER = getattr(settings, "RA_ADMIN_SITE_HEADER", _("Ra Administration"))
-RA_ADMIN_INDEX_TITLE = getattr(
-    settings, "RA_ADMIN_INDEX_TITLE", _("Statistics and Dashboard")
+RA_ADMIN_SITE_TITLE = ERP_FRAMEWORK_SETTINGS.get("site_name", "ERP Framework System")
+
+RA_ADMIN_SITE_HEADER = ERP_FRAMEWORK_SETTINGS.get("site_name", "ERP Framework System")
+
+RA_ADMIN_INDEX_TITLE = ERP_FRAMEWORK_SETTINGS.get(
+    "index_title", "ERP Framework Dashboard"
 )

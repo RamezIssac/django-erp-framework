@@ -12,8 +12,8 @@ From `Wikipedia <https://en.wikipedia.org/wiki/Ra>`_ : By the Fifth Dynasty in t
 had become one of the most important gods in ancient Egyptian religion, identified primarily with the noon sun.
 Ra was believed to rule in all parts of the created world: the sky, the Earth, and the underworld.
 
-What Ra framework is not?
--------------------------
+What Django ERP framework is not?
+---------------------------------
 
 Ra is not a ready made ERP solution, rather, a framework that provide you tools to build one effortlessly and in style.
 To check how easy it is, go through the tutorial. By the end of it, you'd have a working sales monitor app with

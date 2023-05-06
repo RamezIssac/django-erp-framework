@@ -8,14 +8,14 @@ Base Classes
 
 EntityModel
 -----------
-.. autoclass:: ra.base.models.EntityModel
+.. autoclass:: erp_framework.base.models.EntityModel
    :members:
 
 .. _transaction_model:
 
 TransactionModel
 ~~~~~~~~~~~~~~~~
-.. autoclass:: ra.base.models.TransactionModel
+.. autoclass:: erp_framework.base.models.TransactionModel
    :members:
 
 
@@ -23,12 +23,12 @@ TransactionModel
 
 TransactionItemModel
 ~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: ra.base.models.TransactionModel
+.. autoclass:: erp_framework.base.models.TransactionModel
    :members:
 
 .. _quantitativetransactionitemmodel:
 
 QuantitativeTransactionItemModel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: ra.base.models.TransactionModel
+.. autoclass:: erp_framework.base.models.TransactionModel
    :members:

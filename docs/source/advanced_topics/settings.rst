@@ -13,7 +13,7 @@ See :ref:`base_classes` for information on what are Ra Base Models and how they 
 ``RA_BASEINFO_MODEL``
 ---------------------
 
-Default: ``'ra.base.models.EntityModel'``
+Default: ``'erp_framework.base.models.EntityModel'``
 
 A dotted path to the Base Model from which all other model shall be inherited.
 
@@ -21,7 +21,7 @@ A dotted path to the Base Model from which all other model shall be inherited.
 ``RA_BASEMOVEMENTINFO_MODEL``
 -----------------------------
 
-Default: ``'ra.base.models.BaseMovementInfo'``
+Default: ``'erp_framework.base.models.BaseMovementInfo'``
 
 A dotted path to the Base Transaction Model from which all other transaction models shall be inherited.
 
@@ -29,7 +29,7 @@ A dotted path to the Base Transaction Model from which all other transaction mod
 ``RA_QUANVALUEMOVEMENTITEM_MODEL``
 -----------------------------------
 
-Default: ``'ra.base.models.QuantitativeTransactionItemModel'``
+Default: ``'erp_framework.base.models.QuantitativeTransactionItemModel'``
 
 A dotted path to the Base Quantity / Value Transaction Model from which all other transaction models shall be inherited.
 
@@ -41,7 +41,7 @@ Flow Control Settings
 ``RA_ADMIN_SITE_CLASS``
 -----------------------
 
-Defaults ``'ra.admin.admin.RaAdminSite'``
+Defaults ``'erp_framework.admin.admin.RaAdminSite'``
 
 A dotted path to the main Ra Admin Site class.
 Make sure to inherit from ``RaAdminSiteBase`` in your custom admin site.
@@ -57,7 +57,7 @@ While users
 ``RA_FORMFIELD_FOR_DBFIELD_FUNC``
 ---------------------------------
 
-Defaults ``'ra.base.helpers.default_formfield_for_dbfield'``
+Defaults ``'erp_framework.base.helpers.default_formfield_for_dbfield'``
 
 A dotted path a universal hook that gets called on all 'formfield_for_db_field` on the framework.
 You can use this hook to universally control the widgets being displayed without needing to manually set it on each RaModelAdmin
@@ -86,7 +86,7 @@ Defaults to start of the next year (ie First of January, current year + 1). Type
 ``RA_NAVIGATION_CLASS``
 -----------------------
 
-Defaults to ``'ra.utils.navigation.RaSuitMenu'``
+Defaults to ``'erp_framework.utils.navigation.RaSuitMenu'``
 
 A Dotted path to the navigation render menu.
 

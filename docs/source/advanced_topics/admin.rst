@@ -1,4 +1,4 @@
-.. _ra_admin:
+.. _erp_admin:
 
 The Admin
 #########
@@ -32,7 +32,7 @@ A subclass of admin.ModelAdmin with various different options
 
 EntityAdmin
 ~~~~~~~~~~~
-.. autoclass:: ra.admin.admin.EntityAdmin
+.. autoclass:: erp_framework.admin.admin.EntityAdmin
    :members:
 
 
@@ -40,14 +40,14 @@ EntityAdmin
 
 TransactionAdmin
 ~~~~~~~~~~~~~~~~
-.. autoclass:: ra.admin.admin.TransactionAdmin
+.. autoclass:: erp_framework.admin.admin.TransactionAdmin
    :members:
 
 .. _transactionitemadmin:
 
 TransactionItemAdmin
 ~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: ra.admin.admin.TransactionItemAdmin
+.. autoclass:: erp_framework.admin.admin.TransactionItemAdmin
    :members:
 
 
