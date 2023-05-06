@@ -1,17 +1,17 @@
-.. image:: https://img.shields.io/pypi/v/django-ra-erp.svg
-    :target: https://pypi.org/project/django-ra-erp
+.. image:: https://img.shields.io/pypi/v/django-erp-framework.svg
+    :target: https://pypi.org/project/django-erp-framework
 
-.. image:: https://img.shields.io/pypi/pyversions/django-ra-erp.svg
-    :target: https://pypi.org/project/django-ra-erp
+.. image:: https://img.shields.io/pypi/pyversions/django-erp-framework.svg
+    :target: https://pypi.org/project/django-erp-framework
 
 .. image:: https://img.shields.io/readthedocs/ra-framework
-    :target: https://ra-framework.readthedocs.io/
+    :target: https://django-erp-framework.readthedocs.io/
 
 .. image:: https://api.travis-ci.org/ra-systems/RA.svg?branch=master
-    :target: https://travis-ci.org/ra-systems/django-ra-erp
+    :target: https://travis-ci.org/ra-systems/django-erp-framework
 
-.. image:: https://img.shields.io/codecov/c/github/ra-systems/django-ra-erp
-    :target: https://codecov.io/gh/ra-systems/django-ra-erp
+.. image:: https://img.shields.io/codecov/c/github/ra-systems/django-erp-framework
+    :target: https://codecov.io/gh/ra-systems/django-erp-framework
 
 
 
@@ -52,7 +52,7 @@ Quick start
 
         $ virtualenv ra-erp
         $ source ra-erp/bin/activate
-        $ pip install django-ra-erp
+        $ pip install django-erp-framework
 
 2. Once installed, Ra provides a command to generate a new project, which would contains all the dependencies needed.
 
@@ -60,7 +60,7 @@ Quick start
 
         $ ra-admin start my_project_name
 
-    You can always integrate Ra to your existing project, it's fairly simple. Here is the guide `Integrating into an existing django project <https://ra-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
+    You can always integrate Ra to your existing project, it's fairly simple. Here is the guide `Integrating into an existing django project <https://django-erp-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
 
 3. Let's run the preparation commands and get started !
 
@@ -75,9 +75,9 @@ Quick start
 Documentation
 -------------
 
-Available on `Read The Docs <https://ra-framework.readthedocs.io/en/latest/>`_
+Available on `Read The Docs <https://django-erp-framework.readthedocs.io/en/latest/>`_
 
-Please Proceed to the tutorial `Create a sales application Part 1 <https://ra-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+Please Proceed to the tutorial `Create a sales application Part 1 <https://django-erp-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
 
 
 Testing and contribution
@@ -87,7 +87,7 @@ To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
     # 1. Clone and install requirements
-    $ git clone git+git@github.com:ra-systems/django-ra-erp.git
+    $ git clone git+git@github.com:ra-systems/django-erp-framework.git
     $ cd tests
     $ python -m pip install -e ..
     $ python -m pip install -r requirements/py3.txt
