@@ -32,8 +32,8 @@ And in the our template we add code like this
 
 .. code-block:: django
 
-    {% extends 'ra/base_site.html' %}
-    {% load ra_admin_tags ra_tags %}
+    {% extends 'erp_framework/base_site.html' %}
+    {% load erp_reporting_tags ra_tags %}
 
     {% block content %}
         <div class="col-sm-12">
@@ -103,8 +103,8 @@ We can add filters to the report by ``data-extra-params`` to the ``[data-report-
 
 .. code-block:: django
 
-    {% extends 'ra/base_site.html' %}
-    {% load ra_admin_tags %}
+    {% extends 'erp_framework/base_site.html' %}
+    {% load erp_reporting_tags %}
 
     {% block content %}
         {% get_report base_model='client' report_slug='clienttotalbalance' as client_balances %}

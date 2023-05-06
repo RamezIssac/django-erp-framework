@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django import template
+from django.template.defaultfilters import capfirst
 from django.template.loader import get_template, render_to_string
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
@@ -54,3 +55,19 @@ def get_report(context, base_model, report_slug):
     from erp_framework.reporting.registry import report_registry
 
     return report_registry.get(namespace=base_model, report_slug=report_slug)
+
+
+@register.simple_tag()
+def get_model_verbose_name_plural(model):
+    return capfirst(model._meta.verbose_name_plural)
+
+
+@register.simple_tag(takes_context=True)
+def get_report_active_class(context, base_model, css_class=None):
+    css_class = css_class or "active"
+    current_base_model_name = context["current_base_model_name"]
+    return (
+        css_class
+        if current_base_model_name == base_model._meta.model_name.lower()
+        else ""
+    )

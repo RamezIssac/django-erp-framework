@@ -249,6 +249,6 @@ class MyActivityAdmin(LogEntryAdmin):
         return qs
 
 
-erp_admin_site.register(LogEntry, LogEntryAdmin)
+# erp_admin_site.register(LogEntry, LogEntryAdmin)
 
 erp_admin_site.register(MyActivity, MyActivityAdmin)
