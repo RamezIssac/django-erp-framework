@@ -298,9 +298,6 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     # the report form, A subclass of ReportForm is to expected
     form_class = None
 
-    # control the settings of report
-    form_settings = None
-
     # control the chart settings, passed to front end as is.
     chart_settings = None
 
