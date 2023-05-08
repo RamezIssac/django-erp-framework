@@ -50,11 +50,11 @@ def get_report_view(request, base_model, report_slug):
 
 
 class RaAdminSiteBase(AdminSite):
-    site_title = app_settings.RA_ADMIN_SITE_TITLE
-    site_header = app_settings.RA_ADMIN_SITE_HEADER
-    index_title = app_settings.RA_ADMIN_INDEX_TITLE
+    site_title = app_settings.ERP_ADMIN_SITE_TITLE
+    site_header = app_settings.ERP_ADMIN_SITE_HEADER
+    index_title = app_settings.ERP_ADMIN_INDEX_TITLE
 
-    index_template = app_settings.RA_ADMIN_INDEX_TEMPLATE
+    index_template = app_settings.ERP_ADMIN_INDEX_TEMPLATE
     app_index_template = app_settings.RA_ADMIN_APP_INDEX_TEMPLATE
     login_template = app_settings.RA_ADMIN_LOGIN_TEMPLATE
 
@@ -188,6 +188,7 @@ class RaAdminSiteBase(AdminSite):
         context.update(extra_context or {})
 
         request.current_app = self.name
+        context["title"] = app_settings.ERP_ADMIN_INDEX_TITLE
 
         return TemplateResponse(
             request, self.index_template or "admin/index.html", context

@@ -602,7 +602,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                         self.admin_site,
                         **wrapper_kwargs,
                     )
-            return app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(
+            return app_settings.ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC(
                 self, db_field, formfield, request, **kwargs
             )
 
@@ -616,7 +616,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             field.initial = self.get_next_serial()
         elif db_field.name == "date":
             field.initial = now()
-        return app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(
+        return app_settings.ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC(
             self, db_field, field, request, **kwargs
         )
 
@@ -848,7 +848,7 @@ class TransactionAdmin(EntityAdmin):
         form_field = super(TransactionAdmin, self).formfield_for_dbfield(
             db_field, request, **kwargs
         )
-        form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(
+        form_field = app_settings.ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC(
             self, db_field, form_field, request, **kwargs
         )
         return form_field
@@ -1023,7 +1023,7 @@ class TransactionItemAdmin(admin.TabularInline):
         form_field = super(TransactionItemAdmin, self).formfield_for_dbfield(
             db_field, request, **kwargs
         )
-        form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(
+        form_field = app_settings.ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC(
             self, db_field, form_field, request, **kwargs
         )
         return form_field
@@ -1080,7 +1080,7 @@ class RaGenericTabularInline(GenericTabularInline):
         form_field = super(RaGenericTabularInline, self).formfield_for_dbfield(
             db_field, request, **kwargs
         )
-        form_field = app_settings.RA_FORMFIELD_FOR_DBFIELD_FUNC(
+        form_field = app_settings.ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC(
             self, db_field, form_field, request, **kwargs
         )
         return form_field

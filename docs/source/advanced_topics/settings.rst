@@ -54,7 +54,7 @@ Default ``False``
 Control the availability of the admin action "Delete All" on all RaModelAdmin.
 While users
 
-``RA_FORMFIELD_FOR_DBFIELD_FUNC``
+``ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC``
 ---------------------------------
 
 Defaults ``'erp_framework.base.helpers.default_formfield_for_dbfield'``
@@ -83,15 +83,6 @@ Defaults to start of this year (ie first of January). Type `datetime`
 Defaults to start of the next year (ie First of January, current year + 1). Type `datetime`
 
 
-``RA_NAVIGATION_CLASS``
------------------------
-
-Defaults to ``'erp_framework.utils.navigation.RaSuitMenu'``
-
-A Dotted path to the navigation render menu.
-
-This class is forked from `Django suit <https://django-suit.readthedocs.io/en/develop/configuration.html#menu>`_
-
 
 Customization
 =============
@@ -103,7 +94,7 @@ Defaults to ``'adminlte'``
 
 If you want to create a new Ra theme, You can override the templates in another path and set it here .
 
-``RA_ADMIN_INDEX_TEMPLATE``
+``ERP_ADMIN_INDEX_TEMPLATE``
 ---------------------------
 
 Defaults to ``'f'{RA_THEME}/index.html'``
@@ -125,18 +116,18 @@ Defaults to ``f'{RA_THEME}/login.html'``
 Defaults to ``f'{RA_THEME}/logged_out.html'``
 
 
-``RA_ADMIN_SITE_TITLE``
+``ERP_ADMIN_SITE_TITLE``
 -----------------------
 
 Defaults to ``_('Ra Framework')``
 
-``RA_ADMIN_SITE_HEADER``
+``ERP_ADMIN_SITE_HEADER``
 ------------------------
 
 Defaults to ``_('Ra Administration')``
 
 
-``RA_ADMIN_INDEX_TITLE``
+``ERP_ADMIN_INDEX_TITLE``
 ------------------------
 
 Defaults to  ``_('Statistics and Dashboard')``

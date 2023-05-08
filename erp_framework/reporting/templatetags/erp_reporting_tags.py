@@ -12,14 +12,6 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
-def render_navigation_menu(context):
-    navigation_class = import_string(app_settings.RA_NAVIGATION_CLASS)
-    request = context["request"]
-    admin_site = context["admin_site"]
-    return mark_safe(navigation_class.get_menu(context, request, admin_site))
-
-
-@register.simple_tag(takes_context=True)
 def render_reports_menu(context):
     request = context["request"]
     is_in_reports = False
@@ -71,3 +63,20 @@ def get_report_active_class(context, base_model, css_class=None):
         if current_base_model_name == base_model._meta.model_name.lower()
         else ""
     )
+
+
+@register.simple_tag
+def get_html_panel(report, template_name="", **kwargs):
+    kwargs["report"] = report
+    if not report:
+        raise ValueError(
+            "report argument is empty. Are you sure you're using the correct report name"
+        )
+
+    # No chart argument default to True if no charts in reports
+    kwargs.setdefault("no_chart", not bool(report.chart_settings))
+
+    template = get_template(
+        template_name or "erp_framework/report_widget_template.html"
+    )
+    return template.render(context=kwargs)
