@@ -218,19 +218,19 @@ class ReportList(ReportListBase):
     def get_permissions(self):
         return {}
 
-    def get_reports_map(self):
-        from erp_framework.admin.admin import get_reports_map
-        from erp_framework.base.registry import get_ra_model_by_name
-
-        model = get_ra_model_by_name(self.kwargs["base_model"])
-        try:
-            model_name = model.get_class_name().lower()
-        except:
-            model_name = model._meta.model_name
-        val = get_reports_map(
-            model_name, self.request.user, self.request, self.get_order_list()
-        )
-        return val
+    # def get_reports_map(self):
+    #     from erp_framework.admin.admin import get_reports_map
+    #     from erp_framework.base.registry import get_ra_model_by_name
+    #
+    #     model = get_ra_model_by_name(self.kwargs["base_model"])
+    #     try:
+    #         model_name = model.get_class_name().lower()
+    #     except:
+    #         model_name = model._meta.model_name
+    #     val = get_reports_map(
+    #         model_name, self.request.user, self.request, self.get_order_list()
+    #     )
+    #     return val
 
     def get_meta_data(self):
         model = registry.get_ra_model_by_name(self.kwargs["base_model"])

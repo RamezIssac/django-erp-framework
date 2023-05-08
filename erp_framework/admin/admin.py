@@ -44,7 +44,7 @@ from tabular_permissions.admin import (
 )
 
 from erp_framework.base.helpers import flatten_list
-from erp_framework.admin.forms import RaUserChangeForm
+from erp_framework.admin.forms import CustomUserChangeForm
 from erp_framework.reporting.printing import HTMLPrintingClass
 from erp_framework.utils.views import (
     get_typed_reports_for_templates,
@@ -606,9 +606,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                 self, db_field, formfield, request, **kwargs
             )
 
-        # if db_field.name == 'date' and db_field.__class__ == DateTimeField:
-        #     field = forms.SplitDateTimeField(widget=AdminSplitDateTimeNoBr, label=_('Date'))
-        # else:
         field = super(EntityAdmin, self).formfield_for_dbfield(
             db_field, request, **kwargs
         )
@@ -828,11 +825,7 @@ class TransactionAdmin(EntityAdmin):
     list_display_links = ("slug", "date")
     fields = (("slug", "date"),)
     exclude = ("type",)
-    formfield_overrides = {
-        # DateTimeField: {'widget': AdminSplitDateTimeNoBr},
-        # DecimalField: {'widget': NumberInput},
-        # ForeignKey: {'widget': RaBootstrapForeignKeyWidget},
-    }
+    formfield_overrides = {}
     date_hierarchy = "date"
     type = None
 
@@ -1291,7 +1284,7 @@ class RaUserAdmin(RaThemeMixin, UserTabularPermissionsMixin, UserAdmin):
         # (_('Important dates'), {'fields': (('last_login', 'date_joined'),)}),
     )
     list_filter = ("is_superuser", "is_active", "groups")
-    form = RaUserChangeForm
+    form = CustomUserChangeForm
 
     def get_actions(self, request):
         actions = super(RaUserAdmin, self).get_actions(request)

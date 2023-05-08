@@ -86,78 +86,78 @@ def order_apps(app_list):
     return app_list
 
 
-def admin_get_app_list(request, admin_site):
-    """
-    :param request: Copied from AdminSite.index() djagno v1.8
-    :param admin_site:
-    :return:
-    """
-    from erp_framework.base.app_settings import RA_MENU_HIDE_MODELS, RA_ADMIN_SITE_NAME
-
-    app_dict = {}
-    for model, model_admin in admin_site._registry.items():
-        app_label = model._meta.app_label
-        has_module_perms = model_admin.has_module_permission(request)
-
-        is_model_hidden = (
-            "%s_%s" % (app_label, model.__name__.lower()) in RA_MENU_HIDE_MODELS
-        )
-
-        if has_module_perms and not is_model_hidden:
-            perms = model_admin.get_model_perms(request)
-
-            # Check whether user has any perm for this module.
-            # If so, add the module to the model_list.
-            if True in perms.values():
-                info = (RA_ADMIN_SITE_NAME, app_label, model._meta.model_name)
-                model_dict = {
-                    "name": capfirst(model._meta.verbose_name_plural),
-                    "object_name": model._meta.object_name,
-                    "perms": perms,
-                    "model_class": model,
-                }
-                if (
-                    perms.get("view", False)
-                    or perms.get("change", False)
-                    or perms.get("add", False)
-                ):
-                    try:
-                        model_dict["admin_url"] = reverse(
-                            "%s:%s_%s_changelist" % info, current_app=admin_site.name
-                        )
-                    except NoReverseMatch:
-                        pass
-                if perms.get("add", False):
-                    try:
-                        model_dict["add_url"] = reverse(
-                            "%s:%s_%s_add" % info, current_app=admin_site.name
-                        )
-                    except NoReverseMatch:
-                        pass
-                if app_label in app_dict:
-                    app_dict[app_label]["models"].append(model_dict)
-                else:
-                    app_dict[app_label] = {
-                        "name": apps.get_app_config(app_label).verbose_name,
-                        "app_label": app_label,
-                        "app_url": reverse(
-                            "%s:app_list" % RA_ADMIN_SITE_NAME,
-                            kwargs={"app_label": app_label},
-                            current_app=admin_site.name,
-                        ),
-                        "has_module_perms": has_module_perms,
-                        "models": [model_dict],
-                    }
-
-    # Sort the apps alphabetically.
-    app_list = list(app_dict.values())
-    app_list.sort(key=lambda x: x["name"].lower())
-
-    # Sort the models alphabetically within each app.
-    for app in app_list:
-        app["models"].sort(key=lambda x: x["name"])
-
-    return order_apps(app_list)
+# def admin_get_app_list(request, admin_site):
+#     """
+#     :param request: Copied from AdminSite.index() djagno v1.8
+#     :param admin_site:
+#     :return:
+#     """
+#     from erp_framework.base.app_settings import RA_MENU_HIDE_MODELS, RA_ADMIN_SITE_NAME
+#
+#     app_dict = {}
+#     for model, model_admin in admin_site._registry.items():
+#         app_label = model._meta.app_label
+#         has_module_perms = model_admin.has_module_permission(request)
+#
+#         is_model_hidden = (
+#             "%s_%s" % (app_label, model.__name__.lower()) in RA_MENU_HIDE_MODELS
+#         )
+#
+#         if has_module_perms and not is_model_hidden:
+#             perms = model_admin.get_model_perms(request)
+#
+#             # Check whether user has any perm for this module.
+#             # If so, add the module to the model_list.
+#             if True in perms.values():
+#                 info = (RA_ADMIN_SITE_NAME, app_label, model._meta.model_name)
+#                 model_dict = {
+#                     "name": capfirst(model._meta.verbose_name_plural),
+#                     "object_name": model._meta.object_name,
+#                     "perms": perms,
+#                     "model_class": model,
+#                 }
+#                 if (
+#                     perms.get("view", False)
+#                     or perms.get("change", False)
+#                     or perms.get("add", False)
+#                 ):
+#                     try:
+#                         model_dict["admin_url"] = reverse(
+#                             "%s:%s_%s_changelist" % info, current_app=admin_site.name
+#                         )
+#                     except NoReverseMatch:
+#                         pass
+#                 if perms.get("add", False):
+#                     try:
+#                         model_dict["add_url"] = reverse(
+#                             "%s:%s_%s_add" % info, current_app=admin_site.name
+#                         )
+#                     except NoReverseMatch:
+#                         pass
+#                 if app_label in app_dict:
+#                     app_dict[app_label]["models"].append(model_dict)
+#                 else:
+#                     app_dict[app_label] = {
+#                         "name": apps.get_app_config(app_label).verbose_name,
+#                         "app_label": app_label,
+#                         "app_url": reverse(
+#                             "%s:app_list" % RA_ADMIN_SITE_NAME,
+#                             kwargs={"app_label": app_label},
+#                             current_app=admin_site.name,
+#                         ),
+#                         "has_module_perms": has_module_perms,
+#                         "models": [model_dict],
+#                     }
+#
+#     # Sort the apps alphabetically.
+#     app_list = list(app_dict.values())
+#     app_list.sort(key=lambda x: x["name"].lower())
+#
+#     # Sort the models alphabetically within each app.
+#     for app in app_list:
+#         app["models"].sort(key=lambda x: x["name"])
+#
+#     return order_apps(app_list)
 
 
 def dictsort(value, arg, desc=False):

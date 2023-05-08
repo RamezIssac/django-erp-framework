@@ -230,61 +230,17 @@ class EntityModel(ERPMixin, RAModel):
     #     """
     #     return cls._get_doc_type_plus_list() + cls._get_doc_type_minus_list() + cls.get_doc_type_neuter_list()
 
-    def get_pk_name(self):
-        """
-        This is used to get the full name of the primary key,
-        a bit hackish but is important for reports.
-        :return:
-        """
-        if self.pk_name:
-            return self.pk_name
-        else:
-            # return self._meta.pk.column #not now
-            return "%s_id" % self.__class__.__name__.lower()
-
-    def get_title(self):
-        """
-        A helper function to get a custom name of the instance if needed
-        :return:
-        """
-        return self.name
-
     @classmethod
     def get_report_list_url(cls):
         """
         Return the url for the report list for this model
         :return: a string url
         """
-
+        # todo consider deleting
         return reverse(
             "%s:report_list" % app_settings.RA_ADMIN_SITE_NAME,
             args=(cls.get_class_name().lower(),),
         )
-
-    @classmethod
-    def get_redirect_url_prefix(cls):
-        """
-        Get the url for the change list of this model
-        :return: a string url
-        """
-        return reverse(
-            "%s:%s_%s_changelist"
-            % (
-                app_settings.RA_ADMIN_SITE_NAME,
-                cls._meta.app_label,
-                cls.get_class_name().lower(),
-            )
-        )
-
-
-# class BasePersonInfo(BaseInfo):
-#     address = models.CharField(_('address'), max_length=260, null=True, blank=True)
-#     telephone = models.CharField(_('telephone'), max_length=130, null=True, blank=True)
-#     email = models.EmailField(_('email'), null=True, blank=True)
-#
-#     class Meta:
-#         abstract = True
-#         # swappable = swapper.swappable_setting('ra', 'BasePersonInfo')
 
 
 class TransactionModel(EntityModel):
@@ -304,8 +260,8 @@ class TransactionModel(EntityModel):
         verbose_name=_("Created By"),
         on_delete=models.CASCADE,
     )
-    creation_date = models.DateTimeField(_("Creation timestamp"), default=now)
-    lastmod = models.DateTimeField(_("Last modification"), db_index=True)
+    creation_date = models.DateTimeField(_("Created"), default=now)
+    lastmod = models.DateTimeField(_("Last modified"), db_index=True)
     lastmod_user = models.ForeignKey(
         User,
         related_name="%(app_label)s_%(class)s_lastmod_related",
@@ -320,8 +276,6 @@ class TransactionModel(EntityModel):
         :return:
         """
         return cls.__name__.lower()
-        # raise NotImplementedError(
-        #     f'Class {cls} dont have a get_doc_type override. Each Transaction should define a *type*')
 
     def __str__(self):
         return "%s-%s" % (self._meta.verbose_name, self.slug)
@@ -351,42 +305,10 @@ class TransactionModel(EntityModel):
 
         from erp_framework.base.helpers import get_next_serial
 
-        request = CrequestMiddleware.get_request()
         self.type = self.get_doc_type()
         if not self.slug:
             self.slug = get_next_serial(self.__class__)
-
-        # self.slug = slugify(self.slug)
-        if not self.pk:
-            if not self.lastmod_user_id:
-                self.lastmod_user_id = request.user.pk
-            if not self.owner_id:
-                self.owner_id = request.user.pk
-            self.date = self.date if self.date else now()
-        self.lastmod = now()
-
-        super(EntityModel, self).save(*args, **kwargs)
-
-    #
-    # @classmethod
-    # def get_doc_type_verbose_name(cls, type):
-    #     """
-    #     Return the type verbose name , Must be implemented when needed by children
-    #     @param type: the type field value
-    #     @return: the description of the type
-    #     Example: In: get_doc_type_verbose_name('1')
-    #             Out: Purchase
-    #     """
-    #     # Example :
-    #     # if type == '1': return _('purchase')
-    #     raise NotImplemented()
-
-    # def get_absolute_url(self):
-    #     doc_types = registry.get_doc_type_settings()
-    #     if self.type in doc_types:
-    #         return '%sslug/%s/' % (doc_types[self.type]['redirect_url_prefix'], self.slug)
-    #     else:
-    #         return self.type
+        super().save(*args, **kwargs)
 
     @property
     def name(self):
@@ -459,16 +381,9 @@ class BaseReportModel(DiffingMixin, models.Model):
 
         return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
 
-    # @classmethod
-    # def get_doc_types(cls):
-    #     """
-    #     Return a list of the doc_types supported by the current model , Must implemented when needed by children
-    #     @return:
-    #     """
-    #     return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
-
     class Meta:
         abstract = True
+        default_permissions = ()
 
 
 class QuanValueReport(BaseReportModel):
@@ -494,47 +409,5 @@ class QuanValueReport(BaseReportModel):
 
         return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
 
-    # @classmethod
-    # def get_doc_types(cls):
-    #     """
-    #     Return a list of the doc_types supported by the current model , Must implemented when needed by children
-    #     @return:
-    #     """
-    #     return cls.get_doc_type_plus_list() + cls.get_doc_type_minus_list()
-
     class Meta:
         abstract = True
-
-
-class ProxyMovementManager(models.Manager):
-    def get_queryset(self):
-        return (
-            super(ProxyMovementManager, self)
-            .get_queryset()
-            .filter(type=self.model.get_doc_type())
-        )
-
-
-class ProxyMovement(object):
-    objects = ProxyMovementManager()
-
-    @classmethod
-    def get_doc_type(cls):
-        """
-        Get the doc-type of the row.
-        This method is called internally during save to ensure that the record in the
-        proxy model always have the right type
-        :return: string (type)
-        """
-        return ""
-
-    def __init__(self, *args, **kwargs):
-        super(ProxyMovement, self).__init__(*args, **kwargs)
-        self._doc_type = ""
-
-    def save(self, *args, **kwargs):
-        self.type = self.__class__.get_doc_type()
-        super(ProxyMovement, self).save(*args, **kwargs)
-
-    class Meta:
-        proxy = True
