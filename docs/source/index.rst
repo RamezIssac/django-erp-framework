@@ -6,13 +6,12 @@ A light-weight effective framework to create business application equipped with 
 Features
 --------
 
-- Default Base models to build on your implementation
-- Reporting Engine that filters and compute several types of reports with simple lines of code.
+- A Reporting Engine that can generate reports like time series , crosstab , and more. from any model.
 - Charting capabilities to turn reports into attractive charts.
-- widget system to display reports and its charts on dashboard home , or on object's `view` pages.
-- Tools and goodies to extend and customize the framework behavior from top to bottom.
-- Python 3.6 / 3.7 / 3.8
-- Django 2.2 / 3.0
+- Widget system to display bits of the reports results or its charts on any page you want.
+- Customizable and easily extensible.
+- Python 3.8 / 3.9 / 3.10
+- Django 3.2 +
 
 
 .. toctree::

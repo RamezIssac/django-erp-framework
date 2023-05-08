@@ -5,6 +5,16 @@ System Design / Components
 Components
 ----------
 
+Reporting Engine
+~~~~~~~~~~~~~~~~
+
+View , fields , charts
+
+Reporting organization
+Reporting permissions
+
+
+
 1. **Base Models**
    There are base abstract models which holds attributes and method that the system expect. Those attributes and fields are very generic.
    For reference: :ref:`base_classes`

@@ -6,5 +6,7 @@
 * 
 * Fix jazzmin report menu open close based on active 
 * Sanity Check for charts settings
-* doc type settings
+* Easier way to deal with doc types doc type settings
+* create computation field from its name ;) 
+* Document ideas about extendability and customization
 * 

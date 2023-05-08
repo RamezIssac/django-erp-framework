@@ -7,7 +7,6 @@ class ERPFrameworkConfig(AppConfig):
     name = "erp_framework"
     verbose_name = _("ERP framework")
 
-    # def ready(self):
     from django.db.models.signals import post_migrate
 
     #     super(RaConfig, self).ready()
