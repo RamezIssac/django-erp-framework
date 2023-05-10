@@ -9,7 +9,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from erp_framework.activity.models import MyActivity
-from erp_framework.admin.admin import erp_admin_site, RaThemeMixin
+from erp_framework.admin.admin import RaThemeMixin
+from erp_framework.sites import erp_admin_site
 from erp_framework.base import app_settings
 from erp_framework.base.helpers import RaPermissionWidgetExclude
 

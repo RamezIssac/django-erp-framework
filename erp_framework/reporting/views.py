@@ -201,7 +201,7 @@ class ReportList(ReportListBase):
     _bypass = True
 
     def get_order_list(self):
-        from erp_framework.admin.admin import erp_admin_site
+        from erp_framework.sites import erp_admin_site
 
         model_admin = erp_admin_site.get_admin_by_model_name(self.kwargs["base_model"])
         if model_admin:
@@ -243,7 +243,7 @@ class ReportList(ReportListBase):
         # return verbose_name, verbose_name_plural, page_title, opts
 
     def get_context_data(self, **kwargs):
-        from erp_framework.admin.admin import erp_admin_site
+        from erp_framework.sites import erp_admin_site
 
         context = super(ReportList, self).get_context_data(**kwargs)
 
@@ -339,7 +339,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     doc_type_field_name = "doc_type"
 
     def get_context_data(self, **kwargs):
-        from erp_framework.admin.admin import erp_admin_site
+        from erp_framework.sites import erp_admin_site
 
         context = super().get_context_data(**kwargs)
         extra_context = erp_admin_site.each_context(self.request)
@@ -357,8 +357,8 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         if self.base_model:
             value = doc_type_registry.get(self.base_model)
 
-            return [Q(**{f"{self.doc_type_field_name}__in": value['plus_list']})], [Q(
-                **{f"{self.doc_type_field_name}__in": value['minus_list']})]
+            return [Q(**{f"{self.doc_type_field_name}__in": value['plus_list']})] if value['plus_list'] else [], [Q(
+                **{f"{self.doc_type_field_name}__in": value['minus_list']})] if value['minus_list'] else []
 
         return [], []
 

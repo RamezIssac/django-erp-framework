@@ -1,6 +1,7 @@
+from erp_framework.sites import erp_admin_site
+
 from erp_framework.admin.admin import (
     EntityAdmin,
-    erp_admin_site,
     TransactionAdmin,
     TransactionItemAdmin,
     RaPrePopulatedAdmin,

@@ -128,7 +128,7 @@ We need to hook the Django ERP admin site in ``urls.py``, like so:
 .. code-block:: python
 
     from django.urls import path
-    from erp_framework.admin.admin import erp_admin_site
+    from erp_framework.sites import erp_admin_site
 
     urlpatterns = [
         # ...

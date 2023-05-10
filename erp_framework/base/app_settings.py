@@ -23,6 +23,7 @@ ERP_FRAMEWORK_SETTINGS = {
     "index_template": "",
     # a function to control be dbfield on all instances, Saves you time to subclass ifonly you need to add a help text or something
     "admin_default_formfield_for_dbfield": "erp_framework.base.helpers.default_formfield_for_dbfield",
+    "admin_site_class": "erp_framework.admin.admin.RaAdminSite",
 }
 
 USER_FRAMEWORK_SETTINGS = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {})
@@ -71,9 +72,6 @@ RA_ADMIN_LOGGED_OUT_TEMPLATE = getattr(
     settings, "RA_ADMIN_LOGIN_TEMPLATE", f"{RA_THEME}/logged_out.html"
 )
 
-RA_ADMIN_SITE_CLASS = getattr(
-    settings, "RA_ADMIN_SITE_CLASS", "erp_framework.admin.admin.RaAdminSite"
-)
 # correct
 ERP_ADMIN_SITE_TITLE = ERP_FRAMEWORK_SETTINGS.get("site_name", "ERP Framework System")
 
@@ -89,4 +87,8 @@ ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC = ERP_FRAMEWORK_SETTINGS.get(
 
 ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC = get_callable(
     ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC
+)
+
+ERP_FRAMEWORK_ADMIN_SITE_CLASS = ERP_FRAMEWORK_SETTINGS.get(
+    "admin_site_class", "erp_framework.admin.admin.RaAdminSite"
 )

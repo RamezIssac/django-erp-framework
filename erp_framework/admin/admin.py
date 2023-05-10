@@ -52,6 +52,7 @@ from erp_framework.utils.views import (
     apply_order_to_typed_reports,
 )
 from .base import RaAdminSiteBase
+from erp_framework.sites import erp_admin_site
 from ..base import app_settings
 from ..base.widgets import RaRelatedFieldWidgetWrapper
 
@@ -160,9 +161,6 @@ class RaChangeList(ChangeList):
 class RaAdminSite(RaAdminSiteBase):
     pass
 
-
-site_class = import_string(app_settings.RA_ADMIN_SITE_CLASS)
-erp_admin_site = site_class(name=app_settings.RA_ADMIN_SITE_NAME)
 
 
 class RaThemeMixin:
@@ -1317,6 +1315,7 @@ class RaGroupAdmin(RaThemeMixin, GroupTabularPermissionsMixin, GroupAdmin):
     list_display = ["name"]
 
     save_on_top = True
+
 
 
 erp_admin_site.register(Group, RaGroupAdmin)

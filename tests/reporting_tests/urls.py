@@ -15,7 +15,7 @@ Including another URLconf
 """
 
 from django.urls import path
-from erp_framework.admin.admin import erp_admin_site
+from erp_framework.sites import erp_admin_site
 
 
 urlpatterns = [
