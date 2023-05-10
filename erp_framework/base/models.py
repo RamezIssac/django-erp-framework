@@ -8,7 +8,7 @@ from django.urls import reverse, NoReverseMatch
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
-from . import app_settings, registry
+from . import app_settings
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -172,14 +172,12 @@ class EntityModel(ERPMixin, RAModel):
             if not self.slug:
                 self.slug = self.get_next_slug(self.name)
                 # print(self.slug)
-            if not self.owner_id:
-                try:
-                    self.owner = self.lastmod_user
-                except:
-                    self.owner_id = self.lastmod_user_id
-                    logger.info(
-                        "lastmod_user_id is used instead of lastmod_user object"
-                    )
+            if not self.owner_id and self.lastmod_user_id:
+                self.owner_id = self.lastmod_user_id
+
+            if not self.lastmod_user_id and self.owner_id:
+                self.lastmod_user_id = self.owner_id
+
 
         self.lastmod = now()
 

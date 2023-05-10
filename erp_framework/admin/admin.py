@@ -394,7 +394,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     def get_history_link(self, obj):
         info = self.model._meta.app_label, self.model._meta.model_name
-        url = reverse("erp_admin::%s_%s_history" % info, args=(obj.pk,))
+        url = reverse("erp_admin:%s_%s_history" % info, args=(obj.pk,))
 
         return mark_safe(
             """<a href="%s" class="legitRipple" data-popup="tooltip" name="%s">

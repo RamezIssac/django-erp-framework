@@ -155,13 +155,13 @@ class RaAdminSiteBase(AdminSite):
     def app_index(self, request, app_label, extra_context=None):
         app_name = apps.get_app_config(app_label).verbose_name
         context = self.each_context(request)
-        app_list = context["app_list"]
-        current_app_list = get_from_list(False, app_list, "app_label", app_label)
+        # app_list = context["app_list"]
+        # current_app_list = get_from_list(False, app_list, "app_label", app_label)
         context.update(
             dict(
                 title=_("%(app)s administration") % {"app": app_name},
                 # current_app_list=[app_dict],
-                current_app_list=[current_app_list],
+                # current_app_list=[current_app_list],
                 app_label=app_label,
                 app_name=app_name,
             )
