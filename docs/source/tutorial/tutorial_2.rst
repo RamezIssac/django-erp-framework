@@ -6,7 +6,7 @@ Reporting and Charting
 
 Before we begin, charts and reporting get more fun and interesting the more data available.
 So below is a `custom management command <https://docs.djangoproject.com/en/2.2/howto/custom-management-commands/>`_ code that you can use to generate data for the whole current year.
-This will definitely enhance our experience with this section. Also you can use it to benchmarking Ra Performance.
+This will definitely enhance our experience with this section. Also you can use it to benchmarking Django ERP framework performance.
 
 Generating test data
 ~~~~~~~~~~~~~~~~~~~~

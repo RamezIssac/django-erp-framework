@@ -13,15 +13,15 @@ Create an empty project form scratch
 
 .. code-block:: bat
 
-    $ mkvirtualenv ra-env (or use `virtualenv ra-env` if you don't have mkvirtualenv)
+    $ mkvirtualenv Django ERP framework-env (or use `virtualenv Django ERP framework-env` if you don't have mkvirtualenv)
 
     $ pip install django-erp-framework
 
-2. Ra provides a command to generate a new project with all needed settings in place.
+2. Django ERP framework provides a command to generate a new project with all needed settings in place.
 
 .. code-block:: bash
 
-    $ ra-admin start project_name
+    $ Django ERP framework-admin start project_name
 
 This will create a django project under the directory `project_name`.
 
@@ -46,8 +46,8 @@ Running the tests
 To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
-    $ git clone git+git@github.com:ra-systems/django-erp-framework.git
-    $ cd cd ra/tests
+    $ git clone git+git@github.com:Django ERP framework-systems/django-erp-framework.git
+    $ cd cd Django ERP framework/tests
     $ python -m pip install -e ..
     $ python -m pip install -r requirements/py3.txt
     $ ./runtests.py

@@ -52,7 +52,7 @@ Now, imagine having to write all of this, again, in class based views.. that's a
 
 Well, that's an old phrase that gets passed around which i dont find convincing enough.
 Maybe it was true in the old days; But now, you dont have to be a `staff` member to be able to log in an admin dashboard.
-Also, Ra dashboard is a custom admin site (independent from your typical admin).
+Also, Django ERP framework dashboard is a custom admin site (independent from your typical admin).
 
 
 Reporting
@@ -60,7 +60,7 @@ Reporting
 
 Reporting engine itself was moved from this package to be an independent package `Django Slick Reporting <https://github.com/ra-systems/django-slick-reporting>`_
 
-Ra framework, away from the calculation itself, holds functionality of organizing the reports and create html widgets
+Django ERP framework, apart from the calculation itself, holds functionality of organizing the reports and create html widgets
 out of those reports, which can be controlled . and by default support showing results in tables, and different kinds of charts, all in speed.
 
 

@@ -4,9 +4,9 @@ The Admin
 #########
 
 
-Ra Site
--------
-Ra Site is a custom admin site. It provide you the theme and other goodies aimed to make the dashboard more usable.
+Django ERP framework Site
+--------------------------
+Django ERP framework Site is a custom admin site. It provide you the theme and other goodies aimed to make the dashboard more usable.
 
 
 ModelAdmin Classes

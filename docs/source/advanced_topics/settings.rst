@@ -2,13 +2,13 @@
 Settings
 ========
 
-Ra have a wealth of settings that puts you in control.
+Django ERP framework have a wealth of settings that puts you in control.
 
 
 Base Models Settings
 ====================
 
-See :ref:`base_classes` for information on what are Ra Base Models and how they interact with the rest of the framework
+See :ref:`base_classes` for information on what are Django ERP framework Base Models and how they interact with the rest of the framework
 
 ``RA_BASEINFO_MODEL``
 ---------------------
@@ -43,7 +43,7 @@ Flow Control Settings
 
 Defaults ``'erp_framework.admin.admin.RaAdminSite'``
 
-A dotted path to the main Ra Admin Site class.
+A dotted path to the main Django ERP framework Admin Site class.
 Make sure to inherit from ``RaAdminSiteBase`` in your custom admin site.
 
 ``RA_ENABLE_ADMIN_DELETE_ALL``
@@ -92,7 +92,7 @@ Customization
 
 Defaults to ``'adminlte'``
 
-If you want to create a new Ra theme, You can override the templates in another path and set it here .
+If you want to create a new Django ERP framework theme, You can override the templates in another path and set it here .
 
 ``ERP_ADMIN_INDEX_TEMPLATE``
 ---------------------------
@@ -119,12 +119,12 @@ Defaults to ``f'{RA_THEME}/logged_out.html'``
 ``ERP_ADMIN_SITE_TITLE``
 -----------------------
 
-Defaults to ``_('Ra Framework')``
+Defaults to ``_('Django ERP framework Framework')``
 
 ``ERP_ADMIN_SITE_HEADER``
 ------------------------
 
-Defaults to ``_('Ra Administration')``
+Defaults to ``_('Django ERP framework Administration')``
 
 
 ``ERP_ADMIN_INDEX_TITLE``

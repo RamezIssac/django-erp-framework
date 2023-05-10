@@ -89,7 +89,7 @@ Run ``python manage.py makemigrations sample_erp``, ``python manage.py migrate``
 The Admin
 ----------
 
-Ra makes use of the django admin to leverage the process of authentication, authorization and CRUD operation(s).
+Django ERP framework makes use of the django admin to leverage the process of authentication, authorization and CRUD operation(s).
 This is done by
 
 1. Using a different admin site.
@@ -184,7 +184,7 @@ a template file `admin/sales_change_form.html` and in it we can write:
 
 .. code-block:: Django
 
-    {% extends 'ra/change_form.html' %}
+    {% extends 'erp_framework/change_form.html' %}
 
     {% block extrajs %}
         {{ block.super }}
@@ -217,8 +217,8 @@ a template file `admin/sales_change_form.html` and in it we can write:
 
 Notice here:
 
-1. we `extends` from `ra/change_form.html'`
-   This enables us to change themes of your Ra dashboard rather easily. You can read more about :ref:`theming`
+1. we `extends` from `erp_framework/change_form.html'`
+   This enables us to change themes of your Django ERP framework dashboard rather easily. You can read more about :ref:`theming`
 
 2. we use :func:`$.ra.smartParseFloat` in the javascript.
    This is a custom convenience function to handle strings or empty value when numbers are expected (in which case `value` result would be `NaN`.

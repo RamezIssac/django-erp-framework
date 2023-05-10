@@ -9,4 +9,5 @@
 * Easier way to deal with doc types doc type settings
 * create computation field from its name ;) 
 * Document ideas about extendability and customization
+* Remove js from templates to scripts
 * 

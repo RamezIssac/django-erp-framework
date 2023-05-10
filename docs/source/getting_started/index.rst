@@ -118,7 +118,7 @@ Usage
     }
 
 
-Various other settings are available to configure Ra's behaviour - see :doc:`/advanced_topics/settings`.
+Various other settings are available to configure Django ERP framework's behaviour - see :doc:`/advanced_topics/settings`.
 
 URLS configuration
 -------------------
@@ -143,7 +143,7 @@ With this configuration in place, you are ready to run ``./manage.py migrate``
 User accounts
 -------------
 
-Superuser accounts receive automatic access to the Ra Dashboard interface; use ``./manage.py createsuperuser`` if you don't already have one.
+Superuser accounts receive automatic access to the Django ERP framework Dashboard interface; use ``./manage.py createsuperuser`` if you don't already have one.
 
 Start developing
 ----------------

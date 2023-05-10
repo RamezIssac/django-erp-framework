@@ -15,7 +15,7 @@ Ra was believed to rule in all parts of the created world: the sky, the Earth, a
 What Django ERP framework is not?
 ---------------------------------
 
-Ra is not a ready made ERP solution, rather, a framework that provide you tools to build one effortlessly and in style.
+Django ERP framework is not a ready made ERP solution, rather, a framework that provide you tools to build one effortlessly and in style.
 To check how easy it is, go through the tutorial. By the end of it, you'd have a working sales monitor app with
 a dozen reports and charts in couple of hours.
 
@@ -32,5 +32,5 @@ After that decision was made, the author went on and removed all "specific" modu
 simplified the api, substitute paid libraries with open source ones, write a tutorial / documentation and .... here we are :)
 
 
-In April 2020, the Ra reporting engine was released as a standalone package. Django Slick Reporting
+In April 2020, the Django ERP framework reporting engine was released as a standalone package. Django Slick Reporting
 

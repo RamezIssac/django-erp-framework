@@ -1,5 +1,5 @@
-Welcome to Django Ra ERP framework documentation
-=================================================
+Welcome to Django ERP framework documentation
+=============================================
 
 A light-weight effective framework to create business application equipped with a reporting engine and a responsive dashboard written in `Python <https://www.python.org/>`_ and built on the `Django web framework <https://www.djangoproject.com/>`_.
 

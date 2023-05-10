@@ -3,7 +3,7 @@
 Sample ERP System Tutorial
 ==========================
 
-In this section we will create a sample erp project using Ra framework.
+In this section we will create a sample erp project using Django ERP framework.
 
 .. toctree::
     :maxdepth: 2

@@ -76,7 +76,7 @@ just add attribute ``data-report-default-chart="YOUR_CHART_ID"`` to the ``[data-
 Customizing the View page
 -------------------------
 
-Ra also provide a view page for each EntityModel subclass, registered with `EntityAdmin`.
+Django ERP framework also provide a view page for each EntityModel subclass, registered with `EntityAdmin`.
 For example: If you go to the Clients change list page, you'd find a column called "Stats" which will redirect you to a blank page with the title
 *Statistics for <Client name>*
 
@@ -183,4 +183,4 @@ Let's add another report.
 
 
 
-Now you should have a good idea on how you can use Ra framework to build your system.
+Now you should have a good idea on how you can use Django ERP framework framework to build your system.
