@@ -3,7 +3,6 @@ import hashlib
 import logging
 
 import simplejson as json
-from django.conf import settings
 from django.contrib.auth.mixins import AccessMixin, UserPassesTestMixin
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
@@ -11,21 +10,19 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.template.defaultfilters import capfirst
 from django.urls import reverse, reverse_lazy
-from django.utils.translation import get_language_bidi, gettext
 from django.views.generic import TemplateView
+from slick_reporting.form_factory import report_form_factory
+from slick_reporting.generator import ReportGenerator
+from slick_reporting.views import SlickReportViewBase
 
-from erp_framework.base import app_settings, registry
+from erp_framework.base import app_settings
 from erp_framework.base.app_settings import RA_ADMIN_SITE_NAME
 from erp_framework.base.helpers import dictsort
 from erp_framework.reporting.forms import OrderByForm
 from erp_framework.reporting.printing import (
     regroup_data,
     HTMLPrintingClass,
-    ExportToCSV,
 )
-from slick_reporting.form_factory import report_form_factory
-from slick_reporting.generator import ReportGenerator
-from slick_reporting.views import SlickReportViewBase
 
 # from .generator import ReportGenerator
 # from .meta_data import ReportMetaData
@@ -233,16 +230,17 @@ class ReportList(ReportListBase):
     #     return val
 
     def get_meta_data(self):
-        model = registry.get_ra_model_by_name(self.kwargs["base_model"])
-        verbose_name = model._meta.verbose_name
-        verbose_name_plural = model._meta.verbose_name_plural
-        is_bidi = get_language_bidi()
-        if is_bidi:
-            page_title = "%s %s" % (gettext("reports"), model._meta.verbose_name_plural)
-        else:
-            page_title = "%s %s" % (model._meta.verbose_name_plural, gettext("reports"))
-        opts = model._meta
-        return verbose_name, verbose_name_plural, page_title, opts
+        return "", "", ""
+        # model = registry.get_ra_model_by_name(self.kwargs["base_model"])
+        # verbose_name = model._meta.verbose_name
+        # verbose_name_plural = model._meta.verbose_name_plural
+        # is_bidi = get_language_bidi()
+        # if is_bidi:
+        #     page_title = "%s %s" % (gettext("reports"), model._meta.verbose_name_plural)
+        # else:
+        #     page_title = "%s %s" % (model._meta.verbose_name_plural, gettext("reports"))
+        # opts = model._meta
+        # return verbose_name, verbose_name_plural, page_title, opts
 
     def get_context_data(self, **kwargs):
         from erp_framework.admin.admin import erp_admin_site
@@ -338,6 +336,8 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     admin_site_name = "erp_admin"
     template_name = "erp_framework/report.html"
 
+    doc_type_field_name = "doc_type"
+
     def get_context_data(self, **kwargs):
         from erp_framework.admin.admin import erp_admin_site
 
@@ -353,9 +353,15 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return context
 
     def get_doc_types_q_filters(self):
+        from erp_framework.doc_types import doc_type_registry
+        if self.base_model:
+            value = doc_type_registry.get(self.base_model)
+
+            return [Q(**{f"{self.doc_type_field_name}__in": value['plus_list']})], [Q(
+                **{f"{self.doc_type_field_name}__in": value['minus_list']})]
+
         return [], []
 
-        # doc_types = registry.get_model_doc_type_map(self.base_model.__name__)
         # return [Q(type__in=doc_types['plus_list'])], [Q(type__in=doc_types['minus_list'])]
 
     def get_report_generator(self, queryset, for_print):
@@ -490,7 +496,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return val
 
     def get_printing_class(
-        self,
+            self,
     ):
         return self.printing_class
 

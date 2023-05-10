@@ -16,13 +16,15 @@ def autodiscover():
     ]
 
     for app, mod in mods:
-        # Attempt to import the app's translation module.
+        # Attempt to import the app's reports module.
         module = "%s.reports" % app
-        # before_import_registry = copy.copy(translator._registry)
         try:
             import_module(module)
-        except ImportError:
-            pass
+        except ImportError as e:
+            if str(e) == f"No module named '{module}'":
+                pass
+            else:
+                raise e
 
 
 class ERPFrameworkReportingAppConfig(apps.AppConfig):

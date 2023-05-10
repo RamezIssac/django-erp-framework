@@ -10,4 +10,29 @@
 * create computation field from its name ;) 
 * Document ideas about extendability and customization
 * Remove js from templates to scripts
-* 
+
+
+Docs 
+----
+Problem 
+solution 
+
+
+How to customize 
+* Admin Menu 
+* Admin URLs
+
+
+Charts and js
+
+Customize print
+
+
+
+Creating your own system (ideas)
+  - swapable models 
+  - Polymorphic models
+  - Question about report database view 
+
+
+

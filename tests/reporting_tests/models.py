@@ -7,7 +7,8 @@ from erp_framework.base.models import (
     QuantitativeTransactionItemModel,
     TransactionItemModel,
 )
-from erp_framework.base.registry import register_doc_type
+from erp_framework.doc_types import DocType, doc_type_registry
+
 from django.utils.translation import gettext_lazy as _
 
 
@@ -38,16 +39,11 @@ class SimpleSales(QuantitativeTransactionItemModel):
         verbose_name_plural = _("Sales")
 
 
-sales = {
-    "name": "sales",
-    "plus_list": ["Client"],
-    "minus_list": ["Product"],
-    "redirect_url_prefix": reverse_lazy(
-        "erp_admin::reporting_tests_simplesales_changelist"
-    ),
-}
-
-register_doc_type(sales)
+@doc_type_registry.register
+class SaleDocType(DocType):
+    name = "sales"
+    plus_list = [Client]
+    minus_list = [Product]
 
 
 class Invoice(TransactionModel):
