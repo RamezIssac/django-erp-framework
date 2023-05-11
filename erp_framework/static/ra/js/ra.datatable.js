@@ -32,7 +32,11 @@
             if (!stop_colspan_detection) {
                 footer_colspan += 1;
             } else {
-                footer_th += `<th data-id=${col_name}">${totals_container[col_name]}</th>`;
+                if (total_fields.indexOf(col_name) !== -1) {
+                    footer_th += `<th data-id=${col_name}">${$.ra.smartParseFloat(totals_container[col_name], 2)}</th>`;
+                } else {
+                    footer_th += `<th data-id=${col_name}"></th>`;
+                }
             }
         }
 
