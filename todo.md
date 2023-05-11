@@ -24,6 +24,8 @@ How to customize
 * Admin Menu 
 * Admin URLs
 
+* Report field custom calculations 
+* Report field that depends on each other
 
 
 Charts and js

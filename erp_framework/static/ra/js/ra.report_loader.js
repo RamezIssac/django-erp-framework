@@ -1,3 +1,5 @@
+/*jshint esversion: 6 */
+
 /**
  * Created by ramezashraf on 13/08/16.
  */
@@ -17,13 +19,13 @@
         let chartElem = $elem.find('[data-report-chart]');
         let chart_id = $elem.attr('data-chart-id');
         let display_chart_selector = $elem.attr('data-display-chart-selector');
-        chartElem.append("<canvas width=\"400\" height=\"100\"></canvas>")
+        chartElem.append("<canvas width=\"400\" height=\"100\"></canvas>");
         if (chartElem.length !== 0 && data.chart_settings.length !== 0) {
 
             $.ra.report_loader.displayChart(data, chartElem, chart_id);
         }
 
-        if (display_chart_selector !== "False"){
+        if (display_chart_selector !== "False") {
             $.ra.report_loader.createChartsUIfromResponse(data, $elem);
         }
 
@@ -35,7 +37,13 @@
     }
 
     function displayChart(data, $elem, chart_id) {
-        executeFunctionByName($.ra.report_loader.chart_engines['chartsjs'], window, data, $elem, chart_id)
+        let engine = "highcharts";
+        if (chart_id === '') {
+            engine = data.chart_settings[0]['engine_name'];
+        } else {
+            engine = data.chart_settings.find(x => x.id === chart_id).engine_name;
+        }
+        executeFunctionByName($.ra.report_loader.chart_engines[engine], window, data, $elem, chart_id);
     }
 
 
@@ -64,7 +72,7 @@
 
         }
 
-        $.get(url, data , function (data) {
+        $.get(url, data, function (data) {
             $.ra.cache[data['report_slug']] = jQuery.extend(true, {}, data);
             executeFunctionByName(successFunctionName, window, data, $elem);
         }).fail(function (data) {
