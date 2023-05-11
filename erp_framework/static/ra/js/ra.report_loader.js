@@ -15,10 +15,18 @@
 
     function loadComponents(data, $elem) {
         let chartElem = $elem.find('[data-report-chart]');
+        let chart_id = $elem.attr('data-chart-id');
+        let display_chart_selector = $elem.attr('data-display-chart-selector');
+        chartElem.append("<canvas width=\"400\" height=\"100\"></canvas>")
         if (chartElem.length !== 0 && data.chart_settings.length !== 0) {
-            $.ra.report_loader.displayChart(data, chartElem);
+
+            $.ra.report_loader.displayChart(data, chartElem, chart_id);
         }
-        $.ra.report_loader.createChartsUIfromResponse(data, $elem)
+
+        if (display_chart_selector === "true"){
+            $.ra.report_loader.createChartsUIfromResponse(data, $elem);
+        }
+
         let tableElem = $elem.find('[data-report-table]');
         if (tableElem.length !== 0) {
             $.ra.datatable.buildAdnInitializeDatatable(data, tableElem);
@@ -27,7 +35,7 @@
     }
 
     function displayChart(data, $elem, chart_id) {
-        executeFunctionByName($.ra.report_loader.chart_handler_func, window, data, $elem, chart_id)
+        executeFunctionByName($.ra.report_loader.chart_engines['chartsjs'], window, data, $elem, chart_id)
     }
 
 
@@ -120,7 +128,12 @@
         createChartsUIfromResponse: createChartsUIfromResponse,
         // displayReport: displayReport,
         loadComponents: loadComponents,
-        'chart_handler_func': '$.slick_reporting.highcharts.displayChart'
+        "chart_engines": {
+            'highcharts': '$.slick_reporting.highcharts.displayChart',
+            "chartsjs": '$.slick_reporting.chartsjs.displayChart',
+        }
+        // 'highcharts': '$.slick_reporting.highcharts.displayChart',
+        // "chartsjs": '$.slick_reporting.chartsjs.displayChart',
 
     }
 })(jQuery);

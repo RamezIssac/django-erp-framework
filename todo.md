@@ -10,7 +10,9 @@
 * create computation field from its name ;) 
 * Document ideas about extendability and customization
 * Remove js from templates to scripts
-
+* auto capture base_model
+* datatable to resize after load + scroll 
+* 
 
 Docs 
 ----
@@ -21,6 +23,7 @@ solution
 How to customize 
 * Admin Menu 
 * Admin URLs
+
 
 
 Charts and js

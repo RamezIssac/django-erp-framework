@@ -467,10 +467,10 @@
                     total: 'Total',
                     percent: 'Percent',
                 },
-                credits: {
-                    text: 'RaSystems.io',
-                    href: 'https://rasystems.io'
-                },
+                // credits: {
+                //     text: 'RaSystems.io',
+                //     href: 'https://rasystems.io'
+                // },
                 // notify_error: notify_error,
                 enable3d: false,
 
