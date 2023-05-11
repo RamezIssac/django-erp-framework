@@ -23,7 +23,7 @@
             $.ra.report_loader.displayChart(data, chartElem, chart_id);
         }
 
-        if (display_chart_selector === "true"){
+        if (display_chart_selector !== "False"){
             $.ra.report_loader.createChartsUIfromResponse(data, $elem);
         }
 

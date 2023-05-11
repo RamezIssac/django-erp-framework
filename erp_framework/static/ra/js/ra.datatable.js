@@ -15,7 +15,7 @@
         cols = typeof cols != 'undefined' ? cols : false;
         cols_names = typeof cols_names != 'undefined' ? cols_names : cols;
 
-        let return_val = `<table class="${css_class}"> <thead><tr>`;
+        let return_val = `<table class="${css_class} display" style="width: 100%"> <thead><tr>`;
         let header_th = '';
         let footer_th = '';
         let footer_colspan = 0;
@@ -131,6 +131,7 @@
 
         };
         _instances[data.report_slug] = $(tableSelector).DataTable(datatableOptions);
+        // _instances[data.report_slug] = $(tableSelector).DataTable();
     }
 
 

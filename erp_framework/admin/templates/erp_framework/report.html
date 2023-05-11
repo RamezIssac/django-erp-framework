@@ -18,7 +18,7 @@
     <div class="col-lg-12">
 
         {% if form %}
-            <h4>Filters</h4>
+            <h4>{% trans "Filters" %}</h4>
             <form id="reportForm">
                 {% crispy form crispy_helper %}
                 <input type="submit" value="Filter" class="btn btn-primary btn-lg btn-block refreshReport ">
@@ -29,13 +29,14 @@
 
         <div class="row">
             <div class="col-lg-12">
-                <h4 class="py-5">Results</h4>
+                <h4 class="py-5">{% trans "Results" %}</h4>
                 <div class="card" id="{{ report_data.report_slug }}">
                     <div class="card-body">
                         <div data-report-widget
                              data-report-url="{{ report.get_url }}"
                              data-extra-params="{{ data_extra_param|default:'' }}"
                              data-success-callback="{{ data_success_callback|default:'' }}"
+
                              report-form-selector="#reportForm"
 
                                 {#             data-chart-id="{{ data_chart_id|default:'' }}"#}
