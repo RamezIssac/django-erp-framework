@@ -2,16 +2,6 @@
 FAQ
 ===
 
-
-What's the meaning of "Ra" ?
-----------------------------
-
-Ra is the name of the deity of the sun in the ancient Egyptian mythology.
-
-From `Wikipedia <https://en.wikipedia.org/wiki/Ra>`_ : By the Fifth Dynasty in the 25th and 24th centuries BC, he (Ra)
-had become one of the most important gods in ancient Egyptian religion, identified primarily with the noon sun.
-Ra was believed to rule in all parts of the created world: the sky, the Earth, and the underworld.
-
 What Django ERP framework is not?
 ---------------------------------
 
@@ -32,5 +22,17 @@ After that decision was made, the author went on and removed all "specific" modu
 simplified the api, substitute paid libraries with open source ones, write a tutorial / documentation and .... here we are :)
 
 
-In April 2020, the Django ERP framework reporting engine was released as a standalone package. Django Slick Reporting
+In April 2020, the Django ERP framework reporting engine was released as a standalone package. Django Slick Reporting.
+
+In May 2023 this project was renamed from `django-ra-erp` to `django-erp-framework`.
+
+
+What's the meaning of "Ra" ?
+----------------------------
+
+Ra is the name of the deity of the sun in the ancient Egyptian mythology.
+
+From `Wikipedia <https://en.wikipedia.org/wiki/Ra>`_ : By the Fifth Dynasty in the 25th and 24th centuries BC, he (Ra)
+had become one of the most important gods in ancient Egyptian religion, identified primarily with the noon sun.
+Ra was believed to rule in all parts of the created world: the sky, the Earth, and the underworld.
 

@@ -100,7 +100,7 @@ With this information in mind, let's add the below piece of code into `admin.py`
 .. code-block:: python
 
     from .models import Client, Product, Expense, ExpenseTransaction, SalesLineTransaction, SalesTransaction
-    from erp_framework.admin.admin import ra_admin_site, EntityAdmin, TransactionAdmin, TransactionItemAdmin
+    from erp_framework.admin.admin import erp_framework_site, EntityAdmin, TransactionAdmin, TransactionItemAdmin
 
 
     class ExpenseAdmin(EntityAdmin):
@@ -126,15 +126,15 @@ With this information in mind, let's add the below piece of code into `admin.py`
         copy_to_formset = ['client']
 
 
-    ra_admin_site.register(Client, ClientAdmin)
-    ra_admin_site.register(Product, ProductAdmin)
-    ra_admin_site.register(Expense, ExpenseAdmin)
-    ra_admin_site.register(SalesTransaction, SalesOrderAdmin)
+    erp_framework_site.register(Client, ClientAdmin)
+    erp_framework_site.register(Product, ProductAdmin)
+    erp_framework_site.register(Expense, ExpenseAdmin)
+    erp_framework_site.register(SalesTransaction, SalesOrderAdmin)
 
 
 
 Like with models, here we inherit our admin models from ``EntityAdmin``, ``TransactionAdmin``and ``TransactionItemAdmin``
-Also we register our model with their AdminModel with ``ra_admin_site`` which is an independent admin site than the default django one.
+Also we register our model with their AdminModel with ``erp_framework_site`` which is an independent admin site than the default django one.
 
 .. note::
 
@@ -157,23 +157,6 @@ Now, we notice that
 
 Front End customization
 -----------------------
-
-Let's enhance our Sales Page and make `value` a read only
-
-.. code-block:: python
-
-    from django import forms
-
-    class SalesOrderAdmin(TransactionAdmin):
-        # ...
-        add_form_template = change_form_template = 'sample_erp/admin/sales_change_form.html'
-
-        def formfield_for_dbfield(self, db_field, request, **kwargs):
-            formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
-            if db_field.name == 'value':
-                formfield.widget = forms.TextInput(attrs={'readonly': 'readonly'})
-            return formfield
-
 
 Now we need and compute the value automatically and display it to the user.
 To do that we need to add a little javascript to handle the client side calculation, and to do that we'll need a create our own template.

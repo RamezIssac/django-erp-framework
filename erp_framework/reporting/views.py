@@ -438,8 +438,6 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
                 return JsonResponse({}, status=403)
             else:
                 raise PermissionDenied
-            #     return HttpResponseRedirect(reverse('erp_admin::access-denied'))
-        # else:
         return HttpResponseRedirect(reverse("erp_admin:login"))
 
     @classmethod
@@ -495,22 +493,21 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
         return val
 
-    def get_printing_class(
-            self,
-    ):
+    def get_printing_class(self):
         return self.printing_class
 
     def is_print_request(self):
+        # todo revise
         return self.request.GET.get("print", False)
 
-    @classmethod
-    def get_initialized_form(cls):
-        """
-        Get the form_class initialized.
-        :return:
-        """
-        form_class = cls.get_form_class()
-        return form_class()
+    # @classmethod
+    # def get_initialized_form(cls):
+    #     """
+    #     Get the form_class initialized.
+    #     :return:
+    #     """
+    #     form_class = cls.get_form_class()
+    #     return form_class()
 
     @classmethod
     def get_all_print_settings(cls):

@@ -1,13 +1,15 @@
-Advanced topics
-===============
+Topics
+=======
 
 .. toctree::
    :maxdepth: 2
 
-   settings
    admin
    reporting
+   widgets
+   doc_types
    base_classes
+   settings
    customizing_print
    javascript
    permissions

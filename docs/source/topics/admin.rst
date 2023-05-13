@@ -6,7 +6,8 @@ The Admin
 
 Django ERP framework Site
 --------------------------
-Django ERP framework Site is a custom admin site. It provide you the theme and other goodies aimed to make the dashboard more usable.
+Django ERP framework Site is a custom admin site. It provide you the theme and other goodies aimed to make developement of ERP solutions easier.
+It's use is optional.
 
 
 ModelAdmin Classes
@@ -14,8 +15,12 @@ ModelAdmin Classes
 
 A subclass of admin.ModelAdmin with various different options
 
-1. whole_changeform_validation
-2. `View` page
+
+#. `View` page that display all reports about this certain entity / records creating a dashboard out of the box.
+#. Comes with settings in place for reversion
+#. Usually if a User if given a permission on Model, it means that they have same permissions to its inline models.
+   Example: User who can add invoice, is of course permitted to add its *inline* details.
+   | This option can be switched off by setting `permission_override_model` on the TransactionInline AdminModel
 
 
 ``EntityAdmin`` offer two important hooks to manage little bit complicated flow

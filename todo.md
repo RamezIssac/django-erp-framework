@@ -1,17 +1,16 @@
 
 * make settings lazy 
-* adjust teh reporting engine
+* Done: adjust teh reporting engine
 * create a separate jazzmin integration theme , making the system admin theme agnostic, add other integrations
-* jazzmine integration: fix report page menu and title 
-* 
+* jazzmine integration: fix report page menu and title
 * Fix jazzmin report menu open close based on active 
 * Sanity Check for charts settings
 * Easier way to deal with doc types doc type settings
-* create computation field from its name ;) 
-* Document ideas about extendability and customization
+* create computation field from its name ;)
 * Remove js from templates to scripts
 * auto capture base_model
-* datatable to resize after load + scroll 
+* Done: datatable to resize after load
+* Enable Compressor
 * 
 
 Docs 
@@ -27,6 +26,7 @@ How to customize
 * Report field custom calculations 
 * Report field that depends on each other
 
+* Hook reports into your own admin , or front end
 
 Charts and js
 
@@ -34,7 +34,7 @@ Customize print
 
 
 
-Creating your own system (ideas)
+Creating your own system , extendability and customization (ideas) 
   - swapable models 
   - Polymorphic models
   - Question about report database view 

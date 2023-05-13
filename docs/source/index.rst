@@ -7,9 +7,10 @@ Features
 --------
 
 - A Reporting Engine that can generate reports like time series , crosstab , and more. from any model.
-- Charting capabilities to turn reports into attractive charts.
+- Charting capabilities built in to turn reports into attractive charts.
 - Widget system to display bits of the reports results or its charts on any page you want.
 - Customizable and easily extensible.
+- Django Jazzmin theme ready (& can be used with any django admin theme)
 - Python 3.8 / 3.9 / 3.10
 - Django 3.2 +
 
@@ -20,8 +21,9 @@ Features
    :titlesonly:
 
    getting_started/index
+   Walkthrough
    tutorial/index
-   advanced_topics/index
+   topics/index
    release_notes/index
    faq
 

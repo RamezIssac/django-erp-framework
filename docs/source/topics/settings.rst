@@ -2,6 +2,8 @@
 Settings
 ========
 
+# todo
+
 Django ERP framework have a wealth of settings that puts you in control.
 
 
@@ -10,28 +12,6 @@ Base Models Settings
 
 See :ref:`base_classes` for information on what are Django ERP framework Base Models and how they interact with the rest of the framework
 
-``RA_BASEINFO_MODEL``
----------------------
-
-Default: ``'erp_framework.base.models.EntityModel'``
-
-A dotted path to the Base Model from which all other model shall be inherited.
-
-
-``RA_BASEMOVEMENTINFO_MODEL``
------------------------------
-
-Default: ``'erp_framework.base.models.BaseMovementInfo'``
-
-A dotted path to the Base Transaction Model from which all other transaction models shall be inherited.
-
-
-``RA_QUANVALUEMOVEMENTITEM_MODEL``
------------------------------------
-
-Default: ``'erp_framework.base.models.QuantitativeTransactionItemModel'``
-
-A dotted path to the Base Quantity / Value Transaction Model from which all other transaction models shall be inherited.
 
 
 

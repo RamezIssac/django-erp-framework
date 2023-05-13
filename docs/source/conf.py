@@ -68,8 +68,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "Django ERP framework"
-copyright = "2019, RaSystems"
-author = "Ramez@RaSystems.io"
+copyright = "2023, RamezIssac"
+author = "ramez@rasystems.io"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
