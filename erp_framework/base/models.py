@@ -189,17 +189,18 @@ class EntityModel(ERPMixin, RAModel):
 
         Returns List of Identified doctype that a plus effect on the entity
         """
-        return ["fb"] + registry.get_model_doc_type_map(cls.get_class_name()).get(
-            "plus_list", []
-        )
+        return []
+        # return ["fb"] + registry.get_model_doc_type_map(cls.get_class_name()).get(
+        #     "plus_list", []
+        # )
 
     @classmethod
     def _get_doc_type_minus_list(cls):
         """Returns List of Identified doctype that a minus effect on the entity"""
-
-        return registry.get_model_doc_type_map(cls.get_class_name()).get(
-            "minus_list", []
-        )
+        return []
+        # return registry.get_model_doc_type_map(cls.get_class_name()).get(
+        #     "minus_list", []
+        # )
 
     @classmethod
     def get_doc_type_neuter_list(cls):

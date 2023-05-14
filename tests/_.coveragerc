@@ -3,15 +3,16 @@ disable_warnings = no-data-collected
 
 
 source=
-    ra
+    django-erp-framework
 
 omit =
     # omit anything in a .local directory anywhere
     tests/
     top_search/*
+    slick_reporting/*
 
 include =
-    ../../ra/*
+    ../../django-erp-framework/*
 
 [report]
 exclude_lines =

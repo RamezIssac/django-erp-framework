@@ -1,10 +1,7 @@
 argon2-cffi >= 16.1.0
 bcrypt
 docutils
-geoip2
-jinja2 >= 2.9.2
-numpy
-Pillow >= 6.2.0
+crispy_bootstrap4
 # pylibmc/libmemcached can't be built on Windows.
 pylibmc; sys.platform != 'win32'
 python-memcached >= 1.59

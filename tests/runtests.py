@@ -68,9 +68,11 @@ ALWAYS_INSTALLED_APPS = [
     "jazzmin",
     "crequest",
     "crispy_forms",
+    "crispy_bootstrap4",
     "reversion",
     "tabular_permissions",
-    "ra",
+    "slick_reporting",
+    "erp_framework",
     "erp_framework.admin",
     "erp_framework.activity",
     "erp_framework.reporting",
@@ -176,7 +178,7 @@ def setup(verbosity, test_labels, parallel):
                     "django.contrib.messages.context_processors.messages",
                     "django.template.context_processors.i18n",
                     "django.template.context_processors.static",
-                    "erp_framework.base.context_processors.global_info",
+                    # "erp_framework.base.context_processors.global_info",
                 ],
             },
         }
@@ -200,6 +202,7 @@ def setup(verbosity, test_labels, parallel):
     settings.SILENCED_SYSTEM_CHECKS = [
         "fields.W342",  # ForeignKey(unique=True) -> OneToOneField
     ]
+    settings.CRISPY_TEMPLATE_PACK = "bootstrap4"
 
     # Load all the ALWAYS_INSTALLED_APPS.
     django.setup()

@@ -69,7 +69,7 @@ Documentation
 
 Available on `Read The Docs <https://django-erp-framework.readthedocs.io/en/latest/>`_
 
-Please Proceed to the tutorial `Create a sales application Part 1 <https://django-erp-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+Please Proceed to the tutorial `Create a sales application Part 1 <https://django-erp-framework.readthedocs.io/en/latest/getting_started/index.html>`_
 
 
 
@@ -82,8 +82,8 @@ clone the repo, install the test requirements and run the tests::
     # 1. Clone and install requirements
     $ git clone git+git@github.com:ra-systems/django-erp-framework.git
     $ cd tests
-    $ python -m pip install -e ..
-    $ python -m pip install -r requirements/py3.txt
+    $ pip install -e ..
+    $ pip install -r requirements.txt
 
     # 2. Set the test database connection details in the environment
     $ export DATABASE_NAME=<database name>
