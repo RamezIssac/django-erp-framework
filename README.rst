@@ -4,11 +4,8 @@
 .. image:: https://img.shields.io/pypi/pyversions/django-erp-framework.svg
     :target: https://pypi.org/project/django-erp-framework
 
-.. image:: https://img.shields.io/readthedocs/ra-framework
+.. image:: https://img.shields.io/readthedocs/django-erp-framework
     :target: https://django-erp-framework.readthedocs.io/
-
-.. image:: https://api.travis-ci.org/ra-systems/RA.svg?branch=master
-    :target: https://travis-ci.org/ra-systems/django-erp-framework
 
 .. image:: https://img.shields.io/codecov/c/github/ra-systems/django-erp-framework
     :target: https://codecov.io/gh/ra-systems/django-erp-framework
@@ -27,11 +24,12 @@ Offers a ready made platform where you can start to create data entry pages and 
 Features
 --------
 
-- Admin theme jazzmin support
-- A widget system to display various reports on a page.
-- Extendable and customizable
-- Python 3.6 / 3.7 / 3.8/ Django 2.2, 3.0 Compatible
-- Slick reporting integration for time series reports anf other
+* A Reporting Engine that can generate reports like time series , crosstab , and more. from any model.
+* Charting capabilities built in to turn reports into attractive charts.
+* Widget system to create dashboards and display bits of the reports results or its charts on any page you want.
+* Customizable and easily extensible.
+* Django Jazzmin theme ready (& can be used with any django admin theme)
+* Python 3.8 / 3.9 / 3.10 , Django 3.2 +
 
 
 
@@ -50,25 +48,19 @@ Quick start
 
     .. code-block:: console
 
-        $ virtualenv ra-erp
+        $ virtualenv venv
         $ source ra-erp/bin/activate
         $ pip install django-erp-framework
 
-2. Once installed, Ra provides a command to generate a new project, which would contains all the dependencies needed.
+Check out the getting started on Read The Docs `Integrating into an existing django project <https://django-erp-framework.readthedocs.io/en/latest/getting_started/index.html>`_
 
-    .. code-block:: console
 
-        $ ra-admin start my_project_name
+Demo
+----
 
-    You can always integrate Ra to your existing project, it's fairly simple. Here is the guide `Integrating into an existing django project <https://django-erp-framework.readthedocs.io/en/latest/usage/integrating_into_django.html>`_
+You can checkout a demo application `here <https://my-shop.django-erp-framework.com>`_.
 
-3. Let's run the preparation commands and get started !
-
-    .. code-block:: console
-
-        $ ./manage.py migrate
-        $ ./manage.py createsuperuser
-        $ ./manage.py runserver
+Code is available on `Github <https://github.com/RamezIssac/my-shop>`_.
 
 
 
@@ -78,6 +70,7 @@ Documentation
 Available on `Read The Docs <https://django-erp-framework.readthedocs.io/en/latest/>`_
 
 Please Proceed to the tutorial `Create a sales application Part 1 <https://django-erp-framework.readthedocs.io/en/latest/usage/tutorial_1.html>`_
+
 
 
 Testing and contribution
