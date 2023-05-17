@@ -12,7 +12,7 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
-def render_reports_menu(context):
+def render_reports_menu(context, template_name="erp_framework/reports_menu.html"):
     request = context["request"]
     is_in_reports = False
     active_base_model = ""
@@ -24,9 +24,8 @@ def render_reports_menu(context):
 
     base_models = report_registry.get_base_models_with_reports()
     if base_models:
-        t = get_template(f"erp_framework/reports_menu.html")
         output = render_to_string(
-            "erp_framework/reports_menu.html",
+            template_name,
             {
                 "base_models_reports_tuple": base_models,
                 "is_report": context.get("is_report", False),
