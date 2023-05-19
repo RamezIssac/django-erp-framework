@@ -24,11 +24,11 @@ Offers a ready made platform where you can start to create data entry pages and 
 Features
 --------
 
-* A Reporting Engine that can generate reports like time series , crosstab , and more. from any model.
-* Charting capabilities built in to turn reports into attractive charts.
-* Widget system to create dashboards and display bits of the reports results or its charts on any page you want.
+* A Reporting Engine that can generate grouped reports and/or time series and/or crosstab from any model in your apps.
+* Charting capabilities to represent the data in the reports.
+* Widget system to create dashboards and display bits of the reports results and/or its charts on any page you want.
 * Customizable and easily extensible.
-* Django Jazzmin theme ready (& can be used with any django admin theme)
+* Django Jazzmin admin theme integration ready to use.
 * Python 3.8 / 3.9 / 3.10 , Django 3.2 +
 
 
@@ -40,17 +40,6 @@ Installation
 
     $ pip install django-erp-framework
 
-
-Quick start
------------
-
-1. Create a virtual environment and install Django Ra ERP from Pypi
-
-    .. code-block:: console
-
-        $ virtualenv venv
-        $ source ra-erp/bin/activate
-        $ pip install django-erp-framework
 
 Check out the getting started on Read The Docs `Integrating into an existing django project <https://django-erp-framework.readthedocs.io/en/latest/getting_started/index.html>`_
 
@@ -71,6 +60,11 @@ Available on `Read The Docs <https://django-erp-framework.readthedocs.io/en/late
 
 Please Proceed to the tutorial `Create a sales application Part 1 <https://django-erp-framework.readthedocs.io/en/latest/getting_started/index.html>`_
 
+
+Reporting Engine
+----------------
+
+The reporting engine of this framework is released as a separate package `django-slick-reporting <https://pypi.org/project/django-slick-reporting/>`_.
 
 
 Testing and contribution
