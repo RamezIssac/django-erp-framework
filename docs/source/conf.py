@@ -141,7 +141,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "Radoc"
+htmlhelp_basename = "erp-doc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -165,7 +165,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "erp_framework.tex", "Django ERP framework Documentation", "Django ERP framework Systems", "manual"),
+    (
+        master_doc,
+        "erp_framework.tex",
+        "Django ERP framework Documentation",
+        "Django ERP framework Systems",
+        "manual",
+    ),
 ]
 
 
@@ -173,7 +179,15 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "Django ERP framework", "Django ERP framework Documentation", [author], 1)]
+man_pages = [
+    (
+        master_doc,
+        "Django ERP framework",
+        "Django ERP framework Documentation",
+        [author],
+        1,
+    )
+]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -213,3 +227,7 @@ epub_copyright = copyright
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ["search.html"]
+
+html_theme_path = [
+    "_themes",
+]

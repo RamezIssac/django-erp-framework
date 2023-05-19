@@ -4,15 +4,13 @@ Walkthrough
 =============
 
 
-Log in to My Shop demo site My Shop https://my-shop.django-erp-framework.com/_ with the following credentials:
+Log in to My Shop demo site "My Shop" https://my-shop.django-erp-framework.com/  with the following credentials:
 
-username `test`
+Username `test`
+
 Password `testuser123`
 
 This is a custom admin site with a dashboard and reporting. :ref:`erp_admin`
-
-You can add this dashboard to your current admin site, or outside of the admin completely <See how>.
-
 
 In the dashboard You see reports displayed as widgets:
 

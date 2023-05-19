@@ -51,6 +51,7 @@ You can checkout a demo application `here <https://my-shop.django-erp-framework.
 
 Code is available on `Github <https://github.com/RamezIssac/my-shop>`_.
 
+![alt text](https://github.com/RamezIssac/django-erp-framework/blob/develop/docs/source/_static/widgets.png?raw=true)
 
 
 Documentation

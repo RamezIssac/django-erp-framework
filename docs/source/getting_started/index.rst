@@ -53,22 +53,6 @@ Usage
 
 
 
-
-* Add a ``STATIC_ROOT`` setting, if your project does not have one already:
-
-.. code-block:: python
-
-    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-
-* Add ``MEDIA_ROOT`` and ``MEDIA_URL`` settings, if your project does not have these already:
-
-.. code-block:: python
-
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    MEDIA_URL = '/media/'
-
-
 * Django-erp-framework uses django-crispy-forms for the reporting forms. So we need to add this:
 
 .. code-block:: python
@@ -76,35 +60,7 @@ Usage
     CRISPY_TEMPLATE_PACK = 'bootstrap4' # or your version of bootstrap
 
 
-* Add default Jazzmin theme Settings
-
-.. code-block:: python
-
-    JAZZMIN_SETTINGS = {
-        'navigation_expanded': False,
-        "changeform_format": "single",
-    }
-
-    JAZZMIN_UI_TWEAKS = {
-        "navbar": "navbar-primary navbar-dark",
-        "no_navbar_border": True,
-        "body_small_text": False,
-        "navbar_small_text": False,
-        "sidebar_nav_small_text": False,
-        "accent": "accent-primary",
-        "sidebar": "sidebar-dark-primary",
-        "brand_colour": "navbar-primary",
-        "brand_small_text": False,
-        "sidebar_disable_expand": False,
-        "sidebar_nav_child_indent": True,
-        "sidebar_nav_compact_style": False,
-        "sidebar_nav_legacy_style": False,
-        "sidebar_nav_flat_style": False,
-        "footer_small_text": False
-    }
-
-
-* Finally, you can Change the settings for the django erp framework:
+* Add the settings for the django erp framework:
 
 .. code-block:: python
 
@@ -119,6 +75,7 @@ Usage
 
 
 Various other settings are available to configure Django ERP framework's behaviour - see :doc:`/advanced_topics/settings`.
+
 
 URLS configuration
 -------------------
