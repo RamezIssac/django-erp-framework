@@ -338,6 +338,9 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     doc_type_field_name = "doc_type"
 
+    doc_type_plus_list = None
+    doc_type_minus_list = None
+
     def get_context_data(self, **kwargs):
         from erp_framework.sites import erp_admin_site
 
@@ -353,12 +356,25 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return context
 
     def get_doc_types_q_filters(self):
+        if self.doc_type_plus_list or self.doc_type_minus_list:
+            return [
+                Q(**{f"{self.doc_type_field_name}__in": self.doc_type_plus_list})
+            ] if self.doc_type_plus_list else [], [
+                Q(**{f"{self.doc_type_field_name}__in": self.doc_type_minus_list})
+            ] if self.doc_type_minus_list else []
+
         from erp_framework.doc_types import doc_type_registry
+
         if self.base_model:
             value = doc_type_registry.get(self.base_model)
 
-            return [Q(**{f"{self.doc_type_field_name}__in": value['plus_list']})] if value['plus_list'] else [], [Q(
-                **{f"{self.doc_type_field_name}__in": value['minus_list']})] if value['minus_list'] else []
+            return [
+                Q(**{f"{self.doc_type_field_name}__in": value["plus_list"]})
+            ] if value["plus_list"] else [], [
+                Q(**{f"{self.doc_type_field_name}__in": value["minus_list"]})
+            ] if value[
+                "minus_list"
+            ] else []
 
         return [], []
 

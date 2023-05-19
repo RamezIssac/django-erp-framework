@@ -38,7 +38,10 @@
 
     function displayChart(data, $elem, chart_id) {
         let engine = "highcharts";
-        if (chart_id === '') {
+        // if ( typeof (chart_id) !== "undefined"){
+        //     engine = "chartsjs"
+        // }
+        if (chart_id === '' || typeof (chart_id) === "undefined") {
             engine = data.chart_settings[0]['engine_name'];
         } else {
             engine = data.chart_settings.find(x => x.id === chart_id).engine_name;
