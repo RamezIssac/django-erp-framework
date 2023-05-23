@@ -1,17 +1,17 @@
 
 * make settings lazy 
 * Done: adjust teh reporting engine
-* create a separate jazzmin integration theme , making the system admin theme agnostic, add other integrations
+* Addressed: create a separate jazzmin integration theme , making the system admin theme agnostic, add other integrations
 * jazzmine integration: fix report page menu and title
 * Fix jazzmin report menu open close based on active 
 * Sanity Check for charts settings
-* Easier way to deal with doc types doc type settings
+* Addressed Easier way to deal with doc types doc type settings
 * create computation field from its name ;)
 * Remove js from templates to scripts
 * auto capture base_model
 * Done: datatable to resize after load
 * Enable Compressor
-* 
+  * 
 
 Docs 
 ----
