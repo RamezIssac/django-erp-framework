@@ -16,7 +16,7 @@ function parseArabicNumbers(str) {
 function calculateTotalOnObjectArray(data, columns) {
     // Compute totals in array of objects
     // example :
-    // calculateTotalOnObjectArray ([{ value1:500, value2: 70} , {value:200, value2:15} ], ['value'])
+    // calculateTotalOnObjectArray ([{ value1:500, value2: 70} , {value1:200, value2:15} ], ['value'])
     // return {'value1': 700, value2:85}
 
     let total_container = {};
@@ -70,14 +70,6 @@ function notify_message(message, type, timeout) {
 
 }
 
-
-function notify_success(m, timeout, killer) {
-    timeout = timeout || 1500;
-    killer = killer || true;
-    m = typeof m == 'undefined' ? $.ra.defaults.messages.SuccessMessage : m;
-    m = '<i class=" icon-checkmark-circle"> </i> ' + m;
-    notify_message(m, 'success', timeout);
-}
 
 function notify_error(message, timeout) {
     timeout = typeof timeout == 'undefined' ? 4000 : timeout;
@@ -237,29 +229,15 @@ function capfirst(s) {
         debug: true,
 
         messages: {
-            RedirectionMessage: 'Redirecting...',
+
             DoneMessage: "Done...",
             SuccessMessage: "<i class='icon-checkmark-circle'></i> Done...",
             ErrorMessage: "An error happened :( ",
             WaitMessage: 'Just a moment...',
             LoadingMessage: 'loading...',
-            slug_verbose: 'slug',
-            title_verbose: 'title',
-            choose: 'choose',
-            choice: 'choice',
-            to_code: 'to code',
-            from_code: 'from code',
-            select_all: 'Select All',
-            select_none: 'Select None',
-            inverse: 'Inverse',
-            apply: 'Apply',
-            choiceBeenMade: 'Choice made',
-            total: 'Total',
-            availableReports: 'Available Reports',
-            availableCharts: 'Available Charts',
         },
         urls: {
-            settings_portal: '/backend/settings/update/',
+
         },
     };
 

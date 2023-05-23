@@ -11,7 +11,6 @@
             $elem.hide()
         } else {
             notify_error();
-            // unblockDiv($elem);
         }
     }
 

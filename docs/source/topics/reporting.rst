@@ -4,6 +4,15 @@
 Reporting
 ==========
 
+Reporting is a very important part of any ERP system. It allows you to get a quick overview of your business and to make decisions based on that.
+The Reporting engine of the framework was released as a separate package "Django-slick-reporting"
+
+Why? Because it's a very powerful tool that can be used in any Django project, not only in an ERP systems or in a business application.
+
+You can check its docs here : https://django-slick-reporting.readthedocs.io/en/latest/
+
+
+
 
 As you may have seen in the tutorial Part 2 :ref:`tutorial_2` , you can create a report by creating a subclass of ``ReportView`` class
 and register it with the decorator ``@register_report_view``
@@ -25,40 +34,4 @@ The model in which this report must be imported during django load. Preferably o
 
 By registering this report, the dashboard have now a new menu item "reports", with a Product sub menu in which you'll find this report FilterForm and results.
 
-Report View
-------------
-
-A view class which represent a report with a default structure..
-
-_ document hooks , cache _
-
-
-Report Form
-------------
-
-The report form get generated automatically and you can customize it on several levels.
-By default the filter form contains
-
-1. A Date to filter
-2. All foreign keys found in the ``report_model`` ,  displayed as a SelectMultiple Widget.
-3. In case of a cross tab report, it shows a check "Show the rest".
-
-The report form is responsible for delivering those filters into a queryset filters and hand them to the ReportGenerator
-
-Report JSON Response Structure
--------------------------------
-
-// todo
-
-
-Javascript
-~~~~~~~~~~~
-
-
-.. _report_loader_api:
-
-Report Loader API
------------------
-
-Coming soon
 
