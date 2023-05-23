@@ -16,7 +16,7 @@
              data-chart-id="{{ data_chart_id|default:'' }}"
              data-display-chart-selector="{{ data_display_chart_selector }}"
         >
-            {% if report.chart_settings and not no_chart %}
+            {% if report.chart_settings and no_chart == False %}
                 <div id="container" data-report-chart style="width:100%; height:400px;"></div>
                 {#                <canvas data-report-chart height="100"></canvas>#}
             {% endif %}

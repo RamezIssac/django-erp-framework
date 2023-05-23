@@ -1260,63 +1260,63 @@ class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
         formset.save()
 
 
-class RaUserAdmin(RaThemeMixin, UserTabularPermissionsMixin, UserAdmin):
-    enable_view_view = False
-    date_hierarchy = None
-    fields = None
-    list_display_links = ["username"]
-    change_user_password_template = (
-        f"{app_settings.RA_THEME}/auth/user/change_password.html"
-    )
-    list_display = ("username", "is_superuser", "last_login", "is_active")
-
-    save_on_top = True
-
-    fieldsets = (
-        (None, {"fields": ("username", "password")}),
-        (_("Personal info"), {"fields": (("first_name", "last_name", "email"),)}),
-        (
-            _("Permissions"),
-            {"fields": (("is_active", "is_superuser"), "groups", "user_permissions")},
-        ),
-        # (_('Important dates'), {'fields': (('last_login', 'date_joined'),)}),
-    )
-    list_filter = ("is_superuser", "is_active", "groups")
-    form = CustomUserChangeForm
-
-    def get_actions(self, request):
-        actions = super(RaUserAdmin, self).get_actions(request)
-        if "delete_selected" in actions:
-            del actions["delete_selected"]
-        return actions
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def save_model(self, request, obj, form, change):
-        obj.is_staff = True
-        super(RaUserAdmin, self).save_model(request, obj, form, change)
-
-    def get_inline_instances(self, request, obj=None):
-        if obj is None:
-            return []
-        return super(RaUserAdmin, self).get_inline_instances(request, obj)
-
-    def changelist_view(self, request, extra_context=None):
-        extra_context = {"has_detached_sidebar": True}
-        return super(RaUserAdmin, self).changelist_view(request, extra_context)
-
-
-class RaGroupAdmin(RaThemeMixin, GroupTabularPermissionsMixin, GroupAdmin):
-    enable_view_view = False
-    date_hierarchy = None
-    fields = None
-    list_display_links = ["name"]
-    list_display = ["name"]
-
-    save_on_top = True
-
-
-
-erp_admin_site.register(Group, RaGroupAdmin)
-erp_admin_site.register(User, RaUserAdmin)
+# class RaUserAdmin(RaThemeMixin, UserTabularPermissionsMixin, UserAdmin):
+#     enable_view_view = False
+#     date_hierarchy = None
+#     fields = None
+#     list_display_links = ["username"]
+#     change_user_password_template = (
+#         f"{app_settings.RA_THEME}/auth/user/change_password.html"
+#     )
+#     list_display = ("username", "is_superuser", "last_login", "is_active")
+#
+#     save_on_top = True
+#
+#     fieldsets = (
+#         (None, {"fields": ("username", "password")}),
+#         (_("Personal info"), {"fields": (("first_name", "last_name", "email"),)}),
+#         (
+#             _("Permissions"),
+#             {"fields": (("is_active", "is_superuser"), "groups", "user_permissions")},
+#         ),
+#         # (_('Important dates'), {'fields': (('last_login', 'date_joined'),)}),
+#     )
+#     list_filter = ("is_superuser", "is_active", "groups")
+#     form = CustomUserChangeForm
+#
+#     def get_actions(self, request):
+#         actions = super(RaUserAdmin, self).get_actions(request)
+#         if "delete_selected" in actions:
+#             del actions["delete_selected"]
+#         return actions
+#
+#     def has_delete_permission(self, request, obj=None):
+#         return False
+#
+#     def save_model(self, request, obj, form, change):
+#         obj.is_staff = True
+#         super(RaUserAdmin, self).save_model(request, obj, form, change)
+#
+#     def get_inline_instances(self, request, obj=None):
+#         if obj is None:
+#             return []
+#         return super(RaUserAdmin, self).get_inline_instances(request, obj)
+#
+#     def changelist_view(self, request, extra_context=None):
+#         extra_context = {"has_detached_sidebar": True}
+#         return super(RaUserAdmin, self).changelist_view(request, extra_context)
+#
+#
+# class RaGroupAdmin(RaThemeMixin, GroupTabularPermissionsMixin, GroupAdmin):
+#     enable_view_view = False
+#     date_hierarchy = None
+#     fields = None
+#     list_display_links = ["name"]
+#     list_display = ["name"]
+#
+#     save_on_top = True
+#
+#
+#
+# erp_admin_site.register(Group, RaGroupAdmin)
+# erp_admin_site.register(User, RaUserAdmin)

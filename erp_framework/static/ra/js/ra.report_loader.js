@@ -121,7 +121,7 @@
         return $container
     }
 
-    $('body').on('click', '[data-chart-id]', function (e) {
+    $('body').on('click', 'a[data-chart-id]', function (e) {
         e.preventDefault();
         let $this = $(this);
         let data = $.ra.cache[$this.attr('data-report-slug')]
