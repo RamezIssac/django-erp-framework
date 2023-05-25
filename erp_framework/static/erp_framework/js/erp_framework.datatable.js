@@ -45,7 +45,6 @@
     function buildAndInitializeDataTable(data, $elem, extraOptions, successFunction) {
         // Responsible for turning a ReportView Response into a datatable.
 
-        let isGroup = true;
         let opts = $.extend({}, $.erp_framework.datatable.defaults, extraOptions);
         opts['datatableContainer'] = $elem;
 
@@ -67,7 +66,7 @@
         datatable_container.html(constructTable(
             $.erp_framework.datatable.defaults.tableCssClass, data['columns'], column_names,
             provide_total, opts.messages.total, total_fields, data.data));
-        initializeReportDatatable(datatable_container.find('table'), data, isGroup, opts);
+        initializeReportDatatable(datatable_container.find('table'), data, opts);
 
         if (typeof (successFunction) === 'function') {
             successFunction(data);
@@ -76,7 +75,7 @@
     }
 
 
-    function getDatatableColumns(isGroup, data) {
+    function getDatatableColumns(data) {
         let columns = [];
         for (let i = 0; i < data['columns'].length; i++) {
 
@@ -93,7 +92,7 @@
     }
 
 
-    function initializeReportDatatable(tableSelector, data, isGroup, extraOptions) {
+    function initializeReportDatatable(tableSelector, data, extraOptions) {
         tableSelector = typeof tableSelector != 'undefined' ? tableSelector : '.datatable';
         extraOptions = typeof extraOptions != 'undefined' ? extraOptions : {};
 
@@ -118,7 +117,7 @@
         datatableOptions.sorting = [];
         datatableOptions.processing = true;
         datatableOptions.data = data['data'];
-        datatableOptions.columns = getDatatableColumns(isGroup, data);
+        datatableOptions.columns = getDatatableColumns(data);
         datatableOptions.initComplete = function (settings, json) {
             setTimeout(function () {
                 if (opts.enableFixedHeader) {

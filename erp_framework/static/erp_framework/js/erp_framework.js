@@ -13,6 +13,7 @@ function parseArabicNumbers(str) {
     }));
 }
 
+
 function calculateTotalOnObjectArray(data, columns) {
     // Compute totals in array of objects
     // example :
@@ -88,37 +89,6 @@ function notify_error(message, timeout) {
 
 }
 
-
-function blockDiv(div) {
-    div = typeof div == 'undefined' ? $(window) : div;
-    div.block({
-        overlayCSS: {
-            backgroundColor: '#fff'
-        },
-        message: '<img src="/static/erp_framework/images/loading.gif" />  ' + $.erp_framework.defaults.messages.WaitMessage,
-        css: {
-            border: 'none',
-            color: '#333',
-            background: 'none'
-        }
-    });
-}
-
-function blockInput($input) {
-    $input = typeof $input == 'undefined' ? $('.main-content') : $input;
-    $input.block({
-        overlayCSS: {
-            backgroundColor: '#fff'
-        },
-        message: '<img src="/static/erp_framework/images/loading.gif" /> ',
-        css: {
-            border: 'none',
-            color: '#333',
-            background: 'none'
-        }
-    });
-}
-
 function unblockDiv(div) {
     div = typeof div == 'undefined' ? $(window) : div;
 
@@ -140,11 +110,6 @@ function executeFunctionByName(functionName, context /*, args */) {
         console.error('Function {0} is not found the context {1}'.format(functionName, context), err)
     }
     return func.apply(context, args);
-}
-
-
-function capfirst(s) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 

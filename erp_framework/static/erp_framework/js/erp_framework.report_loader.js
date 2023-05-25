@@ -114,7 +114,7 @@
             else icon = '<i class="fas fa-chart-bar"></i>';
 
             ul.append('<li class="nav-link"><a href class="' + a_class + '" data-chart-id="' + chart.id + '" ' +
-                'data-report-slug="' + report_slug + '">' + icon + ' ' + capfirst(chart.title) + '</a></li>')
+                'data-report-slug="' + report_slug + '">' + icon + ' ' + chart.title + '</a></li>')
         }
         $elem.prepend($container)
         return $container
