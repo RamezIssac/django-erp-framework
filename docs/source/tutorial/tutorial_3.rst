@@ -164,9 +164,9 @@ So what did we do ?
 2. we accessed the response sent from the server `data` which is a list of the results, we accessed the first item in that array, and got the `__balance__` property
 
 .. hint::
-    The default success callback `$.ra.report_loader.loadComponents` checks for the existence of elements with attr `[data-report-chart]`
-    if found it calls `$.ra.report_loader..displayChart`.
-    It also check for children elements with attr `[data-report-table]` , if found it calls `$.ra.datatable.buildAdnInitializeDatatable` and pass the response, $elem arguments.
+    The default success callback `$.erp_framework.report_loader.loadComponents` checks for the existence of elements with attr `[data-report-chart]`
+    if found it calls `$.erp_framework.report_loader..displayChart`.
+    It also check for children elements with attr `[data-report-table]` , if found it calls `$.erp_framework.datatable.buildAdnInitializeDatatable` and pass the response, $elem arguments.
 
 
 Let's add another report.

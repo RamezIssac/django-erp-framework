@@ -10,7 +10,7 @@
 
 {% block nav-global %}{% endblock %}
 {% block extrastyle %}
-    <link href="{% static "ra/css/animate.min.css" %}" rel="stylesheet" type="text/css">
+    <link href="{% static "erp_framework/css/animate.min.css" %}" rel="stylesheet" type="text/css">
 
     <style>
         .groupChartControllers {
@@ -26,7 +26,7 @@
 
 {% endblock %}
 {#{% block sidebar %}#}
-{#    {% include 'ra/sidebar.html' %}#}
+{#    {% include 'erp_framework/sidebar.html' %}#}
 {#{% endblock %}#}
 
 {% block extrajs %}
@@ -37,10 +37,10 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
 
-    <script type="text/javascript" src="{% static "ra/js/ra.js" %}"></script>
+    <script type="text/javascript" src="{% static "erp_framework/js/erp_framework.js" %}"></script>
 
     <script>
-        $.ra.rtl = {% if LANGUAGE_BIDI %} true ;{% else %} false; {% endif %}
+        $.erp_framework.rtl = {% if LANGUAGE_BIDI %} true ;{% else %} false; {% endif %}
     </script>
 
 
@@ -51,26 +51,23 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap4.min.css"/>
 
 
-    {#<script type="text/javascript" charset="utf8"#}
-    {#        src="{{ STATIC_URL }}ra/js/vendor/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>#}
-    {#<script type="text/javascript" src="{{ STATIC_URL }}ra/js/vendor/daterangepicker.js"></script>#}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.highcharts.com/highcharts.js"></script>
 
 
-    <script src="{% static 'slick_reporting/ra.chartsjs.js' %}"></script>
+    <script src="{% static 'slick_reporting/erp_framework.chartsjs.js' %}"></script>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.css"/>
 
-    <script type="text/javascript" src="{% static 'ra/js/ra.report_loader.js' %}"></script>
-    <script type="text/javascript" src="{% static 'ra/js/ra.dataComprehension.js' %}"></script>
+    <script type="text/javascript" src="{% static 'erp_framework/js/erp_framework.report_loader.js' %}"></script>
+{#    <script type="text/javascript" src="{% static 'erp_framework/js/erp_framework.dataComprehension.js' %}"></script>#}
 
     <script src="{% static 'slick_reporting/main.js' %}"></script>
-    <script src="{% static 'slick_reporting/ra.highchart.js' %}"></script>
-    <script src="{% static 'slick_reporting/ra.chartsjs.js' %}"></script>
+    <script src="{% static 'slick_reporting/erp_framework.highchart.js' %}"></script>
+    <script src="{% static 'slick_reporting/erp_framework.chartsjs.js' %}"></script>
 
 
 
-    <script src="{% static 'ra/js/ra.datatable.js' %}"></script>
+    <script src="{% static 'erp_framework/js/erp_framework.datatable.js' %}"></script>
 
 
     <script>
@@ -129,8 +126,8 @@
         jQuery(document).ready(function () {
             $('.page-container').show();
             {# RA_Main.init(); #}
-            $.ra.focus_first();
-            $.ra.report_loader.initialize();
+            $.erp_framework.focus_first();
+            $.erp_framework.report_loader.initialize();
             $('#changelist-form table').addClass('table table-hover table-striped table-condensed table-bordered')
 
         });

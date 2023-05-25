@@ -21,16 +21,16 @@
         chartElem.append("<canvas width=\"400\" height=\"100\"></canvas>");
         if (chartElem.length !== 0 && data.chart_settings.length !== 0) {
 
-            $.ra.report_loader.displayChart(data, chartElem, chart_id);
+            $.erp_framework.report_loader.displayChart(data, chartElem, chart_id);
         }
 
         if (display_chart_selector !== "False") {
-            $.ra.report_loader.createChartsUIfromResponse(data, $elem);
+            $.erp_framework.report_loader.createChartsUIfromResponse(data, $elem);
         }
 
         let tableElem = $elem.find('[data-report-table]');
         if (tableElem.length !== 0) {
-            $.ra.datatable.buildAdnInitializeDatatable(data, tableElem);
+            $.erp_framework.datatable.buildAdnInitializeDatatable(data, tableElem);
         }
 
     }
@@ -45,15 +45,15 @@
         } else {
             engine = data.chart_settings.find(x => x.id === chart_id).engine_name;
         }
-        executeFunctionByName($.ra.report_loader.chart_engines[engine], window, data, $elem, chart_id);
+        executeFunctionByName($.erp_framework.report_loader.chart_engines[engine], window, data, $elem, chart_id);
     }
 
 
     function refreshReportWidget($elem, extra_params) {
         let successFunctionName = $elem.attr('data-success-callback');
-        successFunctionName = successFunctionName || "$.ra.report_loader.loadComponents";
+        successFunctionName = successFunctionName || "$.erp_framework.report_loader.loadComponents";
         let failFunctionName = $elem.attr('data-fail-callback');
-        failFunctionName = failFunctionName || "$.ra.report_loader.failFunction";
+        failFunctionName = failFunctionName || "$.erp_framework.report_loader.failFunction";
 
         let data = {};
 
@@ -75,7 +75,7 @@
         }
 
         $.get(url, data, function (data) {
-            $.ra.cache[data['report_slug']] = jQuery.extend(true, {}, data);
+            $.erp_framework.cache[data['report_slug']] = jQuery.extend(true, {}, data);
             executeFunctionByName(successFunctionName, window, data, $elem);
         }).fail(function (data) {
             executeFunctionByName(failFunctionName, window, data, $elem);
@@ -123,14 +123,14 @@
     $('body').on('click', 'a[data-chart-id]', function (e) {
         e.preventDefault();
         let $this = $(this);
-        let data = $.ra.cache[$this.attr('data-report-slug')]
+        let data = $.erp_framework.cache[$this.attr('data-report-slug')]
         let chart_id = $this.attr('data-chart-id')
-        $.ra.report_loader.displayChart(data, $this.parents('[data-report-widget]').find('[data-report-chart]'), chart_id)
+        $.erp_framework.report_loader.displayChart(data, $this.parents('[data-report-widget]').find('[data-report-chart]'), chart_id)
 
     });
 
-    $.ra.report_loader = {
-        cache: $.ra.cache,
+    $.erp_framework.report_loader = {
+        cache: $.erp_framework.cache,
         initialize: initialize,
         refreshReportWidget: refreshReportWidget,
         failFunction: failFunction,

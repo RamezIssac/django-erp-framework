@@ -11,4 +11,4 @@ class RaSuitMenu(object):
         from erp_framework.admin.templatetags.suit_menu import get_menu as suit_get_menu
 
         context["app_list"] = suit_get_menu(context, request)
-        return get_template("ra/menu.html").render(context.flatten())
+        return get_template("erp_framework/menu.html").render(context.flatten())

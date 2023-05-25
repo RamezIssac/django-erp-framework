@@ -53,7 +53,7 @@ function notify_message(message, type, timeout) {
             text: message,
             type: type,
             dismissQueue: false,
-            layout: $.ra.rtl ? 'topLeft' : 'topRight',
+            layout: $.erp_framework.rtl ? 'topLeft' : 'topRight',
             killer: true,
             theme: 'relax',
             timeout: timeout,
@@ -73,7 +73,7 @@ function notify_message(message, type, timeout) {
 
 function notify_error(message, timeout) {
     timeout = typeof timeout == 'undefined' ? 4000 : timeout;
-    message = typeof message == 'undefined' ? $.ra.defaults.messages.ErrorMessage : message;
+    message = typeof message == 'undefined' ? $.erp_framework.defaults.messages.ErrorMessage : message;
     if (typeof message == 'object') {
         $.each(message, function (i, e) {
             let html = $('<ul>');
@@ -95,7 +95,7 @@ function blockDiv(div) {
         overlayCSS: {
             backgroundColor: '#fff'
         },
-        message: '<img src="/static/ra/images/loading.gif" />  ' + $.ra.defaults.messages.WaitMessage,
+        message: '<img src="/static/erp_framework/images/loading.gif" />  ' + $.erp_framework.defaults.messages.WaitMessage,
         css: {
             border: 'none',
             color: '#333',
@@ -110,7 +110,7 @@ function blockInput($input) {
         overlayCSS: {
             backgroundColor: '#fff'
         },
-        message: '<img src="/static/ra/images/loading.gif" /> ',
+        message: '<img src="/static/erp_framework/images/loading.gif" /> ',
         css: {
             border: 'none',
             color: '#333',
@@ -151,7 +151,7 @@ function capfirst(s) {
 (function ($) {
 
 
-    // let opts = $.extend({}, $.ra.defaults, options);
+    // let opts = $.extend({}, $.erp_framework.defaults, options);
 
     function enable_tab_support() {
         //support for enter key as a navigation
@@ -217,7 +217,7 @@ function capfirst(s) {
         });
     }
 
-    $.ra = {
+    $.erp_framework = {
         enterTabSupport: enable_tab_support,
         smartParseFloat: smartParseFloat,
         focus_first: focus_first,
@@ -225,7 +225,7 @@ function capfirst(s) {
     }
     // };
 
-    $.ra.defaults = {
+    $.erp_framework.defaults = {
         debug: true,
 
         messages: {
@@ -241,10 +241,10 @@ function capfirst(s) {
         },
     };
 
-    $.ra.cache = {};
-    $.ra.rtl = false;
+    $.erp_framework.cache = {};
+    $.erp_framework.rtl = false;
 
-    $.ra.debug = false; // turned on only on dev ;
+    $.erp_framework.debug = false; // turned on only on dev ;
 }(jQuery));
 
         

@@ -109,7 +109,7 @@ class RaAdminSiteBase(AdminSite):
             "name": "ERP Framework System",
             "icons": [
                 {
-                    "src": "/static/ra/images/ra_systems.png",
+                    "src": "/static/erp_framework/images/ra_systems.png",
                     "type": "image/png",
                     "sizes": "147x147",
                 },

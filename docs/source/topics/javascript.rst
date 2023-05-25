@@ -4,5 +4,5 @@ Javascript
 ==========
 
 Document
-$.ra
-$.ra.report_loader
+$.erp_framework
+$.erp_framework.report_loader

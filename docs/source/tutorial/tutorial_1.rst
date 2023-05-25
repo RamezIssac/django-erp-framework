@@ -180,8 +180,8 @@ a template file `admin/sales_change_form.html` and in it we can write:
                         let holder = $(e.target).parents('.dynamic-saleslinetransaction_set');
                         let $quantity = holder.find('[name*=quantity]');
                         let $price = holder.find('[name*=price]');
-                        let quantity = $.ra.smartParseFloat($quantity.val());
-                        let price = $.ra.smartParseFloat($price.val());
+                        let quantity = $.erp_framework.smartParseFloat($quantity.val());
+                        let price = $.erp_framework.smartParseFloat($price.val());
                         holder.find('[name*=value]').val(quantity * price)
                     }
 
@@ -203,7 +203,7 @@ Notice here:
 1. we `extends` from `erp_framework/change_form.html'`
    This enables us to change themes of your Django ERP framework dashboard rather easily. You can read more about :ref:`theming`
 
-2. we use :func:`$.ra.smartParseFloat` in the javascript.
+2. we use :func:`$.erp_framework.smartParseFloat` in the javascript.
    This is a custom convenience function to handle strings or empty value when numbers are expected (in which case `value` result would be `NaN`.
    If you want to try just replace smartParseFloat with normal `parseFloat` and enter a string or make empty the quantity and/or price field.
 

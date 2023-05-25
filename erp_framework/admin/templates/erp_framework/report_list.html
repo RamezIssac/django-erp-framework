@@ -39,7 +39,7 @@
             </div>
             <div class="card-body">
 
-                {% include 'ra/report_list_forms.html' %}
+                {% include 'erp_framework/report_list_forms.html' %}
             </div>
         </div>
     </div>
@@ -92,7 +92,7 @@
                 let $this = $(this);
                 let $elem = $('[data-report-widget][data-report-url="' + $this.attr('data-report-url') + '"]')
                 let $form = $('.formContainer[data-report-url="' + $this.attr('data-report-url') + '"] form')
-                $.ra.report_loader.refreshReportWidget($elem, $form.serialize())
+                $.erp_framework.report_loader.refreshReportWidget($elem, $form.serialize())
             });
 
             let hash = document.location.hash;

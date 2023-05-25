@@ -6,29 +6,30 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('ra', '0001_initial'),
-        ('cash', '0001_initial'),
-        ('store', '0001_initial'),
-        ('payment', '0001_initial'),
+        ("erp_framework", "0001_initial"),
+        ("cash", "0001_initial"),
+        ("store", "0001_initial"),
+        ("payment", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TopSearchModel',
+            name="TopSearchModel",
             fields=[
-                ('id', models.PositiveIntegerField(serialize=False, primary_key=True)),
-                ('slug', models.CharField(max_length=255)),
-                ('name', models.TextField()),
-                ('blob_text', models.TextField(null=True)),
-                ('identifier', models.CharField(max_length=255)),
+                ("id", models.PositiveIntegerField(serialize=False, primary_key=True)),
+                ("slug", models.CharField(max_length=255)),
+                ("name", models.TextField()),
+                ("blob_text", models.TextField(null=True)),
+                ("identifier", models.CharField(max_length=255)),
             ],
             options={
-                'abstract': False,
-                'db_table': 'ra_topsearch',
-                'managed': False,
+                "abstract": False,
+                "db_table": "ra_topsearch",
+                "managed": False,
             },
         ),
-        migrations.RunSQL("""
+        migrations.RunSQL(
+            """
         create  VIEW ra_topsearch as
             SELECT ID, SLUG , name ,  '' as blob_text, 'client' as identifier
             from store_client
@@ -97,12 +98,14 @@ class Migration(migrations.Migration):
             SELECT ID, SLUG , slug ,  '', type
             from payment_paymentmovement
 
-        """),
-
-        migrations.RunSQL("""
+        """
+        ),
+        migrations.RunSQL(
+            """
             create MATERIALIZED VIEW ra_topsearch_materialized as
             select * from ra_topsearch ;
            create INDEX search_title on ra_topsearch_materialized(name);
             create INDEX search_slug on ra_topsearch_materialized(slug);
-        """)
+        """
+        ),
     ]

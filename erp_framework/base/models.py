@@ -82,7 +82,7 @@ class ERPMixin:
     @classmethod
     def get_class_name(cls):
         """
-        return the class name, usable when a ra model is mimicking (ie:proxying)
+        return the class name, usable when a erp_framework model is mimicking (ie:proxying)
         another model.
         This method is used is get_doc_type_* functions,
         This method is made to avoid to repeat registered type to make adjustments
@@ -177,7 +177,6 @@ class EntityModel(ERPMixin, RAModel):
 
             if not self.lastmod_user_id and self.owner_id:
                 self.lastmod_user_id = self.owner_id
-
 
         self.lastmod = now()
 
