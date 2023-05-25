@@ -46,9 +46,11 @@ This code above will be actually rendered as this in the html page:
                 </div>
 
 The ``data-report-widget`` attribute is used by the javascript to find the
-widget and render the report. The ``data-report-url`` attribute is the url
-that will be used to fetch the data. The ``data-extra-params`` attribute
-is used to pass extra parameters to the report. The ``data-success-callback``
+widget and render the report.
+you can add [data-no-auto-load] to the widget to prevent the widget from loading automatically.
+
+The ``data-report-url`` attribute is the url that will be used to fetch the data.
+The ``data-extra-params`` attribute is used to pass extra parameters to the report. The ``data-success-callback``
 attribute is used to pass a javascript function that will be called after
 the report data is retrieved.
 The ``data-fail-callback`` attribute is used to pass a javascript function
@@ -64,11 +66,6 @@ if the report loader should display the chart selectors links.
 The ``data-report-chart`` attribute is used by the javascript to find the
 container for the chart. The ``data-report-table`` attribute is used by the
 javascript to find the container for the table.
-
-
-The $.erp_framework jquery plugin is fired on document ready and it will
-search for all elements with the ``data-report-widget`` attribute and
-call the report, get the data and render the chart and the table.
 
 
 get_html_panel Tag can accept a ``template_name`` parameter to render the

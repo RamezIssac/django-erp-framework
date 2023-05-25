@@ -10,7 +10,7 @@
     let _instances = {}
 
 
-    function constructTable(id, css_class, cols, cols_names, add_footer, total_verbose, total_fields, data) {
+    function constructTable(css_class, cols, cols_names, add_footer, total_verbose, total_fields, data) {
         // Construct an HTML table , header and footer , without a body as it is filled by th datatable.net plugin
         cols = typeof cols != 'undefined' ? cols : false;
         cols_names = typeof cols_names != 'undefined' ? cols_names : cols;
@@ -64,8 +64,7 @@
 
         if (total_fields.length === 0) provide_total = false;
 
-        let datatable_slug = data.report_slug;
-        datatable_container.html(constructTable(datatable_slug,
+        datatable_container.html(constructTable(
             $.erp_framework.datatable.defaults.tableCssClass, data['columns'], column_names,
             provide_total, opts.messages.total, total_fields, data.data));
         initializeReportDatatable(datatable_container.find('table'), data, isGroup, opts);

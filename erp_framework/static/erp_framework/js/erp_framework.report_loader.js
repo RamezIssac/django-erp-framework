@@ -51,7 +51,7 @@
 
     function refreshReportWidget($elem, extra_params) {
         let successFunctionName = $elem.attr('data-success-callback');
-        successFunctionName = successFunctionName || "$.erp_framework.report_loader.loadComponents";
+        successFunctionName = successFunctionName || "$.erp_framework.report_loader.successCallback";
         let failFunctionName = $elem.attr('data-fail-callback');
         failFunctionName = failFunctionName || "$.erp_framework.report_loader.failFunction";
 
@@ -136,14 +136,10 @@
         failFunction: failFunction,
         displayChart: displayChart,
         createChartsUIfromResponse: createChartsUIfromResponse,
-        // displayReport: displayReport,
-        loadComponents: loadComponents,
+        successCallback: loadComponents,
         "chart_engines": {
             'highcharts': '$.slick_reporting.highcharts.displayChart',
             "chartsjs": '$.slick_reporting.chartsjs.displayChart',
         }
-        // 'highcharts': '$.slick_reporting.highcharts.displayChart',
-        // "chartsjs": '$.slick_reporting.chartsjs.displayChart',
-
     }
 })(jQuery);

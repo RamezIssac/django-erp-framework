@@ -196,12 +196,8 @@ function capfirst(s) {
 
     }
 
-    function start_load() {
-
-    }
-
     function focus_first($div) {
-        $div = $div || $('#ra_page_content');
+        $div = $div || $('body');
         $div.find('input:visible').not(':disabled').not('.hasDatepicker').not('.timeinput').first().select().focus();
     }
 
@@ -222,7 +218,7 @@ function capfirst(s) {
         smartParseFloat: smartParseFloat,
         focus_first: focus_first,
 
-    }
+    } ;
     // };
 
     $.erp_framework.defaults = {
