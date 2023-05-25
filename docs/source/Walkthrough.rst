@@ -25,23 +25,11 @@ In the dashboard You see reports displayed as widgets:
   :align: center
 
 
-Links
-~~~~~
+*Links*
 
 * How to add a widget :ref:`widgets`
 * Check the demo index template on github https://github.com/ra-systems/my-shop/blob/main/templates/admin/custom_index.html
 * Create a Time Series <link here>
-
-In the left hand side you see the main menu of django apps.
-You can see Expense, Sales , and purchase apps.
-
-Expense and Expense Transaction are normal django models and a basic ModelAdmin .
-
-Sales and Purchase are ERP framework models and a ERPModelAdmin. <ERP ModelAdmin link Here>
-
-
-After you can see the Reports section , you can browse the reports and find the reports you see in the dashboard there.
-
 
 Apps
 ----
@@ -54,4 +42,20 @@ Expense, Sales & Purchase
 #. Sales: In Sales app we use bundled base model and ModelAdmin
 
 #. Purchase: In Purchase app we can see how to create & customize reports calculations.
+
+
+
+Reports
+-------
+You can find the reports section in the left hand side menu. The reports are grouped by base model. You can create your own reports and calculations. The reports are displayed as tables and charts. You can also export the reports to csv and excel.
+Check :ref:`reporting` for more details.
+
+
+Front end integration
+---------------------
+
+You can use the framework in your own views and templates, and not just in the admin site.
+Find the "Front End Dashboard" link in the left hand side menu. This is a simple dashboard with a few charts and tables.
+You can use this as a starting point for your own dashboard. Code on github: https://github.com/RamezIssac/my-shop/blob/main/templates/front_end_dashboard.html
+
 

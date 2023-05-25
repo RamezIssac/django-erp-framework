@@ -50,8 +50,8 @@ widget and render the report.
 you can add [data-no-auto-load] to the widget to prevent the widget from loading automatically.
 
 The ``data-report-url`` attribute is the url that will be used to fetch the data.
-The ``data-extra-params`` attribute is used to pass extra parameters to the report. The ``data-success-callback``
-attribute is used to pass a javascript function that will be called after
+The ``data-extra-params`` attribute is used to pass extra parameters to the report.
+The ``data-success-callback`` attribute is used to pass a javascript function that will be called after
 the report data is retrieved.
 The ``data-fail-callback`` attribute is used to pass a javascript function
 that will be called if the report data retrieval fails.
@@ -75,3 +75,29 @@ report using a custom template. By default it renders the
 
 
 
+Customization
+-------------
+
+You You can customize how the widget is loading by defining your own success call-back
+and fail call-back functions.
+
+The success call-back function will receive the report data as a parameter
+
+
+.. code-block:: html+django
+
+        {% load i18n static erp_reporting_tags %}
+
+        <div class="widget-container">
+            {% get_report base_model='expense' report_slug='ExpensesTotalStatement' as ExpensesTotalStatement %}
+            {% get_html_panel ExpensesTotalStatement data-success-callback='my_success_callback' %}
+        </div>
+
+        <script>
+            function my_success_callback(data, $element) {
+                $element.html(data);
+                console.log(data);
+            }
+        </script>
+
+For deeper customization visit :ref:`_javascript` section.

@@ -7,11 +7,11 @@ Topics
    admin
    reporting
    widgets
+   javascript
    doc_types
    base_classes
    settings
    customizing_print
-   javascript
    permissions
    themeing
    roadmap
