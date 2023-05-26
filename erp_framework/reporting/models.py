@@ -7,17 +7,19 @@ from django.utils.translation import gettext_lazy as _
 User = get_user_model()
 
 
-class Reports(models.Model):
+class Report(models.Model):
     code = models.CharField(
         max_length=255, editable=False, primary_key=True, verbose_name=_("Code")
     )
     deleted = models.BooleanField(default=False, verbose_name=_("deleted"))
 
     users = models.ManyToManyField(
-        User, through="ReportUserPermission", verbose_name=_("Users")
+        User, through="UserReportPermission", verbose_name=_("Users")
     )
     groups = models.ManyToManyField(
-        Group, through="ReportGroupPermission", verbose_name=_("Groups")
+        Group,
+        through="GroupReportPermission",
+        verbose_name=_("Groups"),
     )
 
     def __str__(self):
@@ -34,24 +36,24 @@ class ReportPermissionMixin(models.Model):
 
     deleted = models.BooleanField(default=False, verbose_name=_("deleted"))
     report = models.ForeignKey(
-        Reports, on_delete=models.CASCADE, verbose_name=_("Report")
+        Report, on_delete=models.CASCADE, verbose_name=_("Report")
     )
 
     class Meta:
         abstract = True
 
 
-class ReportUserPermission(ReportPermissionMixin, models.Model):
+class UserReportPermission(ReportPermissionMixin, models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_("User"))
 
     class Meta:
-        verbose_name = _("Report User Permission")
-        verbose_name_plural = _("Report User Permissions")
+        verbose_name = _("User Report Permission")
+        verbose_name_plural = _("User Report Permissions")
 
 
-class ReportGroupPermission(ReportPermissionMixin, models.Model):
+class GroupReportPermission(ReportPermissionMixin, models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, verbose_name=_("Group"))
 
     class Meta:
-        verbose_name = _("Report Group Permission")
-        verbose_name_plural = _("Report Group Permissions")
+        verbose_name = _("Group Report Permission")
+        verbose_name_plural = _("Group Report Permissions")

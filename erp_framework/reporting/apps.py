@@ -29,20 +29,20 @@ def autodiscover():
 
 
 def sync_reports():
-    from .models import Reports
+    from .models import Report
     from .registry import report_registry
 
     reports = report_registry.get_all_reports()
 
     try:
-        reports_in_db = list(Reports.objects.all().values_list("code", flat=True))
+        reports_in_db = list(Report.objects.all().values_list("code", flat=True))
     except (ProgrammingError, OperationalError):
         # Before first migrations
         return
 
     for report_klass in reports:
         code = f"{report_klass.get_base_model_name()}.{report_klass.get_report_slug()}"
-        c, created = Reports.objects.update_or_create(
+        c, created = Report.objects.update_or_create(
             code=code,
         )
         c.deleted = False
@@ -52,7 +52,7 @@ def sync_reports():
         except ValueError:
             pass
 
-    Reports.objects.filter(code__in=reports_in_db).update(deleted=True)
+    Report.objects.filter(code__in=reports_in_db).update(deleted=True)
 
 
 class ERPFrameworkReportingAppConfig(apps.AppConfig):

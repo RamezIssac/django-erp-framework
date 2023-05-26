@@ -15,15 +15,15 @@ def _check_permissions(record, permissions_list):
 
 
 def get_user_permissions(user):
-    from .models import ReportUserPermission, ReportGroupPermission
+    from .models import UserReportPermission, GroupReportPermission
 
-    records = ReportUserPermission.objects.filter(user=user).values()
+    records = UserReportPermission.objects.filter(user=user).values()
     permissions = []
     for record in records:
         _check_permissions(record, permissions)
 
     groups = user.groups.all().values_list("pk", flat=True)
-    group_records = ReportGroupPermission.objects.filter(group_id__in=groups)
+    group_records = GroupReportPermission.objects.filter(group_id__in=groups)
     for record in group_records:
         _check_permissions(record, permissions)
     return set(permissions)
