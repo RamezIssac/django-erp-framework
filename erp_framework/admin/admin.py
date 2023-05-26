@@ -500,10 +500,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         extra_context["description"] = self.description
         return super(EntityAdmin, self).changelist_view(request, extra_context)
 
-    # todo check and maybe bring back
-    # def get_changelist(self, request, **kwargs):
-    #     return RaChangeList
-
     def save_model(self, request, obj, form, change):
         obj.lastmod_user = request.user
         obj.lastmod_date = now()

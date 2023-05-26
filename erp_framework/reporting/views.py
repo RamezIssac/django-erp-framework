@@ -436,17 +436,19 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return cls.base_model._meta.model_name
 
     @classmethod
+    def get_report_code(cls):
+        return f"{cls.get_base_model_name()}.{cls.get_report_slug()}"
+
+    @classmethod
     def get_url(cls):
-        url = reverse(
-            f"{RA_ADMIN_SITE_NAME}:report_list", args=(cls.get_base_model_name(),)
-        )
-        url += "%s/" % cls.get_report_slug()
-        return url
+        return cls.get_absolute_url()
 
     def test_func(self):
-        app_label = self.base_model._meta.app_label
-        codename = f"view_{self.get_report_slug()}"
-        return self.request.user.has_perm(f"{app_label}.{codename}")
+        from .registry import report_registry
+
+        return report_registry.has_perm(
+            self.request.user, self.get_report_code(), "view"
+        )
 
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
@@ -460,7 +462,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     def get_absolute_url(self):
         return reverse(
             "admin:report",
-            args=(self.base_model._meta.model_name, self.get_report_slug()),
+            args=(self.get_base_model_name(), self.get_report_slug()),
             current_app=self.admin_site_name,
         )
 
@@ -725,14 +727,6 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     def form_invalid(self, form):
         return JsonResponse(form.errors, status=400)
-
-    # @classmethod
-    # def get_default_from_date(cls, **kwargs):
-    #     return app_settings.RA_DEFAULT_FROM_DATETIME
-    #
-    # @classmethod
-    # def get_default_to_date(cls, **kwargs):
-    #     return app_settings.RA_DEFAULT_TO_DATETIME
 
 
 class TimeSeriesSelectorReportView(UserPassesTestMixin, SlickReportViewBase):
