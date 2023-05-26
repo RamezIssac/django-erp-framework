@@ -39,9 +39,11 @@ Installation
 .. code-block:: console
 
     $ pip install django-erp-framework
+        OR
+    $ pip install -e git+https://github.com/RamezIssac/django-erp-framework.git#egg=django-erp-framework@develop
 
 
-Check out the getting started on Read The Docs `Integrating into an existing django project <https://django-erp-framework.readthedocs.io/en/latest/getting_started/index.html>`_
+Check out the `getting started <https://django-erp-framework.readthedocs.io/en/latest/getting_started/index.html>`_  on Read The Docs.
 
 
 Demo
