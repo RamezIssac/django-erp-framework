@@ -385,10 +385,10 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         if self.crosstab_model:
             self.crosstab_ids = self.form.get_crosstab_ids()
 
-        crosstab_compute_reminder = (
-            self.form.get_crosstab_compute_reminder()
+        crosstab_compute_remainder = (
+            self.form.get_crosstab_compute_remainder()
             if self.request.GET or self.request.POST
-            else self.crosstab_compute_reminder
+            else self.crosstab_compute_remainder
         )
         doc_type_plus_list, doc_type_minus_list = [], []
 
@@ -417,7 +417,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
             crosstab_model=self.crosstab_model,
             crosstab_ids=self.crosstab_ids,
             crosstab_columns=self.crosstab_columns,
-            crosstab_compute_reminder=crosstab_compute_reminder,
+            crosstab_compute_remainder=crosstab_compute_remainder,
             format_row_func=self.format_row,
             doc_type_plus_list=doc_type_plus_list,
             doc_type_minus_list=doc_type_minus_list,
@@ -494,7 +494,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         return cls.form_class or report_form_factory(
             cls.get_report_model(),
             crosstab_model=cls.crosstab_model,
-            display_compute_reminder=cls.crosstab_compute_reminder,
+            display_compute_remainder=cls.crosstab_compute_remainder,
             fkeys_filter_func=cls.form_filter_func,
             initial=cls.get_form_initial(),
             show_time_series_selector=cls.time_series_selector,
@@ -748,7 +748,7 @@ class TimeSeriesSelectorReportView(UserPassesTestMixin, SlickReportViewBase):
         return cls.form_class or report_form_factory(
             cls.get_report_model(),
             crosstab_model=cls.crosstab_model,
-            display_compute_reminder=cls.crosstab_compute_reminder,
+            display_compute_remainder=cls.crosstab_compute_remainder,
             fkeys_filter_func=cls.form_filter_func,
             initial=cls.get_form_initial(),
         )
