@@ -168,7 +168,7 @@ class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
         ct = obj.content_type
         repr_ = escape(obj.object_repr)
         try:
-            href = reverse('%s:%s_%s_change' % (app_settings.RA_ADMIN_SITE_NAME, ct.app_label, ct.model),
+            href = reverse('%s:%s_%s_change' % (app_settings.ERP_FRAMEWORK_SITE_NAME, ct.app_label, ct.model),
                            args=[obj.object_id])
             link = u'<a href="%s">%s</a>' % (href, repr_)
         except NoReverseMatch:
@@ -210,7 +210,7 @@ class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
     def review(self, obj):
         if obj.action_flag == 2:
             try:
-                url = reverse('%s:%s_%s_history' % (app_settings.RA_ADMIN_SITE_NAME, obj.content_type.app_label,
+                url = reverse('%s:%s_%s_history' % (app_settings.ERP_FRAMEWORK_SITE_NAME, obj.content_type.app_label,
                                                     obj.content_type.model), args=(obj.object_id,))
             except NoReverseMatch:
                 url = ''
@@ -219,7 +219,7 @@ class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
                 <span class="legitRipple-ripple"></span></a>""" % (url, _('History'))
             return mark_safe(link)
         elif obj.action_flag == 3:
-            url = reverse('%s:%s_%s_recover' % (app_settings.RA_ADMIN_SITE_NAME, obj.content_type.app_label,
+            url = reverse('%s:%s_%s_recover' % (app_settings.ERP_FRAMEWORK_SITE_NAME, obj.content_type.app_label,
                                                 obj.content_type.model), args=(obj.object_id,))
             link = """<a href="%s" class="legitRipple" data-popup="tooltip" title="%s">
                     <i class="fas fa-undo text-indigo-800"></i>

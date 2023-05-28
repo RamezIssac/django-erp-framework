@@ -1,13 +1,8 @@
-from __future__ import unicode_literals
-
 import logging
-from collections import OrderedDict
 from collections.abc import Iterable
 
 from django.apps import apps
 from django.db.models import Max
-from django.template.defaultfilters import capfirst
-from django.urls import reverse, NoReverseMatch
 
 logger = logging.getLogger(__name__)
 
@@ -56,35 +51,33 @@ class RaPermissionWidgetExclude(object):
         return False
 
 
-def order_apps(app_list):
-    """Called in admin/base_site.html template override and applies custom ordering of
-    apps/models defined by settings.ADMIN_REORDER
-    """
-    from . import app_settings
-
-    # sort key function - use index of item in order if exists, otherwise item
-    sort = (
-        lambda order, item: (order.index(item), "")
-        if item in order
-        else (len(order), item)
-    )
-
-    # sort the app list
-    order = OrderedDict(app_settings.ADMIN_REORDER)
-    app_list.sort(
-        key=lambda app: sort(order.keys(), app["app_url"].strip("/").split("/")[-1])
-    )
-    for i, app in enumerate(app_list):
-        # sort the model list for each app
-        app_name = app["app_url"].strip("/").split("/")[-1]
-        model_order = [m.lower() for m in order.get(app_name, [])]
-        app_list[i]["models"].sort(
-            key=lambda model: sort(
-                model_order, model.get("admin_url", "").strip("/").split("/")[-1]
-            )
-        )
-    return app_list
-
+# def order_apps(app_list):
+#     """Called in admin/base_site.html template override and applies custom ordering of
+#     apps/models defined by settings.ADMIN_REORDER
+#     """
+#     from . import app_settings
+#
+#     # sort key function - use index of item in order if exists, otherwise item
+#     sort = lambda order, item: (
+#         (order.index(item), "") if item in order else (len(order), item)
+#     )
+#
+#     # sort the app list
+#     order = OrderedDict(app_settings.ADMIN_REORDER)
+#     app_list.sort(
+#         key=lambda app: sort(order.keys(), app["app_url"].strip("/").split("/")[-1])
+#     )
+#     for i, app in enumerate(app_list):
+#         # sort the model list for each app
+#         app_name = app["app_url"].strip("/").split("/")[-1]
+#         model_order = [m.lower() for m in order.get(app_name, [])]
+#         app_list[i]["models"].sort(
+#             key=lambda model: sort(
+#                 model_order, model.get("admin_url", "").strip("/").split("/")[-1]
+#             )
+#         )
+#     return app_list
+#
 
 # def admin_get_app_list(request, admin_site):
 #     """
@@ -92,7 +85,7 @@ def order_apps(app_list):
 #     :param admin_site:
 #     :return:
 #     """
-#     from erp_framework.base.app_settings import RA_MENU_HIDE_MODELS, RA_ADMIN_SITE_NAME
+#     from erp_framework.base.app_settings import RA_MENU_HIDE_MODELS, ERP_FRAMEWORK_SITE_NAME
 #
 #     app_dict = {}
 #     for model, model_admin in admin_site._registry.items():
@@ -109,7 +102,7 @@ def order_apps(app_list):
 #             # Check whether user has any perm for this module.
 #             # If so, add the module to the model_list.
 #             if True in perms.values():
-#                 info = (RA_ADMIN_SITE_NAME, app_label, model._meta.model_name)
+#                 info = (ERP_FRAMEWORK_SITE_NAME, app_label, model._meta.model_name)
 #                 model_dict = {
 #                     "name": capfirst(model._meta.verbose_name_plural),
 #                     "object_name": model._meta.object_name,
@@ -141,7 +134,7 @@ def order_apps(app_list):
 #                         "name": apps.get_app_config(app_label).verbose_name,
 #                         "app_label": app_label,
 #                         "app_url": reverse(
-#                             "%s:app_list" % RA_ADMIN_SITE_NAME,
+#                             "%s:app_list" % ERP_FRAMEWORK_SITE_NAME,
 #                             kwargs={"app_label": app_label},
 #                             current_app=admin_site.name,
 #                         ),

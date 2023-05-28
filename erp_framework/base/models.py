@@ -1,7 +1,6 @@
 import datetime
 import logging
 
-from crequest.middleware import CrequestMiddleware
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse, NoReverseMatch
@@ -141,14 +140,18 @@ class EntityModel(ERPMixin, RAModel):
         try:
             url = reverse(
                 "%s:%s_%s_view"
-                % (app_settings.RA_ADMIN_SITE_NAME, self._meta.app_label, model_name),
+                % (
+                    app_settings.ERP_FRAMEWORK_SITE_NAME,
+                    self._meta.app_label,
+                    model_name,
+                ),
                 args=(self.pk,),
             )
         except NoReverseMatch:
             url = reverse(
                 "%s:%s_%s_change"
                 % (
-                    app_settings.RA_ADMIN_SITE_NAME,
+                    app_settings.ERP_FRAMEWORK_SITE_NAME,
                     self._meta.app_label,
                     self.get_class_name().lower(),
                 ),
@@ -236,7 +239,7 @@ class EntityModel(ERPMixin, RAModel):
         """
         # todo consider deleting
         return reverse(
-            "%s:report_list" % app_settings.RA_ADMIN_SITE_NAME,
+            "%s:report_list" % app_settings.ERP_FRAMEWORK_SITE_NAME,
             args=(cls.get_class_name().lower(),),
         )
 
@@ -371,13 +374,13 @@ class BaseReportModel(DiffingMixin, models.Model):
 
         Returns List of Identified doctype that a plus effect on the entity
         """
-        return []  # ['0','3' , 'client-cash-in','supplier-cash-in']
+        return []
 
     @classmethod
     def get_doc_type_minus_list(cls):
         """Returns List of Identified doctype that a minus effect on the entity"""
 
-        return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
+        return []
 
     class Meta:
         abstract = True
@@ -399,13 +402,13 @@ class QuanValueReport(BaseReportModel):
 
         Returns List of Identified doctype that a plus effect on the entity
         """
-        return []  # ['0','3' , 'client-cash-in','supplier-cash-in']
+        return []
 
     @classmethod
     def get_doc_type_minus_list(cls):
         """Returns List of Identified doctype that a minus effect on the entity"""
 
-        return []  # ['1', '2', 'client-cash-out', 'supplier-cash-out']
+        return []
 
     class Meta:
         abstract = True

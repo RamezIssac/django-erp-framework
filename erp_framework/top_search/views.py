@@ -1,13 +1,11 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.generic import FormView
 
 from .forms import SearchForm
-from erp_framework.base.app_settings import RA_ADMIN_SITE_NAME
 
 # todo  Revise Index
 # todo: Revise the Models / DocTypes Dicts and make them look for the admin for correct reversing (change / view)

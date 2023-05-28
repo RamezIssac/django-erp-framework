@@ -127,9 +127,7 @@ class BaseTestData:
         )
 
 
-@override_settings(
-    ROOT_URLCONF="reporting_tests.urls", RA_CACHE_REPORTS=False, USE_TZ=False
-)
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class ReportTest(BaseTestData, TestCase):
     def test_client_balance(self):
         self.client.login(username="super", password="secret")
@@ -360,9 +358,7 @@ class ReportTest(BaseTestData, TestCase):
                 self.assertTrue(line["__balance__"] < previous_balance)
 
 
-@override_settings(
-    ROOT_URLCONF="reporting_tests.urls", RA_CACHE_REPORTS=False, USE_TZ=False
-)
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class ReportTest2(BaseTestData, TestCase):
     """
     This is in a class on it's own as for some off reason, while executed as part the other class, it's picked up
@@ -386,9 +382,7 @@ class ReportTest2(BaseTestData, TestCase):
         self.assertEqual(response.status_code, 302)
 
 
-@override_settings(
-    ROOT_URLCONF="reporting_tests.urls", RA_CACHE_REPORTS=True, USE_TZ=False
-)
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class TestAdmin(BaseTestData, TestCase):
     # def test_changelist(self):
     #     self.client.login(username="super", password="secret")
@@ -624,9 +618,7 @@ class TestAdmin(BaseTestData, TestCase):
     #     self.assertEqual(response.status_code, 200, response)
 
 
-@override_settings(
-    ROOT_URLCONF="reporting_tests.urls", RA_CACHE_REPORTS=True, USE_TZ=False
-)
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class TestPrePolutaedAdmin(BaseTestData, TestCase):
     @classmethod
     def setUpTestData(cls):

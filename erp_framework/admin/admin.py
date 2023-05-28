@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import logging
-from functools import update_wrapper
 
 from crequest.middleware import CrequestMiddleware
 from django.contrib import admin
@@ -14,10 +13,8 @@ from django.contrib.admin.options import (
 )
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.contrib.admin.utils import quote, unquote, flatten_fieldsets
-from django.contrib.admin.widgets import AdminTextareaWidget
+from django.contrib.admin.widgets import AdminTextareaWidget, RelatedFieldWidgetWrapper
 from django.contrib.auth import get_permission_codename
-from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.db import models
@@ -31,30 +28,16 @@ from django.template.defaultfilters import capfirst
 from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.utils.decorators import method_decorator
-from django.utils.html import escape
-from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from reversion.admin import VersionAdmin
-from tabular_permissions.admin import (
-    UserTabularPermissionsMixin,
-    GroupTabularPermissionsMixin,
-)
 
 from erp_framework.base.helpers import flatten_list
-from erp_framework.admin.forms import CustomUserChangeForm
 from erp_framework.reporting.printing import HTMLPrintingClass
-from erp_framework.utils.views import (
-    get_typed_reports_for_templates,
-    get_typed_reports_map,
-    apply_order_to_typed_reports,
-)
-from .base import RaAdminSiteBase
-from erp_framework.sites import erp_admin_site
+from .base import ERPFrameworkAdminSiteBase
 from ..base import app_settings
-from ..base.widgets import RaRelatedFieldWidgetWrapper
 
 csrf_protect_m = method_decorator(csrf_protect)
 
@@ -66,117 +49,32 @@ default_list_display = ("name", "slug", "notes")
 
 logger = logging.getLogger(__name__)
 
-from django.contrib.admin.views.main import ChangeList
-
 # todo bring back
 # changeform_saved = Signal(providing_args=["instance", "created", 'using'])
 changeform_saved = Signal()
 
 
-def get_reports_map(model_name, user, request, order_list=None):
-    """
-    Gets ReportViews associated with a specific model ie. namespace
-    :param model_name: or namespace defined in ReportView namespace
-    :param user: User to check for permissions
-    :param order_list: list to order the reports in comparision to
-
-    :return: a dictionary with two values `slugs` and `reports`
-        slugs: map to a list of report slugs
-        reports: map to a list of ReportView classes
-    """
-
-    # todo refine with erp_framework.views.ReportList View
-    order_list = list(order_list or [])
-    reports = get_typed_reports_for_templates(model_name, user, request)
-    reports = apply_order_to_typed_reports(reports, order_list)
-    return get_typed_reports_map(typed_reports=reports)
-
-
-class RaChangeList(ChangeList):
-    def __init__(
-        self,
-        request,
-        model,
-        list_display,
-        list_display_links,
-        list_filter,
-        date_hierarchy,
-        search_fields,
-        list_select_related,
-        list_per_page,
-        list_max_show_all,
-        list_editable,
-        model_admin,
-        sortable_by,
-    ):
-        super(RaChangeList, self).__init__(
-            request,
-            model,
-            list_display,
-            list_display_links,
-            list_filter,
-            date_hierarchy,
-            search_fields,
-            list_select_related,
-            list_per_page,
-            list_max_show_all,
-            list_editable,
-            model_admin,
-            sortable_by,
-        )
-        self.request = request  # Add request to the class
-        if self.is_popup:
-            name = gettext("Select %s")
-        else:
-            name = gettext("%s")
-        self.name = name % str(self.opts.verbose_name_plural)
-
-        self.no_records_message = model_admin.no_records_message
-
-    # def url_for_result(self, result):
-    #     """
-    #     Override parent to handle correct url mapping
-    #     :param result:
-    #     :return:
-    #     """
-    #     if self.model_admin.has_view_permission(self.request):
-    #         pk = getattr(result, self.pk_attname)
-    #         return reverse('%s:%s_%s_view' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
-    #                                           self.opts.model_name),
-    #                        args=(quote(pk),),
-    #                        current_app=self.model_admin.admin_site.name)
-    #     elif self.model_admin.has_change_permission(self.request):
-    #         pk = getattr(result, self.pk_attname)
-    #         return reverse('%s:%s_%s_change' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
-    #                                             self.opts.model_name),
-    #                        args=(quote(pk),),
-    #                        current_app=self.model_admin.admin_site.name)
-    #     elif self.model_admin.has_add_permission(self.request):
-    #         return reverse('%s:%s_%s_add' % (app_settings.RA_ADMIN_SITE_NAME, self.opts.app_label,
-    #                                          self.opts.model_name),
-    #                        current_app=self.model_admin.admin_site.name)
-    #     return False
-
-
-class RaAdminSite(RaAdminSiteBase):
+class ERPFrameworkAdminSite(ERPFrameworkAdminSiteBase):
     pass
 
 
 class RaThemeMixin:
-    change_form_template = f"{app_settings.RA_THEME}/change_form.html"
-    change_list_template = f"{app_settings.RA_THEME}/change_list.html"
-    delete_confirmation_template = f"{app_settings.RA_THEME}/delete_confirmation.html"
-    delete_selected_confirmation_template = (
-        f"{app_settings.RA_THEME}/delete_selected_confirmation.html"
+    change_form_template = f"{app_settings.ERP_FRAMEWORK_THEME}/change_form.html"
+    change_list_template = f"{app_settings.ERP_FRAMEWORK_THEME}/change_list.html"
+    delete_confirmation_template = (
+        f"{app_settings.ERP_FRAMEWORK_THEME}/delete_confirmation.html"
     )
-    add_form_template = f"{app_settings.RA_THEME}/change_form.html"
+    delete_selected_confirmation_template = (
+        f"{app_settings.ERP_FRAMEWORK_THEME}/delete_selected_confirmation.html"
+    )
+    add_form_template = f"{app_settings.ERP_FRAMEWORK_THEME}/change_form.html"
 
     recover_form_template = f"erp_framework/reversion/recover_form.html"
     revision_form_template = f"erp_framework/reversion/revision_form.html"
     object_history_template = f"erp_framework/reversion/object_history.html"
     recover_list_template = f"erp_framework/reversion/recover_list.html"
 
-    view_template = None  # Defaults to f'{app_settings.RA_THEME}/view.html'
+    view_template = None  # Defaults to f'{app_settings.ERP_FRAMEWORK_THEME}/view.html'
 
 
 class AdminViewMixin(admin.ModelAdmin):
@@ -194,9 +92,9 @@ class AdminViewMixin(admin.ModelAdmin):
 
         # todo change the str obj
         view_link = (
-            '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> '
-            '<i class="fas fa-chart-line"></i> </a>'
-            % (url, capfirst(_("Statistics for")), str(obj))
+                '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> '
+                '<i class="fas fa-chart-line"></i> </a>'
+                % (url, capfirst(_("Statistics for")), str(obj))
         )
         return mark_safe(view_link)
 
@@ -204,9 +102,9 @@ class AdminViewMixin(admin.ModelAdmin):
 
     def get_view_fields(self, request, obj=None):
         return (
-            self.view_fields
-            or [x for x in flatten_list(self.fields)]
-            or self.get_fields(request, obj)
+                self.view_fields
+                or [x for x in flatten_list(self.fields)]
+                or self.get_fields(request, obj)
         )
 
     def get_view_title(self, request, obj=None):
@@ -315,7 +213,7 @@ class AdminViewMixin(admin.ModelAdmin):
                 "erp_framework/%s/%s/view.html" % (opts.app_label, opts.model_name),
                 "erp_framework/%s/view.html" % opts.app_label,
                 "erp_framework/view.html",
-                f"{app_settings.RA_THEME}/view.html",
+                f"{app_settings.ERP_FRAMEWORK_THEME}/view.html",
             ],
             context,
         )
@@ -371,7 +269,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             url = reverse(
                 "%s:%s_%s_change"
                 % (
-                    app_settings.RA_ADMIN_SITE_NAME,
+                    app_settings.ERP_FRAMEWORK_SITE_NAME,
                     self.model._meta.app_label,
                     self.model._meta.model_name,
                 ),
@@ -381,8 +279,8 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             if not main_url:
                 main_url = url
             view_link = (
-                '<a href="%s" data-popup="tooltip" name="%s" data-placement="bottom">'
-                ' <i class="fas fa-edit"></i> </a>' % (url, capfirst(_("change")))
+                    '<a href="%s" data-popup="tooltip" name="%s" data-placement="bottom">'
+                    ' <i class="fas fa-edit"></i> </a>' % (url, capfirst(_("change")))
             )
             links.append(view_link)
             links = "<span class='go-to-change-form'>%s</span>" % "".join(links) + ""
@@ -491,7 +389,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     #         "erp_framework/%s/%s/view.html" % (opts.app_label, opts.model_name),
     #         "erp_framework/%s/view.html" % opts.app_label,
     #         'erp_framework/view.html',
-    #         f"{app_settings.RA_THEME}/view.html",
+    #         f"{app_settings.ERP_FRAMEWORK_THEME}/view.html",
     #     ], context)
 
     @csrf_protect_m
@@ -511,12 +409,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     def get_urls(self):
         # Override ModelAdmin
         from django.urls import re_path as url
-
-        def wrap(view):
-            def wrapper(*args, **kwargs):
-                return self.admin_site.admin_view(view)(*args, **kwargs)
-
-            return update_wrapper(wrapper, view)
 
         info = self.model._meta.app_label, self.model._meta.model_name
         admin_site = self.admin_site
@@ -558,7 +450,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             admin_url = reverse(
                 "%s:%s_%s_change"
                 % (
-                    app_settings.RA_ADMIN_SITE_NAME,
+                    app_settings.ERP_FRAMEWORK_SITE_NAME,
                     self.model._meta.app_label,
                     self.model._meta.model_name,
                 ),
@@ -589,7 +481,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                             request
                         ),
                     )
-                    formfield.widget = RaRelatedFieldWidgetWrapper(
+                    formfield.widget = RelatedFieldWidgetWrapper(
                         formfield.widget,
                         db_field.remote_field,
                         self.admin_site,
@@ -700,9 +592,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                 request, new_object, change=not add
             )
             if (
-                all_valid(formsets)
-                and form_validated
-                and self.whole_changeform_validation(request, form, formsets, not add)
+                    all_valid(formsets)
+                    and form_validated
+                    and self.whole_changeform_validation(request, form, formsets, not add)
             ):
                 self.pre_save(form, formsets, change=not add)
                 self.save_model(request, new_object, form, not add)
@@ -781,9 +673,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         # Hide the "Save" and "Save and continue" buttons if "Save as New" was
         # previously chosen to prevent the interface from getting confusing.
         if (
-            request.method == "POST"
-            and not form_validated
-            and "_saveasnew" in request.POST
+                request.method == "POST"
+                and not form_validated
+                and "_saveasnew" in request.POST
         ):
             context["show_save"] = False
             context["show_save_and_continue"] = False
@@ -798,7 +690,10 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     def get_actions(self, request):
         actions = super(EntityAdmin, self).get_actions(request)
-        if not (app_settings.RA_ENABLE_ADMIN_DELETE_ALL and request.user.is_superuser):
+        if not (
+                app_settings.ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL
+                and request.user.is_superuser
+        ):
             if "delete_selected" in actions:
                 del actions["delete_selected"]
         return actions
@@ -883,7 +778,7 @@ class TransactionAdmin(EntityAdmin):
 
 
 class TransactionItemAdmin(admin.TabularInline):
-    template = f"{app_settings.RA_THEME}/edit_inline/tabular.html"
+    template = f"{app_settings.ERP_FRAMEWORK_THEME}/edit_inline/tabular.html"
     extra = 2
     exclude = (
         "slug",
@@ -1003,7 +898,7 @@ class TransactionItemAdmin(admin.TabularInline):
                             request
                         ),
                     )
-                    formfield.widget = RaRelatedFieldWidgetWrapper(
+                    formfield.widget = RelatedFieldWidgetWrapper(
                         formfield.widget,
                         db_field.remote_field,
                         self.admin_site,
@@ -1060,7 +955,7 @@ class RaGenericTabularInline(GenericTabularInline):
                             request
                         ),
                     )
-                    formfield.widget = RaRelatedFieldWidgetWrapper(
+                    formfield.widget = RelatedFieldWidgetWrapper(
                         formfield.widget,
                         db_field.remote_field,
                         self.admin_site,
@@ -1217,8 +1112,8 @@ class PrepopulatedAdmin(object):
                 )
                 # Not here is a necessity, in case you find unuseful revise again
                 if (
-                    inline.__class__ in self.prepopulated_inlines
-                    or not self.prepopulated_inlines
+                        inline.__class__ in self.prepopulated_inlines
+                        or not self.prepopulated_inlines
                 ):
                     FormSet.extra = len(initial_data)
                 if initial_data:
@@ -1253,14 +1148,13 @@ class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
 
         formset.save()
 
-
 # class RaUserAdmin(RaThemeMixin, UserTabularPermissionsMixin, UserAdmin):
 #     enable_view_view = False
 #     date_hierarchy = None
 #     fields = None
 #     list_display_links = ["username"]
 #     change_user_password_template = (
-#         f"{app_settings.RA_THEME}/auth/user/change_password.html"
+#         f"{app_settings.ERP_FRAMEWORK_THEME}/auth/user/change_password.html"
 #     )
 #     list_display = ("username", "is_superuser", "last_login", "is_active")
 #

@@ -1,12 +1,82 @@
+.. _settings:
+
 ========
 Settings
 ========
 
+ERP framework settings
+======================
+
+.. code-block:: python
+
+
+        ERP_FRAMEWORK_SETTINGS = {
+            "site_name": "ERP Framework System",
+            "site_header": "ERP Framework System",
+            "index_title": "Dashboard Home",
+            "index_template": "admin/index.html",
+            "login_template": "admin/login.html",
+            "logout_template": "admin/logout.html",
+            "app_index_template": "admin/app_index.html",
+            # a function to control be dbfield on all instances, Saves you time to subclass if
+            # only you need to add a help text or something
+            "admin_default_formfield_for_dbfield": (
+                "erp_framework.base.helpers.default_formfield_for_dbfield"
+            ),
+            "admin_site_class": "erp_framework.admin.admin.ERPFrameworkAdminSite",
+            "admin_site_namespace": "erp_framework",
+            "enable_delete_all": False,
+        }
+
+
+
+
+``admin_site_class``
+-----------------------
+
+Defaults ``'erp_framework.admin.admin.ERPFrameworkAdminSite'``
+
+A dotted path to the main Django ERP framework Admin Site class.
+Make sure to inherit from ``ERPFrameworkAdminSiteBase`` in your custom admin site.
+
+
+``enable_delete_all``
+----------------------
+
+Default ``False``
+
+Control the availability of the admin action "Delete All" on all ERP framework model admin classes.
+
+``admin_default_formfield_for_dbfield``
+---------------------------------------
+
+Default to ``'erp_framework.base.helpers.default_formfield_for_dbfield'``
+
+A dotted path a universal hook that gets called on all 'formfield_for_db_field` on the framework.
+You can use this hook to universally control the widgets being displayed without needing to manually set it on each RaModelAdmin
+
+The function should have this signature.
+
+.. code-block:: python
+
+    def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **kwargs):
+        # do something
+        return form_field
+
+
+
+
+
 Jazzmin settings
 ================
 
-``JAZZMIN_SETTINGS``
+Jazzmin is a modern responsive skin for the Django admin interface based on the excellent AdminLTE project.
+Here is a glimpse f its settings.
 
+To know more head over to the `Jazzmin Configuration documentation <https://django-jazzmin.readthedocs.io/configuration/>`_
+
+
+``JAZZMIN_SETTINGS``
 .. code-block:: python
 
     JAZZMIN_SETTINGS = {
@@ -33,126 +103,3 @@ Jazzmin settings
     }
 
 
-
-
-
-Base Models Settings
-====================
-
-See :ref:`base_classes` for information on what are Django ERP framework Base Models and how they interact with the rest of the framework
-
-
-
-
-Flow Control Settings
-======================
-
-``RA_ADMIN_SITE_CLASS``
------------------------
-
-Defaults ``'erp_framework.admin.admin.RaAdminSite'``
-
-A dotted path to the main Django ERP framework Admin Site class.
-Make sure to inherit from ``RaAdminSiteBase`` in your custom admin site.
-
-``RA_ENABLE_ADMIN_DELETE_ALL``
-------------------------------
-
-Default ``False``
-
-Control the availability of the admin action "Delete All" on all RaModelAdmin.
-While users
-
-``ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC``
----------------------------------
-
-Defaults ``'erp_framework.base.helpers.default_formfield_for_dbfield'``
-
-A dotted path a universal hook that gets called on all 'formfield_for_db_field` on the framework.
-You can use this hook to universally control the widgets being displayed without needing to manually set it on each RaModelAdmin
-
-The function should have this signature.
-
-.. code-block:: python
-
-    def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **kwargs):
-        ...
-
-
-
-``RA_DEFAULT_FROM_DATETIME``
-----------------------------
-
-Defaults to start of this year (ie first of January). Type `datetime`
-
-
-``RA_DEFAULT_TO_DATETIME``
---------------------------
-
-Defaults to start of the next year (ie First of January, current year + 1). Type `datetime`
-
-
-
-Customization
-=============
-
-``RA_THEME``
-------------
-
-Defaults to ``'adminlte'``
-
-If you want to create a new Django ERP framework theme, You can override the templates in another path and set it here .
-
-``ERP_ADMIN_INDEX_TEMPLATE``
----------------------------
-
-Defaults to ``'f'{RA_THEME}/index.html'``
-
-
-``RA_ADMIN_APP_INDEX_TEMPLATE``
--------------------------------
-
-Defaults to ``'f'{RA_THEME}//app_index.html'``
-
-``RA_ADMIN_LOGIN_TEMPLATE``
----------------------------
-
-Defaults to ``f'{RA_THEME}/login.html'``
-
-``RA_ADMIN_LOGGED_OUT_TEMPLATE``
----------------------------------
-
-Defaults to ``f'{RA_THEME}/logged_out.html'``
-
-
-``ERP_ADMIN_SITE_TITLE``
------------------------
-
-Defaults to ``_('Django ERP framework Framework')``
-
-``ERP_ADMIN_SITE_HEADER``
-------------------------
-
-Defaults to ``_('Django ERP framework Administration')``
-
-
-``ERP_ADMIN_INDEX_TITLE``
-------------------------
-
-Defaults to  ``_('Statistics and Dashboard')``
-
-
-Cache
-=====
-
-``RA_CACHE_REPORTS``
---------------------
-Defaults to ``True``
-
-Enabling Caching for the Reports
-
-``RA_CACHE_REPORTS_PER_USER``
------------------------------
-Defaults to ``True``
-
-Enable Caching the report value not only per its parameters, but also per each user.

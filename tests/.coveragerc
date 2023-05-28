@@ -1,0 +1,8 @@
+
+[run]
+omit =
+    runtests.py
+    reporting_tests/*
+    registry_tests/*
+    urls.py
+    test_postgres.py

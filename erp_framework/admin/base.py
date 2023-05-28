@@ -14,7 +14,6 @@ from django.utils.translation import gettext_lazy as _
 
 from erp_framework.admin.helpers import get_each_context
 from erp_framework.base import app_settings
-from erp_framework.base.helpers import get_from_list
 
 # from erp_framework.top_search.views import TopSearchView
 
@@ -49,16 +48,15 @@ def get_report_view(request, base_model, report_slug):
     return klass.as_view()(request)
 
 
-class RaAdminSiteBase(AdminSite):
+class ERPFrameworkAdminSiteBase(AdminSite):
     site_title = app_settings.ERP_ADMIN_SITE_TITLE
     site_header = app_settings.ERP_ADMIN_SITE_HEADER
     index_title = app_settings.ERP_ADMIN_INDEX_TITLE
 
     index_template = app_settings.ERP_ADMIN_INDEX_TEMPLATE
-    app_index_template = app_settings.RA_ADMIN_APP_INDEX_TEMPLATE
-    login_template = app_settings.RA_ADMIN_LOGIN_TEMPLATE
-
-    # logout_template = app_settings.RA_ADMIN_LOGGED_OUT_TEMPLATE
+    app_index_template = app_settings.ERP_FRAMEWORK_APP_INDEX_TEMPLATE
+    login_template = app_settings.ERP_FRAMEWORK_LOGIN_TEMPLATE
+    logout_template = app_settings.ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE
 
     def get_urls(self):
         # from erp_framework.utils.views import access_denied
@@ -68,10 +66,8 @@ class RaAdminSiteBase(AdminSite):
 
             return update_wrapper(wrapper, view)
 
-        urls = super(RaAdminSiteBase, self).get_urls()
-        help_center = [
-            url(r"^i18n/", include("django.conf.urls.i18n")),
-        ]
+        urls = super(ERPFrameworkAdminSiteBase, self).get_urls()
+        help_center = [url(r"^i18n/", include("django.conf.urls.i18n"))]
 
         settings_update = [
             url(r"^manifest/$", self.manifest_view, name="manifest"),
@@ -132,7 +128,7 @@ class RaAdminSiteBase(AdminSite):
         return JsonResponse(json, status=200)
 
     def __init__(self, name="admin"):
-        super(RaAdminSiteBase, self).__init__(name)
+        super(ERPFrameworkAdminSiteBase, self).__init__(name)
 
         self._registry_names = {}  # holds model name -> ModelAdmin instances
         #                  l-> Model
@@ -181,10 +177,7 @@ class RaAdminSiteBase(AdminSite):
         extra_context["opts"] = {"app_name": "home"}
         extra_context["is_index"] = True
         extra_context["sidebar_status"] = "expanded"
-        context = dict(
-            self.each_context(request),
-            name=self.index_title,
-        )
+        context = dict(self.each_context(request), name=self.index_title)
         context.update(extra_context or {})
 
         request.current_app = self.name
@@ -195,8 +188,8 @@ class RaAdminSiteBase(AdminSite):
         )
 
     def each_context(self, request):
-        context = super(RaAdminSiteBase, self).each_context(request)
-        context["RA_ADMIN_SITE_NAME"] = app_settings.RA_ADMIN_SITE_NAME
+        context = super(ERPFrameworkAdminSiteBase, self).each_context(request)
+        context["ERP_FRAMEWORK_SITE_NAME"] = app_settings.ERP_FRAMEWORK_SITE_NAME
         context.update(get_each_context(request, self))
         return context
 
@@ -213,4 +206,4 @@ class RaAdminSiteBase(AdminSite):
     def login(self, request, extra_context=None):
         extra_context = extra_context or {}
         # extra_context["SHOW_LANGUAGE_SELECTOR"] = True
-        return super(RaAdminSiteBase, self).login(request, extra_context)
+        return super(ERPFrameworkAdminSiteBase, self).login(request, extra_context)

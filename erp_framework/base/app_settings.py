@@ -1,31 +1,22 @@
-# coding=utf-8
-import pytz
 from django.conf import settings
 from django.urls import get_callable
-from django.utils.functional import lazy
-
-# def get_first_of_this_year():
-#     d = datetime.datetime.today()
-#     return datetime.datetime(d.year, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
-#
-#
-# def get_end_of_this_year():
-#     d = datetime.datetime.today()
-#     return datetime.datetime(d.year + 1, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))
-
-
-import datetime
 
 ERP_FRAMEWORK_SETTINGS = {
     "site_name": "ERP Framework System",
     "site_header": "ERP Framework System",
     "index_title": "Dashboard Home",
-    "index_template": "",
-    # a function to control be dbfield on all instances, Saves you time to subclass ifonly you need to add a help text or something
+    "index_template": "admin/index.html",
+    "login_template": "admin/login.html",
+    "logout_template": "admin/logout.html",
+    "app_index_template": "admin/app_index.html",
+    # a function to control be dbfield on all instances, Saves you time to subclass if
+    # only you need to add a help text or something
     "admin_default_formfield_for_dbfield": (
         "erp_framework.base.helpers.default_formfield_for_dbfield"
     ),
-    "admin_site_class": "erp_framework.admin.admin.RaAdminSite",
+    "admin_site_class": "erp_framework.admin.admin.ERPFrameworkAdminSite",
+    "admin_site_namespace": "erp_framework",
+    "enable_delete_all": False,
 }
 
 USER_FRAMEWORK_SETTINGS = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {})
@@ -36,43 +27,9 @@ ERP_FRAMEWORK_SETTINGS.update(USER_FRAMEWORK_SETTINGS)
 UnDocumented
 """
 
-RA_ENABLE_ADMIN_DELETE_ALL = getattr(settings, "RA_ENABLE_ADMIN_DELETE_ALL", False)
-
-# RA_DEFAULT_FROM_DATETIME = lazy(get_first_of_this_year, datetime.datetime)()
-# RA_DEFAULT_TO_DATETIME = lazy(get_end_of_this_year, datetime.datetime)()
-# # models
-
-
-RA_ADMIN_SITE_NAME = getattr(settings, "RA_ADMIN_SITE_NAME", "erp_framework")
-
 RA_REPORT_LIST_MAP = getattr(settings, "RA_REPORT_LIST_MAP", {})
 
-RA_MENU_HIDE_MODELS = getattr(settings, "RA_MENU_HIDE_MODELS", [])
-ADMIN_REORDER = getattr(settings, "ADMIN_REORDER", [])
-
-RA_FLOATFORMAT_ARG = getattr(settings, "RA_FLOATFORMAT_ARG", "-2")
-
-# Cache
-# =====
-
-RA_CACHE_REPORTS = getattr(settings, "RA_CACHE_REPORTS", True)
-RA_CACHE_REPORTS_PER_USER = getattr(settings, "RA_CACHE_REPORTS_PER_USER", True)
-
-# Style
-RA_THEME = getattr(settings, "RA_THEME", "admin")
-
-# Admin Looks
-from django.utils.translation import gettext_lazy as _
-
-RA_ADMIN_APP_INDEX_TEMPLATE = getattr(
-    settings, "RA_ADMIN_APP_INDEX_PAGE", f"{RA_THEME}/app_index.html"
-)
-RA_ADMIN_LOGIN_TEMPLATE = getattr(
-    settings, "RA_ADMIN_LOGIN_TEMPLATE", f"{RA_THEME}/login.html"
-)
-RA_ADMIN_LOGGED_OUT_TEMPLATE = getattr(
-    settings, "RA_ADMIN_LOGIN_TEMPLATE", f"{RA_THEME}/logged_out.html"
-)
+ERP_FRAMEWORK_THEME = getattr(settings, "ERP_FRAMEWORK_THEME", "admin")
 
 # correct
 ERP_ADMIN_SITE_TITLE = ERP_FRAMEWORK_SETTINGS.get("site_name", "ERP Framework System")
@@ -92,5 +49,25 @@ ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC = get_callable(
 )
 
 ERP_FRAMEWORK_ADMIN_SITE_CLASS = ERP_FRAMEWORK_SETTINGS.get(
-    "admin_site_class", "erp_framework.admin.admin.RaAdminSite"
+    "admin_site_class", "erp_framework.admin.admin.ERPFrameworkAdminSite"
+)
+
+ERP_FRAMEWORK_SITE_NAME = ERP_FRAMEWORK_SETTINGS.get(
+    "admin_site_namespace", "erp_framework"
+)
+
+ERP_FRAMEWORK_LOGIN_TEMPLATE = ERP_FRAMEWORK_SETTINGS.get(
+    "login_template", "admin/login.html"
+)
+
+ERP_FRAMEWORK_APP_INDEX_TEMPLATE = ERP_FRAMEWORK_SETTINGS.get(
+    "app_index_template", "admin/app_index.html"
+)
+
+ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE = ERP_FRAMEWORK_SETTINGS.get(
+    "logout_template", "admin/logout.html"
+)
+
+ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL = ERP_FRAMEWORK_SETTINGS.get(
+    "enable_delete_all", False
 )
