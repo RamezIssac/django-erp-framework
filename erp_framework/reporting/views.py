@@ -140,7 +140,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     # Control the header report function
     must_exist_filter = None
-    header_report = None
+
 
     # to limit records not to exceed certain number, useful for very large reports
     limit_records = False
@@ -151,15 +151,13 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     print_buffer = 10000
 
     # control the caching
-    cache = True
-    cache_duration = 300
+
     with_type = True
 
     admin_site_name = "erp_framework"
     template_name = "erp_framework/report.html"
 
     doc_type_field_name = "doc_type"
-
     doc_type_plus_list = None
     doc_type_minus_list = None
 
