@@ -24,26 +24,3 @@ def check_crequest(app_configs=None, **kwargs):
             )
         )
     return errors
-
-
-@register()
-def check_initial_settings(app_configs, **kwargs):
-    errors = []
-
-    if (
-        "django.template.context_processors.static"
-        not in settings.TEMPLATES[0]["OPTIONS"]["context_processors"]
-    ):
-        errors.append(
-            Error(
-                "django.template.context_processors.static is missing",
-                hint=(
-                    'Add "django.template.context_processors.static" to'
-                    " context_processors"
-                ),
-                obj="settings",
-                id="erp_framework.E003",
-            )
-        )
-
-    return errors
