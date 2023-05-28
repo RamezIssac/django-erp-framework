@@ -222,7 +222,7 @@ class AdminViewMixin(admin.ModelAdmin):
                 "<path:object_id>/view/",
                 self.admin_site.admin_view(self.view_view),
                 name="%s_%s_view" % info,
-            ),
+            )
         ]
         return my_urls + urls
 
@@ -393,7 +393,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     def get_history_link(self, obj):
         info = self.model._meta.app_label, self.model._meta.model_name
-        url = reverse("erp_admin:%s_%s_history" % info, args=(obj.pk,))
+        url = reverse("erp_framework:%s_%s_history" % info, args=(obj.pk,))
 
         return mark_safe(
             """<a href="%s" class="legitRipple" data-popup="tooltip" name="%s">
@@ -546,7 +546,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                 r"^slug/(?P<slug>[\w-]+)/$",
                 self.admin_site.admin_view(self.get_by_slug),
                 name="%s_%s_get-by-slug" % info,
-            ),
+            )
         ]
         return my_urls + reversion_urls + urlpatterns
 
@@ -741,10 +741,12 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         adminForm = helpers.AdminForm(
             form,
             list(self.get_fieldsets(request, obj)),
-            # Clear prepopulated fields on a view-only form to avoid a crash.
-            self.get_prepopulated_fields(request, obj)
-            if add or self.has_change_permission(request, obj)
-            else {},
+            (
+                # Clear prepopulated fields on a view-only form to avoid a crash.
+                self.get_prepopulated_fields(request, obj)
+                if add or self.has_change_permission(request, obj)
+                else {}
+            ),
             readonly_fields,
             model_admin=self,
         )
@@ -929,7 +931,8 @@ class TransactionItemAdmin(admin.TabularInline):
 
         else:
             raise ImproperlyConfigured(
-                "self.permission_override_model can be True, False , str or ModelBase .Got %s instead "
+                "self.permission_override_model can be True, False , str or ModelBase"
+                " .Got %s instead "
                 % type(self.permission_override_model)
             )
 
@@ -1219,11 +1222,7 @@ class PrepopulatedAdmin(object):
                 ):
                     FormSet.extra = len(initial_data)
                 if initial_data:
-                    formset_params.update(
-                        {
-                            "initial": initial_data,
-                        }
-                    )
+                    formset_params.update({"initial": initial_data})
             formsets.append(FormSet(**formset_params))
             inline_instances.append(inline)
         return formsets, inline_instances

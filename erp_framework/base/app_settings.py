@@ -22,7 +22,9 @@ ERP_FRAMEWORK_SETTINGS = {
     "index_title": "Dashboard Home",
     "index_template": "",
     # a function to control be dbfield on all instances, Saves you time to subclass ifonly you need to add a help text or something
-    "admin_default_formfield_for_dbfield": "erp_framework.base.helpers.default_formfield_for_dbfield",
+    "admin_default_formfield_for_dbfield": (
+        "erp_framework.base.helpers.default_formfield_for_dbfield"
+    ),
     "admin_site_class": "erp_framework.admin.admin.RaAdminSite",
 }
 
@@ -41,7 +43,7 @@ RA_ENABLE_ADMIN_DELETE_ALL = getattr(settings, "RA_ENABLE_ADMIN_DELETE_ALL", Fal
 # # models
 
 
-RA_ADMIN_SITE_NAME = getattr(settings, "RA_ADMIN_SITE_NAME", "erp_admin")
+RA_ADMIN_SITE_NAME = getattr(settings, "RA_ADMIN_SITE_NAME", "erp_framework")
 
 RA_REPORT_LIST_MAP = getattr(settings, "RA_REPORT_LIST_MAP", {})
 
