@@ -51,11 +51,7 @@ tempfile.tempdir = os.environ["TMPDIR"] = TMPDIR
 # Removing the temporary TMPDIR.
 atexit.register(shutil.rmtree, TMPDIR)
 
-SUBDIRS_TO_SKIP = [
-    "data",
-    "import_error_package",
-    "test_runner_apps",
-]
+SUBDIRS_TO_SKIP = ["data", "import_error_package", "test_runner_apps"]
 
 ALWAYS_INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -135,7 +131,9 @@ def setup(verbosity, test_labels, parallel):
         test_labels_set.add(".".join(bits))
 
     if verbosity >= 1:
-        msg = "Testing against Ra installed in '%s'" % os.path.dirname(django.__file__)
+        msg = "Testing against ERP framework installed in '%s'" % os.path.dirname(
+            django.__file__
+        )
         max_parallel = 1  # default_test_processes() if parallel == 0 else parallel
         if max_parallel > 1:
             msg += " with up to %d processes" % max_parallel
@@ -144,7 +142,7 @@ def setup(verbosity, test_labels, parallel):
     # Force declaring available_apps in TransactionTestCase for faster tests.
     def no_available_apps(self):
         raise Exception(
-            "Please define available_apps in TransactionTestCase " "and its subclasses."
+            "Please define available_apps in TransactionTestCase and its subclasses."
         )
 
     TransactionTestCase.available_apps = property(no_available_apps)
@@ -179,7 +177,7 @@ def setup(verbosity, test_labels, parallel):
                     "django.template.context_processors.i18n",
                     "django.template.context_processors.static",
                     # "erp_framework.base.context_processors.global_info",
-                ],
+                ]
             },
         }
     ]
@@ -200,7 +198,7 @@ def setup(verbosity, test_labels, parallel):
     log_config["loggers"]["django"]["level"] = "ERROR"
     settings.LOGGING = log_config
     settings.SILENCED_SYSTEM_CHECKS = [
-        "fields.W342",  # ForeignKey(unique=True) -> OneToOneField
+        "fields.W342"  # ForeignKey(unique=True) -> OneToOneField
     ]
     settings.CRISPY_TEMPLATE_PACK = "bootstrap4"
 
@@ -327,8 +325,7 @@ def django_tests(
         exclude_tags=exclude_tags,
     )
     failures = test_runner.run_tests(
-        test_labels or get_installed(),
-        extra_tests=extra_tests,
+        test_labels or get_installed(), extra_tests=extra_tests
     )
     teardown(state)
     return failures
@@ -437,8 +434,10 @@ if __name__ == "__main__":
         "modules",
         nargs="*",
         metavar="module",
-        help='Optional path(s) to test modules; e.g. "i18n" or '
-        '"i18n.tests.TranslationTests.test_lazy_objects".',
+        help=(
+            'Optional path(s) to test modules; e.g. "i18n" or '
+            '"i18n.tests.TranslationTests.test_lazy_objects".'
+        ),
     )
     parser.add_argument(
         "-v",
@@ -467,14 +466,18 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--settings",
-        help='Python path to settings module, e.g. "myproject.settings". If '
-        "this isn't provided, either the DJANGO_SETTINGS_MODULE "
-        'environment variable or "test_postgres" will be used.',
+        help=(
+            'Python path to settings module, e.g. "myproject.settings". If '
+            "this isn't provided, either the DJANGO_SETTINGS_MODULE "
+            'environment variable or "test_postgres" will be used.'
+        ),
     )
     parser.add_argument(
         "--bisect",
-        help="Bisect the test suite to discover a test that causes a test "
-        "failure when combined with the named test.",
+        help=(
+            "Bisect the test suite to discover a test that causes a test "
+            "failure when combined with the named test."
+        ),
     )
     parser.add_argument(
         "--pair",
@@ -483,8 +486,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--reverse",
         action="store_true",
-        help="Sort test suites and test cases in opposite order to debug "
-        "test side effects not apparent with normal execution lineup.",
+        help=(
+            "Sort test suites and test cases in opposite order to debug "
+            "test side effects not apparent with normal execution lineup."
+        ),
     )
     parser.add_argument(
         "--selenium",
@@ -499,8 +504,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--external-host",
         default=socket.gethostname(),
-        help="The external host that can be reached by the selenium hub instance when running Selenium "
-        "tests via Selenium Hub.",
+        help=(
+            "The external host that can be reached by the selenium hub instance when"
+            " running Selenium tests via Selenium Hub."
+        ),
     )
     parser.add_argument(
         "--debug-sql",

@@ -196,6 +196,8 @@ function executeFunctionByName(functionName, context /*, args */) {
             ErrorMessage: "An error happened :( ",
             WaitMessage: 'Just a moment...',
             LoadingMessage: 'loading...',
+            total: 'Total',
+
         },
         urls: {
 

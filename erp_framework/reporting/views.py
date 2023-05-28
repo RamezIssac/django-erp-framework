@@ -330,7 +330,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     cache_duration = 300
     with_type = True
 
-    admin_site_name = "erp_admin"
+    admin_site_name = "erp_framework"
     template_name = "erp_framework/report.html"
 
     doc_type_field_name = "doc_type"

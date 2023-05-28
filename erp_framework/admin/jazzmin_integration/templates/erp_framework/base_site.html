@@ -2,7 +2,7 @@
 {% load i18n static %}
 {% load jazzmin erp_reporting_tags i18n %}
 
-{% block title %}{{ title|capfirst }} | {{ site_title|default:_('RA ERP') }}{% endblock %}
+{% block title %}{{ title|capfirst }} | {{ site_title|default:_('Django ERP Framework') }}{% endblock %}
 
 {% block branding %}
     <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:'' }}</a></h1>

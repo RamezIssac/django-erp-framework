@@ -109,7 +109,7 @@ class ERPMixin:
 
 class EntityModel(ERPMixin, RAModel):
     """
-    The Main base for Ra `static` models
+    The Main base for ERP framework `static` models
     Example: Client , Expense etc..
     """
 
