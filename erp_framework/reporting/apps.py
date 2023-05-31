@@ -1,14 +1,8 @@
 from django import apps
 from django.db import ProgrammingError, OperationalError
-from django.db.models.signals import post_migrate
 
 
 def autodiscover():
-    import os
-    import sys
-    import copy
-    from django.utils.module_loading import module_has_submodule
-
     from importlib import import_module
     from django.apps import apps
 
@@ -41,7 +35,11 @@ def sync_reports():
         return
 
     for report_klass in reports:
-        code = f"{report_klass.get_base_model_name()}.{report_klass.get_report_slug()}"
+        try:
+            base_model_name = report_klass.get_base_model_name()
+        except AttributeError:
+            base_model_name = report_klass.__module__.split(".")[0]
+        code = f"{base_model_name}.{report_klass.get_report_slug()}"
         c, created = Report.objects.update_or_create(
             code=code,
         )

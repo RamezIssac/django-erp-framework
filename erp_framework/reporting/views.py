@@ -141,7 +141,6 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     # Control the header report function
     must_exist_filter = None
 
-
     # to limit records not to exceed certain number, useful for very large reports
     limit_records = False
 
@@ -208,7 +207,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
     def get_report_generator(self, queryset, for_print):
         q_filters, kw_filters = self.form.get_filters()
-        if self.crosstab_model:
+        if self.crosstab_field:
             self.crosstab_ids = self.form.get_crosstab_ids()
 
         crosstab_compute_remainder = (
@@ -223,12 +222,12 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
 
         time_series_pattern = self.time_series_pattern
         if self.time_series_selector:
-            time_series_pattern = self.form.cleaned_data["time_series_pattern"]
+            time_series_pattern = self.form.get_time_series_pattern()
 
         return self.report_generator_class(
             self.get_report_model(),
-            start_date=self.form.cleaned_data["start_date"],
-            end_date=self.form.cleaned_data["end_date"],
+            start_date=self.form.get_start_date(),
+            end_date=self.form.get_end_date(),
             q_filters=q_filters,
             kwargs_filters=kw_filters,
             date_field=self.date_field,
@@ -240,7 +239,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
             group_by=self.group_by,
             time_series_pattern=time_series_pattern,
             time_series_columns=self.time_series_columns,
-            crosstab_model=self.crosstab_model,
+            crosstab_field=self.crosstab_field,
             crosstab_ids=self.crosstab_ids,
             crosstab_columns=self.crosstab_columns,
             crosstab_compute_remainder=crosstab_compute_remainder,
@@ -319,7 +318,7 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         """
         return cls.form_class or report_form_factory(
             cls.get_report_model(),
-            crosstab_model=cls.crosstab_model,
+            crosstab_model=cls.crosstab_field,
             display_compute_remainder=cls.crosstab_compute_remainder,
             fkeys_filter_func=cls.form_filter_func,
             initial=cls.get_form_initial(),

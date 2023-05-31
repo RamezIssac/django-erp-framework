@@ -43,13 +43,15 @@ class ReportRegistry(object):
         :param report_class:
         :return:
         """
-        if not report_class.hidden:
+        if not getattr(report_class, "hidden", False):
             try:
                 namespace = report_class.get_base_model_name()
             except AttributeError:
-                raise ImproperlyConfigured(
-                    "Can not access base_model, is it set on class %s?" % report_class
-                )
+                # namespace = report_class.get_report_model()._meta.model_name
+                namespace = report_class.__module__.split(".")[0]
+                # raise ImproperlyConfigured(
+                #     "Can not access base_model, is it set on class %s?" % report_class
+                # )
             try:
                 if not report_class.report_title:
                     raise AttributeError
