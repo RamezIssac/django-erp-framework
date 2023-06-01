@@ -58,6 +58,9 @@ class ERPFrameworkAdminSiteBase(AdminSite):
     login_template = app_settings.ERP_FRAMEWORK_LOGIN_TEMPLATE
     logout_template = app_settings.ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE
 
+    def has_permission(self, request):
+        return app_settings.admin_site_access_permission(request)
+
     def get_urls(self):
         # from erp_framework.utils.views import access_denied
         def wrap(view, cacheable=False):

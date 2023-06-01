@@ -7,7 +7,7 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.template.defaultfilters import capfirst
 from django.urls import reverse
 from django.views.generic import TemplateView
-from slick_reporting.form_factory import report_form_factory
+from slick_reporting.forms import report_form_factory
 from slick_reporting.generator import ReportGenerator
 from slick_reporting.views import SlickReportViewBase
 
@@ -78,6 +78,7 @@ class ReportList(ReportListBase):
         context = super(ReportList, self).get_context_data(**kwargs)
 
         context["reports"] = self.get_reports_map()
+        context["base_template"] = app_settings.report_base_template
 
         context["ERP_FRAMEWORK_SITE_NAME"] = app_settings.ERP_FRAMEWORK_SITE_NAME
         context["has_detached_sidebar"] = True
@@ -91,7 +92,7 @@ class ReportList(ReportListBase):
         return context
 
 
-class ReportView(UserPassesTestMixin, SlickReportViewBase):
+class ReportView(SlickReportViewBase):
     """
     The Base class for reports .
     It handles the report ajax request, load the report form which provides the needed filers,
@@ -167,10 +168,15 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         extra_context = erp_admin_site.each_context(self.request)
         context.update(extra_context)
         context["is_report"] = True
-        context["current_base_model_name"] = self.base_model.__name__.lower()
+        try:
+            context["current_base_model_name"] = self.base_model.__name__.lower()
+        except:
+            context["current_base_model_name"] = None
+
         context["base_model"] = self.base_model
         context["report_slug"] = self.get_report_slug()
         context["report"] = self
+        context["base_template"] = app_settings.report_base_template
 
         return context
 
@@ -258,7 +264,12 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         A convenience method to get the base model name
         :return:
         """
-        return cls.base_model._meta.model_name
+        try:
+            return cls.base_model._meta.model_name
+        except:
+            app_label = cls.__module__.split(".")[0]
+            return app_label
+        # return
 
     @classmethod
     def get_report_code(cls):
@@ -268,12 +279,16 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
     def get_url(cls):
         return cls.get_absolute_url()
 
-    def test_func(self, user=None):
-        from .registry import report_registry
+    def get_test_func(self):
+        """
+        Override this method to use a different test_func method.
+        """
+        return self.test_func
 
-        return report_registry.has_perm(
-            self.request.user, self.get_report_code(), "view"
-        )
+    @classmethod
+    def test_func(cls, request=None, permission="view"):
+        return app_settings.report_access_function(request, permission, cls)
+        # return True
 
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
@@ -332,6 +347,10 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
         report_slug = kwargs.get("report_slug", False)
         if report_slug:
             self.report_slug = report_slug
+        user_test_result = self.get_test_func()(request)
+        if not user_test_result:
+            return self.handle_no_permission()
+
         val = super(ReportView, self).dispatch(request, *args, **kwargs)
 
         return val
@@ -367,15 +386,8 @@ class ReportView(UserPassesTestMixin, SlickReportViewBase):
             data = dictsort(data, order_field, asc)
         return data
 
-    def prepare_results_for_printing(self, results):
-        """
-        Hook before sending the results for teh printing generator
-        :param results: dict containing the data, columns, column_names, verbose_data and other keys
-        :return: adjusted results
-        """
-        return results
-
     def form_invalid(self, form):
+        # todo return a page if not ajax
         return JsonResponse(form.errors, status=400)
 
 

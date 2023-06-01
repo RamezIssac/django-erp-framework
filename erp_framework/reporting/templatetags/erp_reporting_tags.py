@@ -12,8 +12,12 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
-def render_reports_menu(context, template_name="erp_framework/reports_menu.html"):
+def render_reports_menu(
+    context, template_name="erp_framework/reports_menu.html", flat=True
+):
     request = context["request"]
+    base_models = []
+    reports = []
     is_in_reports = False
     active_base_model = ""
     if request.path.startswith("/reports/"):
@@ -22,23 +26,25 @@ def render_reports_menu(context, template_name="erp_framework/reports_menu.html"
 
     from erp_framework.reporting.registry import report_registry
 
-    base_models = report_registry.get_base_models_with_reports()
-    if base_models:
-        output = render_to_string(
-            template_name,
-            {
-                "base_models_reports_tuple": base_models,
-                "is_report": context.get("is_report", False),
-                "base_model": context.get("base_model", False),
-                "report_slug": context.get("report_slug", False),
-                "current_base_model_name": context.get(
-                    "current_base_model_name", False
-                ),
-            },
-            request,
-        )
-        return mark_safe(output)
-    return ""
+    if flat:
+        reports = report_registry.get_all_reports()
+    else:
+        base_models = report_registry.get_base_models_with_reports()
+    # if base_models:
+    output = render_to_string(
+        template_name,
+        {
+            "reports": reports,
+            "base_models_reports_tuple": base_models,
+            "is_report": context.get("is_report", False),
+            "base_model": context.get("base_model", False),
+            "report_slug": context.get("report_slug", False),
+            "current_base_model_name": context.get("current_base_model_name", False),
+        },
+        request,
+    )
+    return mark_safe(output)
+    # return ""
 
 
 @register.simple_tag(takes_context=True)
@@ -50,7 +56,10 @@ def get_report(context, base_model, report_slug):
 
 @register.simple_tag()
 def get_model_verbose_name_plural(model):
-    return capfirst(model._meta.verbose_name_plural)
+    try:
+        return capfirst(model._meta.verbose_name_plural)
+    except:
+        return "n/a"
 
 
 @register.simple_tag(takes_context=True)

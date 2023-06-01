@@ -104,12 +104,7 @@
                                     <ul class="nav nav-treeview" style="display: none;">
                                         {% for model in app.models %}
                                             <li class="nav-item">
-                                                <a href="
-
-
-
-
-                                                        {% if model.url %}{{ model.url }}{% else %}javascript:void(0){% endif %}"
+                                                <a href="{% if model.url %}{{ model.url }}{% else %}javascript:void(0){% endif %}"
                                                    class="nav-link">
                                                     <i class="nav-icon {{ model.icon }}"></i>
                                                     <p>{{ model.name }}</p>
@@ -121,7 +116,7 @@
                             {% endfor %}
                         {% endif %}
 
-                        {% render_reports_menu %}
+                        {% render_reports_menu template_name="request_analytics/menu.html" %}
                     </ul>
 
                 </nav>

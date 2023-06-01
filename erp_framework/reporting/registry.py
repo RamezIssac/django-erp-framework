@@ -127,12 +127,12 @@ class ReportRegistry(object):
             self._slugs_registry.remove(slug_id)
             self._base_models.remove(report_class.base_model)
 
-    def get_report_classes_by_namespace(self, namespace):
-        if namespace in self._registry:
-            return self._registry[namespace]
-        return []
-        # else:
-        #     raise NotRegistered(namespace)
+    # def get_report_classes_by_namespace(self, namespace):
+    #     if namespace in self._registry:
+    #         return self._registry[namespace]
+    #     return []
+    # else:
+    #     raise NotRegistered(namespace)
 
     def get_all_reports(self):
         reports = []

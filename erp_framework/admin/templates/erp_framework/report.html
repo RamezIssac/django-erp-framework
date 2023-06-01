@@ -1,4 +1,4 @@
-{% extends 'erp_framework/base_site.html' %}
+{% extends base_template %}
 
 {% load crispy_forms_tags i18n slick_reporting_tags static erp_reporting_tags %}
 
@@ -8,7 +8,7 @@
         <a href="{% url 'admin:index' %}" class="breadcrumb-item">
             <i class="icon-home2 mx-2"></i> {% trans 'Home' %} </a>
         <a class="breadcrumb-item"> {% trans 'Reports' %}</a>
-        <a class="breadcrumb-item"> {% get_model_verbose_name_plural base_model %} </a>
+{#        <a class="breadcrumb-item"> {% get_model_verbose_name_plural base_model %} </a>#}
         <a class="breadcrumb-item"> {{ title }}</a>
     </ul>
 
@@ -94,6 +94,7 @@
         </div>
     </div>
 {% endblock %}
+
 {% block extrajs %}
     {{ block.super }}
 
@@ -118,19 +119,7 @@
 
     <script>
         $(document).ready(function () {
-            $('select').select2();
 
-            $('.exportCsvBtn').on('click', function (e) {
-                e.preventDefault()
-                let form = $('#reportForm');
-                window.location = '?' + form.serialize() + '&_export=csv'
-            });
-
-            $('.refreshReport').on('click', function (event) {
-                event.preventDefault();
-                let $elem = $('[data-report-widget]')
-                $.erp_framework.report_loader.refreshReportWidget($elem)
-            });
 
 
             function setDatePicker() {

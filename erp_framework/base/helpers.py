@@ -2,6 +2,7 @@ import logging
 from collections.abc import Iterable
 
 from django.apps import apps
+from django.conf import settings
 from django.db.models import Max
 
 logger = logging.getLogger(__name__)
@@ -223,3 +224,20 @@ def flatten_list(items):
             yield from flatten_list(x)
         else:
             yield x
+
+
+def admin_site_access_permission(request):
+    if settings.DEBUG:
+        return True
+    return request.user.is_active and request.user.is_staff
+
+
+def report_access_function(request, permission, report):
+    from erp_framework.reporting.registry import report_registry
+
+    if settings.DEBUG:
+        return True
+
+    return report_registry.has_perm(
+        request.user, report.get_report_code(), permission=permission
+    )

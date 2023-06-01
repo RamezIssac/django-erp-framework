@@ -17,6 +17,9 @@ ERP_FRAMEWORK_SETTINGS = {
     "admin_site_class": "erp_framework.admin.admin.ERPFrameworkAdminSite",
     "admin_site_namespace": "erp_framework",
     "enable_delete_all": False,
+    "admin_site_access_permission": "erp_framework.base.helpers.admin_site_access_permission",
+    "report_access_function": "erp_framework.base.helpers.report_access_function",
+    "report_base_template": "erp_framework/base_site.html",
 }
 
 USER_FRAMEWORK_SETTINGS = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {})
@@ -70,4 +73,22 @@ ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE = ERP_FRAMEWORK_SETTINGS.get(
 
 ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL = ERP_FRAMEWORK_SETTINGS.get(
     "enable_delete_all", False
+)
+
+
+admin_site_access_permission = get_callable(
+    ERP_FRAMEWORK_SETTINGS.get(
+        "admin_site_access_permission",
+        "erp_framework.base.helpers.admin_site_access_permission",
+    )
+)
+
+report_access_function = get_callable(
+    ERP_FRAMEWORK_SETTINGS.get(
+        "report_access_function", "erp_framework.base.helpers.report_access_function"
+    )
+)
+
+report_base_template = ERP_FRAMEWORK_SETTINGS.get(
+    "report_base_template", "erp_framework/base_site.html"
 )
