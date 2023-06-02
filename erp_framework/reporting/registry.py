@@ -104,19 +104,22 @@ class ReportRegistry(object):
             #     raise ImproperlyConfigured('%s: Must specify a view class or function in `header_report` '
             #                                'if `must_exist_filter` is set' % report_class)
 
-            self._register_report(report_class, namespace)
+            self._register_report(report_class, namespace, erp_admin_sites_names)
 
-    def _register_report(self, report, namespace):
+    def _register_report(self, report, namespace, erp_admin_sites_names):
         """
         Actual registry function, recursive
         :param report:
         :param namespace:
         :return:
         """
-        admin_sites = ["erp_framework"]
+
+        try:
+            admin_sites = [x for x in erp_admin_sites_names.split(",") if x]
+        except:
+            breakpoint()
 
         for admin_site in admin_sites:
-            namespace_existing = namespace in self._registry
             full_name = f"{namespace}.{report.get_report_slug()}"
             self._registry.setdefault(admin_site, {})
             self._registry[admin_site].setdefault(namespace, [])
@@ -158,11 +161,18 @@ class ReportRegistry(object):
     # else:
     #     raise NotRegistered(namespace)
 
-    def get_all_reports(self, admin_site="erp_framework"):
+    def get_all_reports(self, admin_site="erp_framework", all_sites=False):
         reports = []
-        registry = self._registry.get(admin_site, {})
-        for namespace in registry:
-            reports += list(registry[namespace])
+        if all_sites:
+            admin_sites = self._registry.keys()
+        else:
+            admin_sites = [admin_site]
+
+        for admin_site in admin_sites:
+            registry = self._registry.get(admin_site, {})
+            for namespace in registry:
+                reports += list(registry[namespace])
+        reports = set(reports)
         return reports
 
     def get(self, namespace, report_slug, admin_site="erp_framework"):
@@ -210,16 +220,17 @@ class ReportRegistry(object):
 report_registry = ReportRegistry()
 
 
-def register_report_view(report_class=None, condition=None):
+def register_report_view(report_class=None, admin_site_names="", condition=None):
+    admin_site_names = admin_site_names or "erp_framework"
     if report_class:
-        report_registry.register(report_class)
+        report_registry.register(report_class, admin_site_names)
         return report_class
 
     def wrapper(report_class):
         if callable(condition):
             if not condition():
                 return report_class
-        report_registry.register(report_class)
+        report_registry.register(report_class, admin_site_names)
         return report_class
 
     return wrapper

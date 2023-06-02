@@ -11,11 +11,11 @@ Adding a widget to a page is as easy as this code
 
         <div class="widget-container">
             {% get_report base_model='expense' report_slug='ExpensesTotalStatement' as ExpensesTotalStatement %}
-            {% get_html_panel ExpensesTotalStatement %}
+            {% get_widget ExpensesTotalStatement %}
         </div>
 
 The ``get_report`` tag will return a ``Report`` object that can be used to
-render the report. The ``get_html_panel`` tag will render
+render the report. The ``get_widget`` tag will render
 the report as a card with a title, a table and a chart container.
 
 This code above will be actually rendered as this in the html page:
@@ -68,9 +68,22 @@ container for the chart. The ``data-report-table`` attribute is used by the
 javascript to find the container for the table.
 
 
-get_html_panel Tag can accept a ``template_name`` parameter to render the
+``get_widget`` Tag can accept a ``template_name`` parameter to render the
 report using a custom template. By default it renders the
 ``erp_reporting/report_widget.html`` template.
+
+Default Arguments
+-----------------
+
+extra_params
+success_callback
+failure_callback
+display_chart
+display_table
+chart_id
+display_title
+title (default to report report title)
+
 
 
 

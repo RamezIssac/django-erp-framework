@@ -33,7 +33,6 @@ def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=
             "base_model": context.get("base_model", False),
             "report_slug": context.get("report_slug", False),
             "CURRENT_REPORT": context.get("CURRENT_REPORT", None),
-            "current_base_model_name": context.get("current_base_model_name", False),
         },
         request,
     )
@@ -67,23 +66,28 @@ def get_report(context, base_model, report_slug):
     )
 
 
-@register.simple_tag()
-def get_model_verbose_name_plural(model):
-    try:
-        return capfirst(model._meta.verbose_name_plural)
-    except:
-        return "n/a"
+@register.simple_tag
+def get_widget(report, template_name="", **kwargs):
+    kwargs["report"] = report
+    if not report:
+        raise ValueError(
+            "report argument is empty. Are you sure you're using the correct report name"
+        )
+    # if not report.chart_settings:
+    kwargs.setdefault("display_chart", bool(report.chart_settings))
+    kwargs.setdefault("display_table", True)
 
+    kwargs.setdefault("display_chart_selector", kwargs["display_chart"])
+    kwargs.setdefault("display_title", True)
 
-@register.simple_tag(takes_context=True)
-def get_report_active_class(context, base_model, css_class=None):
-    css_class = css_class or "active"
-    current_base_model_name = context["current_base_model_name"]
-    return (
-        css_class
-        if current_base_model_name == base_model._meta.model_name.lower()
-        else ""
-    )
+    passed_title = kwargs.get("title", None)
+    kwargs["title"] = passed_title or report.get_report_title()
+
+    kwargs.setdefault("extra_params", "")
+
+    template = get_template(template_name or "erp_framework/widget_template.html")
+
+    return template.render(context=kwargs)
 
 
 @register.simple_tag

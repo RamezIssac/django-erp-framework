@@ -2,7 +2,9 @@ import datetime
 from unittest import skip
 from urllib.parse import urljoin
 
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.timezone import now
@@ -734,4 +736,27 @@ class ReportRegistryTest(TestCase):
 
         register_report_view(ProductClientSales2)
         report = report_registry.get("reporting_tests", "client_sales_of_products_2")
+        self.assertIsNotNone(report)
+
+        def get_from_non_existing_admin_site():
+            report = report_registry.get(
+                "reporting_tests", "client_sales_of_products_2", admin_site="admin"
+            )
+            return report
+
+        self.assertRaises(NotRegistered, get_from_non_existing_admin_site)
+
+        register_report_view(ProductClientSales2, admin_site_names="admin")
+        report = report_registry.get(
+            "reporting_tests", "client_sales_of_products_2", admin_site="admin"
+        )
+        self.assertIsNotNone(report)
+
+        @register_report_view(admin_site_names="admin")
+        class ProductClientSales2(ProductClientSales):
+            report_slug = "client_sales_of_products_3"
+
+        report = report_registry.get(
+            "reporting_tests", "client_sales_of_products_3", admin_site="admin"
+        )
         self.assertIsNotNone(report)

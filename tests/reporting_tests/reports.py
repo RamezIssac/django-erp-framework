@@ -80,11 +80,6 @@ class ClientList(ReportView):
 
     hidden = True
 
-    form_settings = {
-        "group_by": "client",
-        "group_columns": ["slug", "name"],
-        "add_details_control": True,
-    }
     group_by = "client"
     columns = ["slug", "name"]
 
@@ -100,10 +95,6 @@ class ProductClientSales(ReportView):
     header_report = ClientList
     form_class = report_form_factory(report_model)
 
-    form_settings = {
-        "group_by": "product",
-        "group_columns": ["slug", "name", "__balance_quantity__", "__balance__"],
-    }
     group_by = "product"
     columns = ["slug", "name", "__balance_quantity__", "__balance__"]
 
@@ -140,13 +131,6 @@ class ProductSalesMonthlySeries(ReportView):
     report_model = SimpleSales
     report_title = _("Product Sales Monthly")
 
-    form_settings = {
-        "group_by": "product",
-        "group_columns": ["slug", "name"],
-        "time_series_pattern": "monthly",
-        "time_series_columns": ["__balance_quantity__", "__balance__"],
-    }
-
     group_by = "product"
     columns = ["slug", "name"]
     time_series_pattern = ("monthly",)
@@ -181,16 +165,6 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
     base_model = Client
     report_model = SimpleSales
 
-    # header_report = ProductSalesMonthlySeries
-    # must_exist_filter = 'product_id'
-
-    form_settings = {
-        "group_by": "client",
-        "group_columns": ["slug", "name"],
-        "time_series_pattern": "monthly",
-        "time_series_columns": ["__debit__", "__credit__", "__balance__", "__total__"],
-    }
-
     group_by = "client"
     columns = ["slug", "name"]
     time_series_pattern = "monthly"
@@ -222,18 +196,6 @@ class ClientDetailedStatement2(ReportView):
     header_report = ClientList
     must_exist_filter = "client_id"
 
-    form_settings = {
-        "group_by": "",
-        "group_columns": [
-            "slug",
-            "date",
-            "type",
-            "product__name",
-            "quantity",
-            "price",
-            "value",
-        ],
-    }
     group_by = None
     columns = ["slug", "date", "type", "product__name", "quantity", "price", "value"]
 

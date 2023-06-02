@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import logging
-from functools import update_wrapper
 
 from django.apps import apps
 from django.contrib.admin import AdminSite
@@ -9,43 +8,12 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.urls import re_path as url, include
-
 from django.utils.translation import gettext_lazy as _
 
 from erp_framework.admin.helpers import get_each_context
 from erp_framework.base import app_settings
 
 logger = logging.getLogger(__name__)
-CACHE_DURATION = 0
-
-MSG_ADDED_SUCCESSFULLY = _('The %(name)s "%(obj)s" was added successfully.')
-MSG_CHANGED_SUCCESSFULLY = _('The %(name)s "%(obj)s" was changed successfully.')
-MSG_YOU_MAY_ADD = _("You may add another %(name)s below")
-MSG_YOU_MAY_CHANGE = _("You may change it again below.")
-
-
-# def get_report_list_class(request, base_model):
-#     from erp_framework.base.app_settings import RA_REPORT_LIST_MAP
-#     from erp_framework.reporting.views import ReportList
-#     from django.utils.module_loading import import_string
-#
-#     klass = RA_REPORT_LIST_MAP.get(base_model, False)
-#     if klass:
-#         klass = import_string(klass)
-#         if callable(klass):
-#             return klass(request, base_model=base_model)
-#     else:
-#         klass = ReportList
-#
-#     return klass.as_view()(request, base_model=base_model)
-#
-
-
-def get_report_view(request, base_model, report_slug):
-    from erp_framework.reporting.registry import report_registry
-
-    klass = report_registry.get(base_model, report_slug)
-    return klass.as_view()(request)
 
 
 class ERPFrameworkAdminSiteBase(AdminSite):
@@ -57,6 +25,8 @@ class ERPFrameworkAdminSiteBase(AdminSite):
     app_index_template = app_settings.ERP_FRAMEWORK_APP_INDEX_TEMPLATE
     login_template = app_settings.ERP_FRAMEWORK_LOGIN_TEMPLATE
     logout_template = app_settings.ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE
+
+    admin_base_site_template = None
 
     def has_permission(self, request):
         return app_settings.admin_site_access_permission(request)
@@ -78,7 +48,7 @@ class ERPFrameworkAdminSiteBase(AdminSite):
             # ),
             url(
                 r"^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$",
-                get_report_view,
+                self.get_report_view,
                 name="report",
             ),
             # new from sites
@@ -169,6 +139,8 @@ class ERPFrameworkAdminSiteBase(AdminSite):
 
     def each_context(self, request):
         context = super(ERPFrameworkAdminSiteBase, self).each_context(request)
-        context["ERP_FRAMEWORK_SITE_NAME"] = app_settings.ERP_FRAMEWORK_SITE_NAME
+        context["admin_base_site_template"] = (
+            self.admin_base_site_template or app_settings.admin_base_site_template
+        )
         context.update(get_each_context(request, self))
         return context

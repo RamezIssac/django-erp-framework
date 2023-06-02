@@ -54,7 +54,7 @@ class ReportView(SlickReportViewBase):
     columns = None
 
     report_slug = ""
-    page_title = None
+
     report_title = ""
     date_field = "date"
     # default order by for the results.
@@ -96,10 +96,6 @@ class ReportView(SlickReportViewBase):
         extra_context = erp_admin_site.each_context(self.request)
         context.update(extra_context)
         context["is_report"] = True
-        try:
-            context["current_base_model_name"] = self.base_model.__name__.lower()
-        except:
-            context["current_base_model_name"] = None
 
         context["base_model"] = self.base_model
         context["report_slug"] = self.get_report_slug()
@@ -138,55 +134,6 @@ class ReportView(SlickReportViewBase):
             )
 
         return [], []
-
-        # return [Q(type__in=doc_types['plus_list'])], [Q(type__in=doc_types['minus_list'])]
-
-    def get_report_generator(self, queryset, for_print):
-        q_filters, kw_filters = self.form.get_filters()
-        if self.crosstab_field:
-            self.crosstab_ids = self.form.get_crosstab_ids()
-
-        crosstab_compute_remainder = (
-            self.form.get_crosstab_compute_remainder()
-            if self.request.GET or self.request.POST
-            else self.crosstab_compute_remainder
-        )
-        doc_type_plus_list, doc_type_minus_list = [], []
-
-        if self.with_type:
-            doc_type_plus_list, doc_type_minus_list = self.get_doc_types_q_filters()
-
-        time_series_pattern = self.time_series_pattern
-        if self.time_series_selector:
-            time_series_pattern = self.form.get_time_series_pattern()
-
-        return self.report_generator_class(
-            self.get_report_model(),
-            start_date=self.form.get_start_date(),
-            end_date=self.form.get_end_date(),
-            q_filters=q_filters,
-            kwargs_filters=kw_filters,
-            date_field=self.date_field,
-            main_queryset=queryset,
-            print_flag=for_print,
-            limit_records=self.limit_records,
-            swap_sign=self.swap_sign,
-            columns=self.columns,
-            group_by=self.group_by,
-            time_series_pattern=time_series_pattern,
-            time_series_columns=self.time_series_columns,
-            crosstab_field=self.crosstab_field,
-            crosstab_ids=self.crosstab_ids,
-            crosstab_columns=self.crosstab_columns,
-            crosstab_compute_remainder=crosstab_compute_remainder,
-            format_row_func=self.format_row,
-            doc_type_plus_list=doc_type_plus_list,
-            doc_type_minus_list=doc_type_minus_list,
-        )
-
-    @classmethod
-    def get_report_slug(cls):
-        return cls.report_slug or cls.__name__.lower()
 
     @classmethod
     def get_base_model_name(cls):
@@ -241,16 +188,6 @@ class ReportView(SlickReportViewBase):
             current_app=current_app,
         )
 
-    @classmethod
-    def get_report_model(cls):
-        """
-        Problem: During tests, override settings is used, making the report model always returning the model
-        'first to be found' not the potentially swapped one ,raising an error. so , it is advised to use this method instead
-            of declaring the report model on the module level.
-        :return: the Model to use
-        """
-        return cls.report_model
-
     @staticmethod
     def form_filter_func(fkeys_dict):
         output = {}
@@ -279,16 +216,11 @@ class ReportView(SlickReportViewBase):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        report_slug = kwargs.get("report_slug", False)
-        if report_slug:
-            self.report_slug = report_slug
         user_test_result = self.get_test_func()(request)
         if not user_test_result:
             return self.handle_no_permission()
 
-        val = super(ReportView, self).dispatch(request, *args, **kwargs)
-
-        return val
+        return super().dispatch(request, *args, **kwargs)
 
     @classmethod
     def get_report_title(cls):
@@ -299,14 +231,8 @@ class ReportView(SlickReportViewBase):
         name = ""
         if cls.report_title:
             name = cls.report_title
-        elif cls.page_title:
-            name = cls.page_title
-        return capfirst(name)
 
-    def get_metadata(self, generator):
-        metadata = super().get_metadata(generator)
-        metadata["report_title"] = self.report_title
-        return metadata
+        return capfirst(name)
 
     def order_results(self, data):
         """
@@ -326,6 +252,8 @@ class ReportView(SlickReportViewBase):
         return JsonResponse(form.errors, status=400)
 
 
+# pragma: no cover
+# todo add
 class TimeSeriesSelectorReportView(UserPassesTestMixin, SlickReportViewBase):
     @staticmethod
     def form_filter_func(fkeys_dict):

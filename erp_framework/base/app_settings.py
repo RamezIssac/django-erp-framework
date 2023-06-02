@@ -19,6 +19,7 @@ ERP_FRAMEWORK_SETTINGS = {
     "enable_delete_all": False,
     "admin_site_access_permission": "erp_framework.base.helpers.admin_site_access_permission",
     "report_access_function": "erp_framework.base.helpers.report_access_function",
+    "admin_base_site_template": "admin/base.html",
     "report_base_template": "erp_framework/base_site.html",
     "reports_list_view_class": "",
     "reports_root_view_class": "",
@@ -93,4 +94,8 @@ report_access_function = get_callable(
 
 report_base_template = ERP_FRAMEWORK_SETTINGS.get(
     "report_base_template", "erp_framework/base_site.html"
+)
+
+admin_base_site_template = ERP_FRAMEWORK_SETTINGS.get(
+    "admin_base_site_template", "erp_framework/base_site.html"
 )
