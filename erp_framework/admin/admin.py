@@ -241,7 +241,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         TextField: {"widget": AdminTextareaWidget(attrs={"rows": 2})}
     }
 
-    # Ra New Attributes
+    # ERP New Attributes
     # ------------------
     description = None  # Description of the model to be displayed in hte changelist filter under the name
     enable_next_serial = True  # Enable the default slug to be a serial number
@@ -304,93 +304,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     get_enhanced_obj_title.short_description = _("name")
     get_enhanced_obj_title.admin_order_field = "name"
-
-    # Permissions
-    # def has_view_permission(self, request, obj=None):
-    #     if not self.enable_view_view:
-    #         return False
-    #     opts = self.opts
-    #     codename = get_permission_codename('view', opts)
-    #     return request.user.has_perm("%s.%s" % (opts.app_label, codename))
-    #
-    # def view_view(self, request, object_id, form_url='', extra_context=None):
-    #     extra_context = extra_context or {}
-    #     extra_context['has_add_permission'] = self.has_add_permission(request)
-    #     '''
-    #         Code copied from ChangeForm
-    #     '''
-    #
-    #     to_field = request.POST.get(TO_FIELD_VAR, request.GET.get(TO_FIELD_VAR))
-    #     if to_field and not self.to_field_allowed(request, to_field):
-    #         raise DisallowedModelAdminToField("The field %s cannot be referenced." % to_field)
-    #
-    #     model = self.model
-    #     opts = model._meta
-    #     add = object_id is None
-    #
-    #     if add:
-    #         if not self.has_add_permission(request):
-    #             raise PermissionDenied
-    #         obj = None
-    #
-    #     else:
-    #         obj = self.get_object(request, unquote(object_id), to_field)
-    #
-    #         if not self.has_view_permission(request, obj):
-    #             raise PermissionDenied
-    #
-    #         if obj is None:
-    #             raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {
-    #                 'name': str(opts.verbose_name), 'key': escape(object_id)})
-    #
-    #             # if request.method == 'POST' and "_saveasnew" in request.POST:
-    #             #     return self.add_view(request, form_url=reverse('admin:%s_%s_add' % (
-    #             #         opts.app_label, opts.model_name), current_app=self.admin_site.name))
-    #     context = dict(self.admin_site.each_context(request),
-    #                    name=obj,
-    #                    app_label=opts.app_label,
-    #                    object_id=object_id,
-    #                    original=obj,
-    #                    is_popup=(IS_POPUP_VAR in request.POST or
-    #                              IS_POPUP_VAR in request.GET),
-    #                    to_field=to_field,
-    #                    # media=media,
-    #                    preserved_filters=self.get_preserved_filters(request),
-    #                    )
-    #
-    #     context.update(extra_context or {})
-    #
-    #     opts = self.model._meta
-    #     app_label = opts.app_label
-    #     preserved_filters = self.get_preserved_filters(request)
-    #     form_url = add_preserved_filters({'preserved_filters': preserved_filters, 'opts': opts}, form_url)
-    #     view_on_site_url = self.get_view_on_site_url(obj)
-    #     context.update({
-    #         'add': add,
-    #         'change': not add,
-    #         'has_add_permission': self.has_add_permission(request),
-    #         'has_change_permission': self.has_change_permission(request, obj),
-    #         'has_delete_permission': self.has_delete_permission(request, obj),
-    #         'has_file_field': True,
-    #         'has_absolute_url': view_on_site_url is not None,
-    #         'absolute_url': view_on_site_url,
-    #         'form_url': form_url,
-    #         'opts': opts,
-    #         'content_type_id': get_content_type_for_model(self.model).pk,
-    #         'save_as': self.save_as,
-    #         'save_on_top': self.save_on_top,
-    #         'to_field_var': TO_FIELD_VAR,
-    #         'is_popup_var': IS_POPUP_VAR,
-    #         'app_label': app_label,
-    #     })
-    #
-    #     request.current_app = self.admin_site.name
-    #     return TemplateResponse(request, self.view_template or [
-    #         "erp_framework/%s/%s/view.html" % (opts.app_label, opts.model_name),
-    #         "erp_framework/%s/view.html" % opts.app_label,
-    #         'erp_framework/view.html',
-    #         f"{app_settings.ERP_FRAMEWORK_THEME}/view.html",
-    #     ], context)
 
     @csrf_protect_m
     def changelist_view(self, request, extra_context=None):
@@ -912,7 +825,7 @@ class TransactionItemAdmin(admin.TabularInline):
         return form_field
 
 
-class RaGenericTabularInline(GenericTabularInline):
+class ERPFrameworkGenericTabularInline(GenericTabularInline):
     """
     Implementation of teh needed methods for Generic Tabular inline with RA
     """
@@ -960,9 +873,7 @@ class RaGenericTabularInline(GenericTabularInline):
                         self.admin_site,
                         **wrapper_kwargs,
                     )
-        form_field = super(RaGenericTabularInline, self).formfield_for_dbfield(
-            db_field, request, **kwargs
-        )
+        form_field = super().formfield_for_dbfield(db_field, request, **kwargs)
         form_field = app_settings.ERP_ADMIN_DEFAULT_FORMFIELD_FOR_DBFIELD_FUNC(
             self, db_field, form_field, request, **kwargs
         )
@@ -1146,65 +1057,3 @@ class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
                 )
 
         formset.save()
-
-
-# class RaUserAdmin(RaThemeMixin, UserTabularPermissionsMixin, UserAdmin):
-#     enable_view_view = False
-#     date_hierarchy = None
-#     fields = None
-#     list_display_links = ["username"]
-#     change_user_password_template = (
-#         f"{app_settings.ERP_FRAMEWORK_THEME}/auth/user/change_password.html"
-#     )
-#     list_display = ("username", "is_superuser", "last_login", "is_active")
-#
-#     save_on_top = True
-#
-#     fieldsets = (
-#         (None, {"fields": ("username", "password")}),
-#         (_("Personal info"), {"fields": (("first_name", "last_name", "email"),)}),
-#         (
-#             _("Permissions"),
-#             {"fields": (("is_active", "is_superuser"), "groups", "user_permissions")},
-#         ),
-#         # (_('Important dates'), {'fields': (('last_login', 'date_joined'),)}),
-#     )
-#     list_filter = ("is_superuser", "is_active", "groups")
-#     form = CustomUserChangeForm
-#
-#     def get_actions(self, request):
-#         actions = super(RaUserAdmin, self).get_actions(request)
-#         if "delete_selected" in actions:
-#             del actions["delete_selected"]
-#         return actions
-#
-#     def has_delete_permission(self, request, obj=None):
-#         return False
-#
-#     def save_model(self, request, obj, form, change):
-#         obj.is_staff = True
-#         super(RaUserAdmin, self).save_model(request, obj, form, change)
-#
-#     def get_inline_instances(self, request, obj=None):
-#         if obj is None:
-#             return []
-#         return super(RaUserAdmin, self).get_inline_instances(request, obj)
-#
-#     def changelist_view(self, request, extra_context=None):
-#         extra_context = {"has_detached_sidebar": True}
-#         return super(RaUserAdmin, self).changelist_view(request, extra_context)
-#
-#
-# class RaGroupAdmin(RaThemeMixin, GroupTabularPermissionsMixin, GroupAdmin):
-#     enable_view_view = False
-#     date_hierarchy = None
-#     fields = None
-#     list_display_links = ["name"]
-#     list_display = ["name"]
-#
-#     save_on_top = True
-#
-#
-#
-# erp_admin_site.register(Group, RaGroupAdmin)
-# erp_admin_site.register(User, RaUserAdmin)
