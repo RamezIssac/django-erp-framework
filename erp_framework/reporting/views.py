@@ -175,7 +175,9 @@ class ReportView(SlickReportViewBase):
 
         context["base_model"] = self.base_model
         context["report_slug"] = self.get_report_slug()
+        context["CURRENT_REPORT"] = self.__class__
         context["report"] = self
+
         context["base_template"] = app_settings.report_base_template
 
         return context

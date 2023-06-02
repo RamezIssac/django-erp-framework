@@ -260,12 +260,6 @@ class ReportTest(BaseTestData, TestCase):
         self.assertEqual(instance.slug, a_elem.text())
         self.assertEqual(instance.type, type)
 
-    # def test_report_list(self):
-    #     url = Client.get_report_list_url()
-    #     self.client.login(username="super", password="secret")
-    #     response = self.client.get(url)
-    #     self.assertEqual(response.status_code, 200)
-
     def test_productclientsalesmatrix(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(

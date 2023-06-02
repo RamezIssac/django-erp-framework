@@ -12,17 +12,10 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
-def render_reports_menu(
-    context, template_name="erp_framework/reports_menu.html", flat=True
-):
+def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=True):
     request = context["request"]
     base_models = []
     reports = []
-    is_in_reports = False
-    active_base_model = ""
-    if request.path.startswith("/reports/"):
-        is_in_reports = True
-        active_base_model = [x for x in request.path.split("/") if x][1]
 
     from erp_framework.reporting.registry import report_registry
 
@@ -39,12 +32,24 @@ def render_reports_menu(
             "is_report": context.get("is_report", False),
             "base_model": context.get("base_model", False),
             "report_slug": context.get("report_slug", False),
+            "CURRENT_REPORT": context.get("CURRENT_REPORT", None),
             "current_base_model_name": context.get("current_base_model_name", False),
         },
         request,
     )
     return mark_safe(output)
     # return ""
+
+
+@register.simple_tag(takes_context=True)
+def is_active_report(
+    context,
+    report,
+):
+    current_report = context.get("CURRENT_REPORT", None)
+    # breakpoint()
+    if current_report:
+        return current_report == report.__class__
 
 
 @register.simple_tag(takes_context=True)
@@ -90,3 +95,8 @@ def get_html_panel(report, template_name="", **kwargs):
         template_name or "erp_framework/report_widget_template.html"
     )
     return template.render(context=kwargs)
+
+
+@register.simple_tag
+def get_erp_settings():
+    return app_settings.ERP_FRAMEWORK_SETTINGS

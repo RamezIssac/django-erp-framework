@@ -17,10 +17,6 @@ class TestDocTypeRegistry(SimpleTestCase):
         results = SampleModelB._get_doc_type_minus_list()
         self.assertIn("transaction", results)
 
-    # def test_get_doc_type_plus_list(self):
-    #     results = SampleModelA._get_doc_type_plus_list()
-    #     self.assertIn("transaction", results)
-
     def _test_get_doc_types(self):
         results = SampleModelA.get_doc_types()
         self.assertTrue(type(results) is list)

@@ -78,11 +78,11 @@ class ERPFrameworkAdminSiteBase(AdminSite):
         ]
 
         urlpatterns = [
-            url(
-                r"^reports/(?P<base_model>[\w-]+)/$",
-                get_report_list_class,
-                name="report_list",
-            ),
+            # url(
+            #     r"^reports/(?P<base_model>[\w-]+)/$",
+            #     get_report_list_class,
+            #     name="report_list",
+            # ),
             url(
                 r"^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$",
                 get_report_view,

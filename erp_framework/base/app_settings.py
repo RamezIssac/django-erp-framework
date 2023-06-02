@@ -20,6 +20,8 @@ ERP_FRAMEWORK_SETTINGS = {
     "admin_site_access_permission": "erp_framework.base.helpers.admin_site_access_permission",
     "report_access_function": "erp_framework.base.helpers.report_access_function",
     "report_base_template": "erp_framework/base_site.html",
+    "reports_list_view_class": "",
+    "reports_root_view_class": "",
 }
 
 USER_FRAMEWORK_SETTINGS = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {})
