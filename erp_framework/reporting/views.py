@@ -1,5 +1,6 @@
 import logging
 
+from crequest.middleware import CrequestMiddleware
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -17,79 +18,6 @@ from erp_framework.reporting.forms import OrderByForm
 from erp_framework.reporting.printing import HTMLPrintingClass
 
 logger = logging.getLogger("erp_framework.reporting")
-
-
-class ReportListBase(UserPassesTestMixin, TemplateView):
-    """
-    Base class to create a report list page
-    """
-
-    def get_meta_data(self):
-        """
-        Gets Meta data used for Page title , breadcrumbs links etc.
-        Make sure that opts is a model._meta or s sufficient dictionary
-        :return: tuple (verbose_name, verbose_name_plural, page_title, model_meta)
-        """
-        raise NotImplemented
-
-    def get_permissions(self):
-        """
-        Override of RAAccessControl.get_permissions
-        :return: a dictionary with 'any' and/ or 'all' permission. required
-        """
-        raise NotImplemented
-
-    def get_reports_map(self):
-        """
-        Hook to get reports. By default it uses the helper `get_reports_map` to get
-         the reports based on the base_model, However you can override and return your list of reports
-
-        :return: a dictionary with two values `slugs` and `reports`
-        slugs: map to a list of report slugs
-        reports: map to a list of ReportView classes
-        """
-        raise NotImplemented
-
-
-class ReportList(ReportListBase):
-    template_name = f"erp_framework/report_list.html"
-
-    def get_order_list(self):
-        from erp_framework.sites import erp_admin_site
-
-        model_admin = erp_admin_site.get_admin_by_model_name(self.kwargs["base_model"])
-        if model_admin:
-            try:
-                return model_admin["admin"].typed_reports_order_list or []
-            except AttributeError:
-                # The admin class does not have an order list for teh reports
-                pass
-        return []
-
-    def get_permissions(self):
-        return {}
-
-    def get_meta_data(self):
-        return "", "", ""
-
-    def get_context_data(self, **kwargs):
-        from erp_framework.sites import erp_admin_site
-
-        context = super(ReportList, self).get_context_data(**kwargs)
-
-        context["reports"] = self.get_reports_map()
-        context["base_template"] = app_settings.report_base_template
-
-        context["ERP_FRAMEWORK_SITE_NAME"] = app_settings.ERP_FRAMEWORK_SITE_NAME
-        context["has_detached_sidebar"] = True
-        context["ERP_FRAMEWORK_SITE_NAME"] = app_settings.ERP_FRAMEWORK_SITE_NAME
-
-        context["is_report"] = True
-        context["base_model"] = self.kwargs["base_model"].lower()
-
-        extra_context = erp_admin_site.each_context(self.request)
-        context.update(extra_context)
-        return context
 
 
 class ReportView(SlickReportViewBase):
@@ -266,12 +194,11 @@ class ReportView(SlickReportViewBase):
         A convenience method to get the base model name
         :return:
         """
-        try:
-            return cls.base_model._meta.model_name
-        except:
-            app_label = cls.__module__.split(".")[0]
-            return app_label
-        # return
+        # try:
+        #     return cls.base_model._meta.model_name
+        # except:
+        app_label = cls.__module__.split(".")[0]
+        return app_label
 
     @classmethod
     def get_report_code(cls):
@@ -301,11 +228,17 @@ class ReportView(SlickReportViewBase):
         return HttpResponseRedirect(reverse("erp_framework:login"))
 
     @classmethod
-    def get_absolute_url(self):
+    def get_absolute_url(cls):
+        request = CrequestMiddleware.get_request()
+        try:
+            current_app = request.current_app
+        except:
+            current_app = cls.admin_site_name
+
         return reverse(
             "admin:report",
-            args=(self.get_base_model_name(), self.get_report_slug()),
-            current_app=self.admin_site_name,
+            args=(cls.get_base_model_name(), cls.get_report_slug()),
+            current_app=current_app,
         )
 
     @classmethod

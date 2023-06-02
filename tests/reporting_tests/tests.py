@@ -132,7 +132,7 @@ class ReportTest(BaseTestData, TestCase):
     def test_client_balance(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "balances")),
+            reverse("erp_framework:report", args=("reporting_tests", "balances")),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
@@ -142,7 +142,7 @@ class ReportTest(BaseTestData, TestCase):
     def test_product_total_sales(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("product", "total_sales")),
+            reverse("erp_framework:report", args=("reporting_tests", "total_sales")),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
@@ -153,7 +153,8 @@ class ReportTest(BaseTestData, TestCase):
         self.client.login(username="super", password="secret")
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("client", "clientsalesmonthlyseries")
+                "erp_framework:report",
+                args=("reporting_tests", "clientsalesmonthlyseries"),
             ),
             data={"client_id": self.client1.pk},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -176,7 +177,7 @@ class ReportTest(BaseTestData, TestCase):
     def test_print(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "balances")),
+            reverse("erp_framework:report", args=("reporting_tests", "balances")),
             data={"print": True},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -188,7 +189,8 @@ class ReportTest(BaseTestData, TestCase):
         self.client.login(username="super", password="secret")
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("client", "client_sales_of_products")
+                "erp_framework:report",
+                args=("reporting_tests", "client_sales_of_products"),
             ),
             data={"print": True},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -198,7 +200,10 @@ class ReportTest(BaseTestData, TestCase):
     def test_client_statement(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "clientdetailedstatement")),
+            reverse(
+                "erp_framework:report",
+                args=("reporting_tests", "clientdetailedstatement"),
+            ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
@@ -212,7 +217,10 @@ class ReportTest(BaseTestData, TestCase):
         """
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "clientdetailedstatement")),
+            reverse(
+                "erp_framework:report",
+                args=("reporting_tests", "clientdetailedstatement"),
+            ),
             data={"client_id": self.client1.pk},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -223,7 +231,10 @@ class ReportTest(BaseTestData, TestCase):
     def test_view_filter(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "clientdetailedstatement")),
+            reverse(
+                "erp_framework:report",
+                args=("reporting_tests", "clientdetailedstatement"),
+            ),
             data={"client_id": self.client1.pk},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -232,7 +243,10 @@ class ReportTest(BaseTestData, TestCase):
         rows = len(response_json["data"])
 
         without_filter = self.client.get(
-            reverse("erp_framework:report", args=("client", "clientdetailedstatement")),
+            reverse(
+                "erp_framework:report",
+                args=("reporting_tests", "clientdetailedstatement"),
+            ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertNotEqual(rows, len(without_filter.json()["data"]))
@@ -246,7 +260,10 @@ class ReportTest(BaseTestData, TestCase):
         """
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "clientdetailedstatement")),
+            reverse(
+                "erp_framework:report",
+                args=("reporting_tests", "clientdetailedstatement"),
+            ),
             data={"client_id": self.client1.pk},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -264,7 +281,8 @@ class ReportTest(BaseTestData, TestCase):
         self.client.login(username="super", password="secret")
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("product", "productclientsalesmatrix")
+                "erp_framework:report",
+                args=("reporting_tests", "productclientsalesmatrix"),
             ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -272,7 +290,8 @@ class ReportTest(BaseTestData, TestCase):
 
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("product", "productclientsalesmatrix")
+                "erp_framework:report",
+                args=("reporting_tests", "productclientsalesmatrix"),
             ),
             data={
                 # 'matrix_entities': '%s,%s,' % (self.client2.pk, ''),
@@ -292,7 +311,8 @@ class ReportTest(BaseTestData, TestCase):
 
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("product", "productclientsalesmatrix")
+                "erp_framework:report",
+                args=("reporting_tests", "productclientsalesmatrix"),
             ),
             data={
                 "matrix_entities": [self.client1.pk, self.client2.pk],
@@ -307,7 +327,7 @@ class ReportTest(BaseTestData, TestCase):
         self.client.login(username="super", password="secret")
 
         response = self.client.get(
-            reverse("erp_framework:report", args=("product", "total_sales")),
+            reverse("erp_framework:report", args=("reporting_tests", "total_sales")),
             data={"csv": True, "matrix_show_other": True},
         )
         # HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -317,7 +337,8 @@ class ReportTest(BaseTestData, TestCase):
         self.client.login(username="super", password="secret")
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("client", "clienttotalbalancesordered")
+                "erp_framework:report",
+                args=("reporting_tests", "clienttotalbalancesordered"),
             ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -337,7 +358,7 @@ class ReportTest(BaseTestData, TestCase):
         response = self.client.get(
             reverse(
                 "erp_framework:report",
-                args=("client", "ClientTotalBalancesOrderedDESC"),
+                args=("reporting_tests", "ClientTotalBalancesOrderedDESC"),
             ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -368,7 +389,10 @@ class ReportTest2(BaseTestData, TestCase):
         """
         self.client.login(username="super", password="secret")
         response = self.client.get(
-            reverse("erp_framework:report", args=("client", "clientdetailedstatement")),
+            reverse(
+                "erp_framework:report",
+                args=("reporting_tests", "clientdetailedstatement"),
+            ),
             data={},
             HTTP_X_REQUESTED_WITH="--",
             follow=False,
@@ -537,7 +561,8 @@ class TestAdmin(BaseTestData, TestCase):
         self.assertTrue(self.client.login(username="limited", password="password"))
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("product", "productclientsalesmatrix")
+                "erp_framework:report",
+                args=("reporting_tests", "productclientsalesmatrix"),
             ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -551,7 +576,8 @@ class TestAdmin(BaseTestData, TestCase):
         self.assertTrue(self.client.login(username="limited", password="password"))
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("product", "productclientsalesmatrix")
+                "erp_framework:report",
+                args=("reporting_tests", "productclientsalesmatrix"),
             )
         )
         self.assertEqual(response.status_code, 403, response)
@@ -559,7 +585,8 @@ class TestAdmin(BaseTestData, TestCase):
     def test_report_access_anon_user(self):
         response = self.client.get(
             reverse(
-                "erp_framework:report", args=("product", "productclientsalesmatrix")
+                "erp_framework:report",
+                args=("reporting_tests", "productclientsalesmatrix"),
             )
         )
         self.assertEqual(response.status_code, 302, response)
@@ -706,5 +733,5 @@ class ReportRegistryTest(TestCase):
             report_slug = "client_sales_of_products_2"
 
         register_report_view(ProductClientSales2)
-        report = report_registry.get("client", "client_sales_of_products_2")
+        report = report_registry.get("reporting_tests", "client_sales_of_products_2")
         self.assertIsNotNone(report)

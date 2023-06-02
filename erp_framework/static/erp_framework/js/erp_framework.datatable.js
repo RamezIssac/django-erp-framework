@@ -21,6 +21,10 @@
         let footer_colspan = 0;
         let stop_colspan_detection = false;
         let totals_container = calculateTotalOnObjectArray(data, total_fields);
+        if (data.length <= 1) {
+            add_footer = false;
+        }
+
         for (let i = 0; i < cols.length; i++) {
             let col_name = cols[i].name;
             header_th += `<th data-id="${col_name}">${cols_names[i]}</th>`;
@@ -30,7 +34,7 @@
             if (!stop_colspan_detection) {
                 footer_colspan += 1;
             } else {
-                footer_th += `<th data-id=${col_name}">${totals_container[col_name]}</th>`;
+                footer_th += `<th data-id=${col_name}">${totals_container[col_name] || ''}</th>`;
             }
         }
         let footer = '';

@@ -4,7 +4,7 @@
 
 {% block content %}
     <h2>Balance is <span class="clientBalance"></span></h2>
-    {% get_report base_model='client' report_slug='balances' as client_balances %}
+    {% get_report base_model='reporting_tests' report_slug='balances' as client_balances %}
     <div data-report-widget
          data-report-url="{{ client_balances.get_url }}"
          data-extra-params="&client_id={{ original.pk }}"
@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    {% get_report base_model='client' report_slug='client_sales_of_products' as client_sales_of_products %}
+    {% get_report base_model='reporting_tests' report_slug='client_sales_of_products' as client_sales_of_products %}
     <div data-report-widget
          data-report-url="{{ client_sales_of_products.get_url }}"
          data-extra-params="&client_id={{ original.pk }}">

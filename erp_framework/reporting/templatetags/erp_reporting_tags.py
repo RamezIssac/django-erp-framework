@@ -56,7 +56,15 @@ def is_active_report(
 def get_report(context, base_model, report_slug):
     from erp_framework.reporting.registry import report_registry
 
-    return report_registry.get(namespace=base_model, report_slug=report_slug)
+    request = context["request"]
+    try:
+        current_app = request.current_app
+    except AttributeError:
+        current_app = app_settings.ERP_FRAMEWORK_SITE_NAME
+
+    return report_registry.get(
+        namespace=base_model, report_slug=report_slug, admin_site=current_app
+    )
 
 
 @register.simple_tag()
