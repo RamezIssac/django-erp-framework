@@ -92,9 +92,9 @@ class AdminViewMixin(admin.ModelAdmin):
 
         # todo change the str obj
         view_link = (
-                '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> '
-                '<i class="fas fa-chart-line"></i> </a>'
-                % (url, capfirst(_("Statistics for")), str(obj))
+            '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> '
+            '<i class="fas fa-chart-line"></i> </a>'
+            % (url, capfirst(_("Statistics for")), str(obj))
         )
         return mark_safe(view_link)
 
@@ -102,9 +102,9 @@ class AdminViewMixin(admin.ModelAdmin):
 
     def get_view_fields(self, request, obj=None):
         return (
-                self.view_fields
-                or [x for x in flatten_list(self.fields)]
-                or self.get_fields(request, obj)
+            self.view_fields
+            or [x for x in flatten_list(self.fields)]
+            or self.get_fields(request, obj)
         )
 
     def get_view_title(self, request, obj=None):
@@ -146,10 +146,10 @@ class AdminViewMixin(admin.ModelAdmin):
 
         obj = self.get_object(request, unquote(object_id), to_field)
 
-        if not self.has_view_permission(request, obj):
+        if not self.has_view_permission(request, obj):  # pragma: no cover
             raise PermissionDenied
 
-        if obj is None:
+        if obj is None:  # pragma: no cover
             return self._get_obj_does_not_exist_redirect(request, opts, object_id)
 
         data = []
@@ -279,8 +279,8 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             if not main_url:
                 main_url = url
             view_link = (
-                    '<a href="%s" data-popup="tooltip" name="%s" data-placement="bottom">'
-                    ' <i class="fas fa-edit"></i> </a>' % (url, capfirst(_("change")))
+                '<a href="%s" data-popup="tooltip" name="%s" data-placement="bottom">'
+                ' <i class="fas fa-edit"></i> </a>' % (url, capfirst(_("change")))
             )
             links.append(view_link)
             links = "<span class='go-to-change-form'>%s</span>" % "".join(links) + ""
@@ -592,9 +592,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                 request, new_object, change=not add
             )
             if (
-                    all_valid(formsets)
-                    and form_validated
-                    and self.whole_changeform_validation(request, form, formsets, not add)
+                all_valid(formsets)
+                and form_validated
+                and self.whole_changeform_validation(request, form, formsets, not add)
             ):
                 self.pre_save(form, formsets, change=not add)
                 self.save_model(request, new_object, form, not add)
@@ -673,9 +673,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         # Hide the "Save" and "Save and continue" buttons if "Save as New" was
         # previously chosen to prevent the interface from getting confusing.
         if (
-                request.method == "POST"
-                and not form_validated
-                and "_saveasnew" in request.POST
+            request.method == "POST"
+            and not form_validated
+            and "_saveasnew" in request.POST
         ):
             context["show_save"] = False
             context["show_save_and_continue"] = False
@@ -691,8 +691,8 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     def get_actions(self, request):
         actions = super(EntityAdmin, self).get_actions(request)
         if not (
-                app_settings.ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL
-                and request.user.is_superuser
+            app_settings.ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL
+            and request.user.is_superuser
         ):
             if "delete_selected" in actions:
                 del actions["delete_selected"]
@@ -827,8 +827,7 @@ class TransactionItemAdmin(admin.TabularInline):
         else:
             raise ImproperlyConfigured(
                 "self.permission_override_model can be True, False , str or ModelBase"
-                " .Got %s instead "
-                % type(self.permission_override_model)
+                " .Got %s instead " % type(self.permission_override_model)
             )
 
     def has_add_permission(self, request, obj=None):
@@ -1112,8 +1111,8 @@ class PrepopulatedAdmin(object):
                 )
                 # Not here is a necessity, in case you find unuseful revise again
                 if (
-                        inline.__class__ in self.prepopulated_inlines
-                        or not self.prepopulated_inlines
+                    inline.__class__ in self.prepopulated_inlines
+                    or not self.prepopulated_inlines
                 ):
                     FormSet.extra = len(initial_data)
                 if initial_data:
@@ -1147,6 +1146,7 @@ class RaMovementPrepopulatedAdmin(RaPrePopulatedAdmin):
                 )
 
         formset.save()
+
 
 # class RaUserAdmin(RaThemeMixin, UserTabularPermissionsMixin, UserAdmin):
 #     enable_view_view = False

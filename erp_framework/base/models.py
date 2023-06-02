@@ -88,23 +88,6 @@ class ERPMixin:
         """
         return cls.__name__
 
-    @classmethod
-    def get_model_name(cls):
-        """
-        A convenience method to get the base model name, needed in templates
-        :return:
-        """
-
-        return cls._meta.model_name.lower()
-
-    @classmethod
-    def get_verbose_name_plural(cls):
-        """
-        A convenience method to get the base model verbose name, needed in templates
-        :return:
-        """
-        return cls._meta.verbose_name_plural
-
 
 class EntityModel(ERPMixin, RAModel):
     """
@@ -184,20 +167,6 @@ class EntityModel(ERPMixin, RAModel):
         self.lastmod = now()
 
         super(EntityModel, self).save(*args, **kwargs)
-
-    @classmethod
-    def _get_doc_type_minus_list(cls):
-        """Returns List of Identified doctype that a minus effect on the entity"""
-        return []
-        # return registry.get_model_doc_type_map(cls.get_class_name()).get(
-        #     "minus_list", []
-        # )
-
-    @classmethod
-    def get_doc_type_neuter_list(cls):
-        """Returns List of Identified doctype that have a neuttral effect on the entity"""
-
-        return []
 
 
 class TransactionModel(EntityModel):
