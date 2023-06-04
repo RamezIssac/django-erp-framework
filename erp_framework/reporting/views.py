@@ -195,11 +195,6 @@ class ReportView(SlickReportViewBase):
     #             data = dictsort(data, order_field, asc)
     #     return data
 
-    def form_invalid(self, form):
-        if self.request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
-            return JsonResponse(form.errors, status=400)
-        return super().form_invalid(form)
-
 
 class ListReportView(SlickReportingListViewMixin, ReportView):
     pass

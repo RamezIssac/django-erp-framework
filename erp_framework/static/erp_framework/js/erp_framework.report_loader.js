@@ -10,7 +10,7 @@
         if (data.status === 403) {
             $elem.hide()
         } else {
-            notify_error();
+            console.log(data, $elem)
         }
     }
 

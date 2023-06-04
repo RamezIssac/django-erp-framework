@@ -35,7 +35,6 @@
     <script>
         function displayBalance(response, $elem) {
             $('.clientBalance').text(response['data'][0]['__balance__']);
-            unblockDiv($elem);
         }
     </script>
 {% endblock %}

@@ -43,59 +43,6 @@ function calculateTotalOnObjectArray(data, columns) {
     return total_container;
 }
 
-function notify_message(message, type, timeout) {
-    if (typeof message == 'object') {
-        return new Noty(message).show();
-
-    } else {
-        timeout = typeof timeout == 'undefined' ? 3000 : timeout;
-
-        let obj = {
-            text: message,
-            type: type,
-            dismissQueue: false,
-            layout: $.erp_framework.rtl ? 'topLeft' : 'topRight',
-            killer: true,
-            theme: 'relax',
-            timeout: timeout,
-            //animation: {
-            //    open: 'animated lightSpeedIn',
-            //    close: 'animated lightSpeedOut',
-            //    easing: 'swing',
-            //    speed: 100 // opening & closing animation speed
-            //},
-
-        };
-        return new Noty(obj).show();
-    }
-
-}
-
-
-function notify_error(message, timeout) {
-    timeout = typeof timeout == 'undefined' ? 4000 : timeout;
-    message = typeof message == 'undefined' ? $.erp_framework.defaults.messages.ErrorMessage : message;
-    if (typeof message == 'object') {
-        $.each(message, function (i, e) {
-            let html = $('<ul>');
-            let li = $('<li>');
-            li.text(i + ': ' + e);
-            html.append(li);
-            notify_message({text: html.text(), type: 'error', timeout: timeout, killer: true});
-        });
-        return;
-    }
-    notify_message({text: message, type: 'error', timeout: timeout, killer: true});
-
-}
-
-function unblockDiv(div) {
-    div = typeof div == 'undefined' ? $(window) : div;
-
-    div.unblock();
-}
-
-
 function executeFunctionByName(functionName, context /*, args */) {
     let args = Array.prototype.slice.call(arguments, 2);
     let namespaces = functionName.split(".");
@@ -105,6 +52,9 @@ function executeFunctionByName(functionName, context /*, args */) {
     }
     try {
         func = context[func];
+        if (typeof func == 'undefined') {
+            throw 'Function {0} is not found the context {1}'.format(functionName, context);
+        }
 
     } catch (err) {
         console.error('Function {0} is not found the context {1}'.format(functionName, context), err)
