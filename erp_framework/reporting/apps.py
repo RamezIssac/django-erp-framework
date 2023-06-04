@@ -26,7 +26,7 @@ def sync_reports():
     from .models import Report
     from .registry import report_registry
 
-    reports = report_registry.get_all_reports()
+    reports = report_registry.get_all_reports(all_sites=True)
 
     try:
         reports_in_db = list(Report.objects.all().values_list("code", flat=True))

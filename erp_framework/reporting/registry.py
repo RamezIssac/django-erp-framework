@@ -5,6 +5,8 @@ from inspect import getfullargspec, unwrap
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.core.exceptions import ImproperlyConfigured
 
+from erp_framework.base import app_settings
+
 
 def _check_permissions(record, permissions_list):
     if record["view"]:
@@ -36,7 +38,7 @@ class ReportRegistry(object):
         super(ReportRegistry, self).__init__()
         self._registry = OrderedDict()
         self._slugs_registry = []
-        self._store = {}
+        self._store = OrderedDict()
         self._base_models = []
 
     def register(self, func=None, erp_admin_sites_names=None):
@@ -71,12 +73,15 @@ class ReportRegistry(object):
         else:
             raise ValueError("Invalid arguments provided to register")
 
-    def _register(self, report_class, erp_admin_sites_names="erp_framework"):
+    def _register(self, report_class, erp_admin_sites_names=None):
         """
         Register report class
         :param report_class:
         :return:
         """
+        erp_admin_sites_names = erp_admin_sites_names or [
+            app_settings.ERP_FRAMEWORK_SITE_NAME
+        ]
 
         if not getattr(report_class, "hidden", False):
             # try:
@@ -114,16 +119,11 @@ class ReportRegistry(object):
         :return:
         """
 
-        try:
-            admin_sites = [x for x in erp_admin_sites_names.split(",") if x]
-        except:
-            breakpoint()
-
-        for admin_site in admin_sites:
+        for admin_site in erp_admin_sites_names:
             full_name = f"{namespace}.{report.get_report_slug()}"
-            self._registry.setdefault(admin_site, {})
+            self._registry.setdefault(admin_site, OrderedDict())
             self._registry[admin_site].setdefault(namespace, [])
-            self._store.setdefault(admin_site, {})
+            self._store.setdefault(admin_site, OrderedDict())
             reports_registered = self._registry[admin_site][namespace]
             if report not in reports_registered:
                 reports_registered.append(report)
@@ -161,8 +161,11 @@ class ReportRegistry(object):
     # else:
     #     raise NotRegistered(namespace)
 
-    def get_all_reports(self, admin_site="erp_framework", all_sites=False):
+    def get_all_reports(self, admin_site=None, all_sites=False):
         reports = []
+        if not admin_site and not all_sites:
+            return []
+        # admin_site = admin_site or app_settings.ERP_FRAMEWORK_SITE_NAME
         if all_sites:
             admin_sites = self._registry.keys()
         else:
@@ -172,10 +175,11 @@ class ReportRegistry(object):
             registry = self._registry.get(admin_site, {})
             for namespace in registry:
                 reports += list(registry[namespace])
-        reports = set(reports)
-        return reports
+        return list(OrderedDict.fromkeys(reports))
 
-    def get(self, namespace, report_slug, admin_site="erp_framework"):
+    def get(self, namespace, report_slug, admin_site=None):
+        admin_site = admin_site or app_settings.ERP_FRAMEWORK_SITE_NAME
+
         slug_id = "%s.%s" % (namespace, report_slug)
         try:
             return self._store[admin_site][slug_id.lower()]
@@ -185,7 +189,7 @@ class ReportRegistry(object):
                 % (
                     namespace,
                     report_slug,
-                    ",".join(self._store["erp_framework"].keys()),
+                    ",".join(self._store.get(admin_site, {}).keys()),
                 )
             )
 
@@ -221,7 +225,11 @@ report_registry = ReportRegistry()
 
 
 def register_report_view(report_class=None, admin_site_names="", condition=None):
-    admin_site_names = admin_site_names or "erp_framework"
+    admin_site_names = admin_site_names or [app_settings.ERP_FRAMEWORK_SITE_NAME]
+    # check if admin_site_names is a str
+    if type(admin_site_names) is str:
+        admin_site_names = [admin_site_names]
+
     if report_class:
         report_registry.register(report_class, admin_site_names)
         return report_class

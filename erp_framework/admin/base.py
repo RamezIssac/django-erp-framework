@@ -51,8 +51,6 @@ class ERPFrameworkAdminSiteBase(AdminSite):
                 self.get_report_view,
                 name="report",
             ),
-            # new from sites
-            # path('top-search/', TopSearchView.as_view(), name='top-search'),
         ]
 
         return help_center + settings_update + urlpatterns + urls

@@ -12,6 +12,12 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
+def get_report_url(context, report):
+    request = context.get("request", None)
+    return report.get_url(request=request)
+
+
+@register.simple_tag(takes_context=True)
 def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=True):
     request = context["request"]
     base_models = []
@@ -19,8 +25,13 @@ def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=
 
     from erp_framework.reporting.registry import report_registry
 
+    try:
+        current_app = request.current_app
+    except:
+        current_app = None
+
     if flat:
-        reports = report_registry.get_all_reports()
+        reports = report_registry.get_all_reports(admin_site=current_app)
     else:
         base_models = report_registry.get_base_models_with_reports()
     # if base_models:
@@ -37,7 +48,6 @@ def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=
         request,
     )
     return mark_safe(output)
-    # return ""
 
 
 @register.simple_tag(takes_context=True)
@@ -46,9 +56,8 @@ def is_active_report(
     report,
 ):
     current_report = context.get("CURRENT_REPORT", None)
-    # breakpoint()
-    if current_report:
-        return current_report == report.__class__
+
+    return current_report == report.__class__
 
 
 @register.simple_tag(takes_context=True)

@@ -1,6 +1,6 @@
 {% extends base_template %}
 
-{% load crispy_forms_tags i18n slick_reporting_tags static erp_reporting_tags %}
+{% load crispy_forms_tags i18n static erp_reporting_tags %}
 
 
 {% block breadcrumbs %}
@@ -33,7 +33,7 @@
                 <div class="card" id="{{ report_data.report_slug }}">
                     <div class="card-body">
                         <div data-report-widget
-                             data-report-url="{{ report.get_url }}"
+                             data-report-url="{% get_report_url report %}"
                              data-extra-params="{{ data_extra_param|default:'' }}"
                              data-success-callback="{{ data_success_callback|default:'' }}"
 

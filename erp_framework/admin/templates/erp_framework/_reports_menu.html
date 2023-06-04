@@ -26,7 +26,7 @@
                 <ul class="nav nav-treeview" style="display: none">
                     {% for report in reports %}
                         <li class="nav-item ">
-                            <a href="{{ report.get_absolute_url }}"
+                            <a href="{% get_report_url report %}"
                                class="nav-link  {% if report.get_report_slug == report_slug %}active{% endif %}">
                                 {#                            <i class="far fa-circle nav-icon"></i>#}
                                 <p>{{ report.report_title }}</p>

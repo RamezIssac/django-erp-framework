@@ -1,3 +1,5 @@
+{% load  erp_reporting_tags %}
+
 <div class="card">
     {% if no_title != True %}
         <div class="card-header">
@@ -6,7 +8,7 @@
     {% endif %}
     <div class="card-body">
         <div data-report-widget
-             data-report-url="{{ report.get_url }}"
+             data-report-url="{% get_report_url report %}"
              data-extra-params="{{ data_extra_param|default:'' }}"
              data-success-callback="{{ data_success_callback|default:'' }}"
              data-chart-id="{{ data_chart_id|default:'' }}"

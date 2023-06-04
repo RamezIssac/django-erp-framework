@@ -746,13 +746,13 @@ class ReportRegistryTest(TestCase):
 
         self.assertRaises(NotRegistered, get_from_non_existing_admin_site)
 
-        register_report_view(ProductClientSales2, admin_site_names="admin")
+        register_report_view(ProductClientSales2, admin_site_names=["admin"])
         report = report_registry.get(
             "reporting_tests", "client_sales_of_products_2", admin_site="admin"
         )
         self.assertIsNotNone(report)
 
-        @register_report_view(admin_site_names="admin")
+        @register_report_view(admin_site_names=["admin"])
         class ProductClientSales2(ProductClientSales):
             report_slug = "client_sales_of_products_3"
 

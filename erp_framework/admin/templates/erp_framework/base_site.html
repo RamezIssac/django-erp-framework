@@ -1,6 +1,7 @@
-{% extends admin_base_site_template %}
+{% extends admin_base_site_template|default:"admin/base.html" %}
+
 {% load i18n static %}
-{% load jazzmin erp_reporting_tags i18n %}
+{% load erp_reporting_tags i18n %}
 
 {% block title %}{{ title|capfirst }} | {{ site_title|default:_('Django ERP Framework') }}{% endblock %}
 

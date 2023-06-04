@@ -1,4 +1,5 @@
-{% extends admin_base_site_template %}
+{% extends admin_base_site_template|default:"admin/base.html" %}
+
 {% load i18n static %}
 {% load jazzmin erp_reporting_tags i18n %}
 

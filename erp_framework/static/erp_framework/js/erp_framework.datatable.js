@@ -34,7 +34,11 @@
             if (!stop_colspan_detection) {
                 footer_colspan += 1;
             } else {
-                footer_th += `<th data-id=${col_name}">${totals_container[col_name] || ''}</th>`;
+                let column_total = totals_container[col_name]
+                if (!(column_total || column_total === 0)) {
+                    column_total = ''
+                }
+                footer_th += `<th data-id=${col_name}">${column_total}</th>`;
             }
         }
         let footer = '';
