@@ -8,7 +8,7 @@ from django.urls import reverse
 from slick_reporting.forms import (
     report_form_factory,
 )
-from slick_reporting.views import SlickReportViewBase, SlickReportingListViewMixin
+from slick_reporting.views import ReportViewBase, SlickReportingListViewMixin
 
 from erp_framework.base import app_settings
 from erp_framework.reporting.printing import HTMLPrintingClass
@@ -16,7 +16,7 @@ from erp_framework.reporting.printing import HTMLPrintingClass
 logger = logging.getLogger("erp_framework.reporting")
 
 
-class ReportView(SlickReportViewBase):
+class ReportView(ReportViewBase):
     """
     The Base class for reports .
     It handles the report ajax request, load the report form which provides the needed filers,
@@ -202,7 +202,7 @@ class ListReportView(SlickReportingListViewMixin, ReportView):
 
 # pragma: no cover
 # todo add
-class TimeSeriesSelectorReportView(UserPassesTestMixin, SlickReportViewBase):
+class TimeSeriesSelectorReportView(UserPassesTestMixin, ReportViewBase):
     @staticmethod
     def form_filter_func(fkeys_dict):
         output = {}
