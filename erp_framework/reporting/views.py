@@ -33,6 +33,13 @@ class ReportView(ReportViewBase):
     admin_site_name = "erp_framework"
     template_name = "erp_framework/report.html"
 
+    def get_base_template(self):
+        """
+        Returns the base template for the report.
+        :return: a string representing the base template path (e.g. 'admin/base.html')
+        """
+        return app_settings.get_admin_base_template(self.request.current_app)
+
     def get_context_data(self, **kwargs):
         from erp_framework.sites import erp_admin_site
 
@@ -46,7 +53,7 @@ class ReportView(ReportViewBase):
         context["CURRENT_REPORT"] = self.__class__
         context["report"] = self
 
-        context["base_template"] = app_settings.report_base_template
+        context["base_template"] = self.get_base_template()
 
         return context
 

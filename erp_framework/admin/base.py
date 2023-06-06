@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+from typing import Any
 
 from django.apps import apps
 from django.contrib.admin import AdminSite
@@ -21,12 +22,27 @@ class ERPFrameworkAdminSiteBase(AdminSite):
     site_header = app_settings.ERP_ADMIN_SITE_HEADER
     index_title = app_settings.ERP_ADMIN_INDEX_TITLE
 
-    index_template = app_settings.ERP_ADMIN_INDEX_TEMPLATE
-    app_index_template = app_settings.ERP_FRAMEWORK_APP_INDEX_TEMPLATE
-    login_template = app_settings.ERP_FRAMEWORK_LOGIN_TEMPLATE
-    logout_template = app_settings.ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE
+    # index_template = app_settings.ERP_ADMIN_INDEX_TEMPLATE
+    # app_index_template = app_settings.ERP_FRAMEWORK_APP_INDEX_TEMPLATE
+    # login_template = app_settings.ERP_FRAMEWORK_LOGIN_TEMPLATE
+    # logout_template = app_settings.ERP_FRAMEWORK_LOGGED_OUT_TEMPLATE
 
     admin_base_site_template = None
+
+    def __getattribute__(self, name: str) -> Any:
+        output = super().__getattribute__(name)
+        if (
+            name
+            in [
+                "index_template",
+                "login_template",
+                "logout_template",
+                "app_index_template",
+            ]
+            and output is None
+        ):
+            return app_settings.get_template(name, self.name)
+        return output
 
     def has_permission(self, request):
         return app_settings.admin_site_access_permission(request)
@@ -137,8 +153,10 @@ class ERPFrameworkAdminSiteBase(AdminSite):
 
     def each_context(self, request):
         context = super(ERPFrameworkAdminSiteBase, self).each_context(request)
-        context["admin_base_site_template"] = (
-            self.admin_base_site_template or app_settings.admin_base_site_template
+        context[
+            "admin_base_site_template"
+        ] = self.admin_base_site_template or app_settings.get_admin_base_template(
+            self.name
         )
         context.update(get_each_context(request, self))
         return context

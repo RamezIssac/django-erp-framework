@@ -31,6 +31,7 @@ Usage
         'tabular_permissions', # better a permission widget , Optional
 
         'erp_framework',
+        "erp_framework.admin.jazzmin_integration", # if you want to use jazzmin theme, otherwise remove this line
         'erp_framework.admin',
         'erp_framework.reporting',
         'slick_reporting',
@@ -51,7 +52,7 @@ Usage
 
 
 
-* Django-erp-framework uses django-crispy-forms for the reporting forms. So we need to add this:
+* Django-erp-framework uses django-crispy-forms for the reporting forms. So we need to add this to our settings.py:
 
 .. code-block:: python
 
@@ -93,20 +94,8 @@ We need to hook the Django ERP admin site in ``urls.py``, like so:
 
 With this configuration in place, you are ready to run ``./manage.py migrate``
 
-User accounts
--------------
-
-Superuser accounts receive automatic access to the Django ERP framework Dashboard interface; use ``./manage.py createsuperuser`` if you don't already have one.
-
-Start developing
-----------------
-
-You're now ready to add a new app to your Django project via ``./manage.py startapp``.
-
-
 
 Follow to the tutorial to create sample erp system which tracks sales and expense and profitability. :ref:`tutorial_root`
-
 
 
 
