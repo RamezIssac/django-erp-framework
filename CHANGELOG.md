@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project are/will be documented in this file.
 
+## [1.5.2] - 2023-06-07
+- Added Jazzmin integration as an option
+- Added settings for custom dashboard base template, admin_site_access_permission, report_access_function 
+- Simplified creating a widget for a report
+- Simplified integrating erp framework with your project
+- Align own ReportView to Slick Reporting ReportView
+- Removed ReportList View, top_search app, and unused js plugins
+- Changed report URL to be app_label/report_lug
+- Enhanced demo app and documentation
+
+## [1.5.0] - 2023-05-28
+- A makeover and renaming the project to django-erp-framework.
+
 
 ## [1.2.0] - 2020-11-24
 - Update slick_reporting to version >= 0.4

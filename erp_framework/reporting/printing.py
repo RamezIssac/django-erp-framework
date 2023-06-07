@@ -5,8 +5,6 @@ import csv
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from erp_framework.utils.views import re_time_series
-from erp_framework.base import app_settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +17,6 @@ def regroup_data(obj_list, header_report, key):
             values[key_value] = []
         values[key_value].append(line)
     return values
-
-
-# def is_time_series(name):
-#     is_time_field = re_time_series.findall(name)
-#     return is_time_field or False
-
-#
-# def is_partial_text_in_list(text, lst):
-#     check = False
-#     for item in lst:
-#         if text in item:
-#             check = True
-#             break
-#     return check
-#
 
 
 class HTMLPrintingClass(object):

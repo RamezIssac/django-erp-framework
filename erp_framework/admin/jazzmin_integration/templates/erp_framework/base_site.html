@@ -1,4 +1,5 @@
-{% extends "admin/base.html" %}
+{% extends admin_base_site_template|default:"admin/base.html" %}
+
 {% load i18n static %}
 {% load jazzmin erp_reporting_tags i18n %}
 
@@ -104,12 +105,7 @@
                                     <ul class="nav nav-treeview" style="display: none;">
                                         {% for model in app.models %}
                                             <li class="nav-item">
-                                                <a href="
-
-
-
-
-                                                        {% if model.url %}{{ model.url }}{% else %}javascript:void(0){% endif %}"
+                                                <a href="{% if model.url %}{{ model.url }}{% else %}javascript:void(0){% endif %}"
                                                    class="nav-link">
                                                     <i class="nav-icon {{ model.icon }}"></i>
                                                     <p>{{ model.name }}</p>
@@ -121,7 +117,7 @@
                             {% endfor %}
                         {% endif %}
 
-                        {% render_reports_menu %}
+                        {% render_reports_menu template_name="reporting/flat_menu.html" %}
                     </ul>
 
                 </nav>

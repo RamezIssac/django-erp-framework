@@ -88,23 +88,6 @@ class ERPMixin:
         """
         return cls.__name__
 
-    @classmethod
-    def get_model_name(cls):
-        """
-        A convenience method to get the base model name, needed in templates
-        :return:
-        """
-
-        return cls._meta.model_name.lower()
-
-    @classmethod
-    def get_verbose_name_plural(cls):
-        """
-        A convenience method to get the base model verbose name, needed in templates
-        :return:
-        """
-        return cls._meta.verbose_name_plural
-
 
 class EntityModel(ERPMixin, RAModel):
     """
@@ -184,64 +167,6 @@ class EntityModel(ERPMixin, RAModel):
         self.lastmod = now()
 
         super(EntityModel, self).save(*args, **kwargs)
-
-    @classmethod
-    def _get_doc_type_plus_list(cls):
-        """
-
-        Returns List of Identified doctype that a plus effect on the entity
-        """
-        return []
-        # return ["fb"] + registry.get_model_doc_type_map(cls.get_class_name()).get(
-        #     "plus_list", []
-        # )
-
-    @classmethod
-    def _get_doc_type_minus_list(cls):
-        """Returns List of Identified doctype that a minus effect on the entity"""
-        return []
-        # return registry.get_model_doc_type_map(cls.get_class_name()).get(
-        #     "minus_list", []
-        # )
-
-    @classmethod
-    def get_doc_type_neuter_list(cls):
-        """Returns List of Identified doctype that have a neuttral effect on the entity"""
-
-        return []
-
-    #
-    # @classmethod
-    # def get_doc_type_full_map(cls):
-    #     from .registry import model_doc_type_full_map
-    #
-    #     doc_types_unfiltered = model_doc_type_full_map.get(cls.get_class_name(), [])
-    #     doc_typed_filtered = []
-    #     for type in doc_types_unfiltered:
-    #         if not type.get('hidden', False):
-    #             doc_typed_filtered.append(type)
-    #
-    #     return doc_typed_filtered
-
-    # @classmethod
-    # def get_doc_types(cls):
-    #     """
-    #     Return a list of the doc_types supported by the current model , Must implemented when needed by children
-    #     @return:
-    #     """
-    #     return cls._get_doc_type_plus_list() + cls._get_doc_type_minus_list() + cls.get_doc_type_neuter_list()
-
-    @classmethod
-    def get_report_list_url(cls):
-        """
-        Return the url for the report list for this model
-        :return: a string url
-        """
-        # todo consider deleting
-        return reverse(
-            "%s:report_list" % app_settings.ERP_FRAMEWORK_SITE_NAME,
-            args=(cls.get_class_name().lower(),),
-        )
 
 
 class TransactionModel(EntityModel):
@@ -368,20 +293,6 @@ class BaseReportModel(DiffingMixin, models.Model):
         on_delete=models.DO_NOTHING,
     )
 
-    @classmethod
-    def get_doc_type_plus_list(cls):
-        """
-
-        Returns List of Identified doctype that a plus effect on the entity
-        """
-        return []
-
-    @classmethod
-    def get_doc_type_minus_list(cls):
-        """Returns List of Identified doctype that a minus effect on the entity"""
-
-        return []
-
     class Meta:
         abstract = True
         default_permissions = ()
@@ -395,20 +306,6 @@ class QuanValueReport(BaseReportModel):
     discount = models.DecimalField(
         _("discount"), max_digits=19, decimal_places=2, default=0
     )
-
-    @classmethod
-    def get_doc_type_plus_list(cls):
-        """
-
-        Returns List of Identified doctype that a plus effect on the entity
-        """
-        return []
-
-    @classmethod
-    def get_doc_type_minus_list(cls):
-        """Returns List of Identified doctype that a minus effect on the entity"""
-
-        return []
 
     class Meta:
         abstract = True

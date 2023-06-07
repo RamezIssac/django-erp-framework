@@ -4,9 +4,9 @@
 
 {% block content %}
     <h2>Balance is <span class="clientBalance"></span></h2>
-    {% get_report base_model='client' report_slug='balances' as client_balances %}
+    {% get_report base_model='reporting_tests' report_slug='balances' as client_balances %}
     <div data-report-widget
-         data-report-url="{{ client_balances.get_url }}"
+         data-report-url="{% get_report_url client_balances %}"
          data-extra-params="&client_id={{ original.pk }}"
          data-success-callback="displayBalance">
 
@@ -17,21 +17,24 @@
         </div>
     </div>
 
-    {% get_report base_model='client' report_slug='client_sales_of_products' as client_sales_of_products %}
+    {% get_report base_model='reporting_tests' report_slug='client_sales_of_products' as client_sales_of_products %}
     <div data-report-widget
-         data-report-url="{{ client_sales_of_products.get_url }}"
+         data-report-url="{% get_report_url client_sales_of_products %}"
          data-extra-params="&client_id={{ original.pk }}">
 
         <div data-report-chart></div>
         <div data-report-table></div>
     </div>
 
+    {% get_widget client_sales_of_products %}
+
+    {% get_html_panel client_sales_of_products %}
+
 {% endblock %}
 {% block extra_js %}
     <script>
         function displayBalance(response, $elem) {
             $('.clientBalance').text(response['data'][0]['__balance__']);
-            unblockDiv($elem);
         }
     </script>
 {% endblock %}

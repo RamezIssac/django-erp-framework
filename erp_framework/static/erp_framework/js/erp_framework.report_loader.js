@@ -10,7 +10,7 @@
         if (data.status === 403) {
             $elem.hide()
         } else {
-            notify_error();
+            console.log(data, $elem)
         }
     }
 
@@ -24,7 +24,7 @@
             $.erp_framework.report_loader.displayChart(data, chartElem, chart_id);
         }
 
-        if (display_chart_selector !== "False") {
+        if (display_chart_selector !== "False" && data.chart_settings.length > 1) {
             $.erp_framework.report_loader.createChartsUIfromResponse(data, $elem);
         }
 

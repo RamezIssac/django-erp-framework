@@ -20,25 +20,24 @@ Usage
 .. code-block:: python
 
     INSTALLED_APPS = {
-        # ...
 
 
-        'crequest',
-        'crispy_forms',
+        'crequest', # Need access to the request object in places where request
+
+        'crispy_forms', # For the reports forms,
         'crispy_bootstrap4',
 
-        'reversion', # needed only when you add the admin app
-        'tabular_permissions',
+        'reversion', # needed only when you use the admin app
+        'tabular_permissions', # better a permission widget , Optional
 
         'erp_framework',
+        "erp_framework.admin.jazzmin_integration", # if you want to use jazzmin theme, otherwise remove this line
         'erp_framework.admin',
-        'erp_framework.activity',
         'erp_framework.reporting',
         'slick_reporting',
 
-        'jazzmin',
+        'jazzmin', # optional
         'django.contrib.admin', # comes at the end because the theme is replaced
-
     }
 
 
@@ -53,7 +52,7 @@ Usage
 
 
 
-* Django-erp-framework uses django-crispy-forms for the reporting forms. So we need to add this:
+* Django-erp-framework uses django-crispy-forms for the reporting forms. So we need to add this to our settings.py:
 
 .. code-block:: python
 
@@ -69,8 +68,6 @@ Usage
         "site_name": "ERP Framework System",
         "site_header": "ERP Framework System",
         "index_title": "ERP Framework Dashboard",
-
-        # .. todo
     }
 
 
@@ -97,18 +94,8 @@ We need to hook the Django ERP admin site in ``urls.py``, like so:
 
 With this configuration in place, you are ready to run ``./manage.py migrate``
 
-User accounts
--------------
-
-Superuser accounts receive automatic access to the Django ERP framework Dashboard interface; use ``./manage.py createsuperuser`` if you don't already have one.
-
-Start developing
-----------------
-
-You're now ready to add a new app to your Django project via ``./manage.py startapp``.
 
 Follow to the tutorial to create sample erp system which tracks sales and expense and profitability. :ref:`tutorial_root`
-
 
 
 

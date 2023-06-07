@@ -4,7 +4,7 @@ Walkthrough
 =============
 
 
-Log in to My Shop demo site "My Shop" https://my-shop.django-erp-framework.com/  with the following credentials:
+Log in to "My Shop", our demo site  https://my-shop.django-erp-framework.com/  with the following credentials:
 
 Username `test`
 
@@ -12,11 +12,28 @@ Password `testuser123`
 
 This is a custom admin site with a dashboard and reporting. :ref:`erp_admin`
 
-In the dashboard You see reports displayed as widgets:
+The demo site contains 3 dashboards:
+
+1. The default dashboard, with jazzmin theme (https://my-shop.django-erp-framework.com/)
+   The dashboard is for a sample ERP site, with a few widgets and reports.
+
+2. A custom dashboard with a custom index template (https://my-shop.django-erp-framework.com/requests-dashboard/)
+   This dashboard is for the requests app https://github.com/django-request/django-request
+   It's using a custom base template, like what you'd need to integrate this project into your own site.
+
+3. A custom dashboard created without the erp admin site.
+   A demo of how to use the framework in your own views and templates.
+
+
+In the default dashboard You see reports displayed as widgets:
 
 #. Expense total
-#. Profitability Monthly
+#. Profitability Monthly (A time series report)
 #. Sales list
+#. Product Movement Statement (debit and credit transactions)
+#. A custom success call back to display the ajax json response of the report
+#. Product Client Sales Comparision (A cross tab report)
+
 
 
 .. image:: _static/widgets.png
@@ -33,7 +50,7 @@ In the dashboard You see reports displayed as widgets:
 
 Apps
 ----
-My Shop is composed of 3 apps to demo django erp framework
+My Shop default dashboard is composed of 3 apps to demo django erp framework
 Expense, Sales & Purchase
 
 #. Expense:

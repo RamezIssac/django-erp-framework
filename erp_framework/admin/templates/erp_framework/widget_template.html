@@ -1,24 +1,26 @@
 {% load  erp_reporting_tags %}
 
+
 <div class="card">
-    {% if no_title != True %}
+    {% if display_title %}
         <div class="card-header">
-            <h5 class="card-title">{{ report.get_report_title }}</h5>
+            <h5 class="card-title">{{ title }}</h5>
         </div>
     {% endif %}
     <div class="card-body">
         <div data-report-widget
              data-report-url="{% get_report_url report %}"
-             data-extra-params="{{ data_extra_param|default:'' }}"
-             data-success-callback="{{ data_success_callback|default:'' }}"
-             data-chart-id="{{ data_chart_id|default:'' }}"
-             data-display-chart-selector="{{ data_display_chart_selector }}"
+             data-extra-params="{{ extra_params|default:'' }}"
+             data-success-callback="{{ success_callback|default:'' }}"
+             data-chart-id="{{ chart_id|default:'' }}"
+             data-display-chart-selector="{{ display_chart_selector }}"
+             data-failure-callback="{{ failure_callback|default:'' }}"
         >
-            {% if report.chart_settings and no_chart == False %}
+            {% if display_chart %}
                 <div id="container" data-report-chart style="width:100%; height:400px;"></div>
                 {#                <canvas data-report-chart height="100"></canvas>#}
             {% endif %}
-            {% if no_table != True %}
+            {% if display_table %}
                 <div data-report-table>
                 </div>
             {% endif %}
