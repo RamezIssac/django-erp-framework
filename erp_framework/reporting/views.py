@@ -53,7 +53,7 @@ class ReportView(ReportViewBase):
         context["CURRENT_REPORT"] = self.__class__
         context["report"] = self
 
-        context["base_template"] = self.get_base_template()
+        context["admin_base_site_template"] = self.get_base_template()
 
         return context
 
