@@ -108,7 +108,6 @@ def get_admin_base_template(site=None):
     )
 
     if site:
-        # breakpoint()
         admin_base_site_template = (
             ERP_FRAMEWORK_SETTINGS["sites"]
             .get(site, {})
