@@ -70,7 +70,7 @@ Create and add below code to 'sample_erp/management/commands/generate_data.py'
                 self.stdout.write(f'{Expenses_needed} Expense(s) created')
 
             # generating sales
-            # we will generate 10 records per day for teh whole current year
+            # we will generate 10 records per day for the whole current year
             sdate = datetime.datetime(datetime.date.today().year, 1, 1)
             edate = datetime.datetime(datetime.date.today().year, 12, 31)
 
@@ -236,7 +236,7 @@ Adding Charts
 ~~~~~~~~~~~~~~
 
 To add charts to a report, we'd need to add to ``chart_settings`` .
-Here is an example we will add two charts to teh first report we created `ClientTotalBalance`
+Here is an example we will add two charts to the first report we created `ClientTotalBalance`
 
 .. code-block:: python
 
