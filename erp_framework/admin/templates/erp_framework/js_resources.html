@@ -10,19 +10,6 @@
 
 
 
-        $('.exportCsvBtn').on('click', function (e) {
-            e.preventDefault()
-            let form = $('#reportForm');
-            window.location = '?' + form.serialize() + '&_export=csv'
-        });
-
-
-        $('.refreshReport').on('click', function (event) {
-            event.preventDefault();
-            let $elem = $('[data-report-widget]')
-            $.erp_framework.report_loader.refreshReportWidget($elem)
-        });
-
 
     });
 </script>
