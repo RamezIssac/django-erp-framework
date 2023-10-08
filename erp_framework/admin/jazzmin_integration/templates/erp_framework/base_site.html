@@ -1,7 +1,7 @@
 {% extends admin_base_site_template|default:"admin/base.html" %}
 
 {% load i18n static %}
-{% load jazzmin erp_reporting_tags i18n %}
+{% load jazzmin erp_reporting_tags i18n slick_reporting_tags %}
 
 {% block title %}{{ title|capfirst }} | {{ site_title|default:_('Django ERP Framework') }}{% endblock %}
 
@@ -31,7 +31,8 @@
 {#{% endblock %}#}
 
 {% block extrajs %}
-    {% include "erp_framework/js_resources.html" %}
+    {% include "slick_reporting/js_resources.html" %}
+    {% get_charts_media "all" %}
 {% endblock %}
 
 

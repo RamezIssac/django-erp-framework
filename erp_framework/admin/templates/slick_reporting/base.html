@@ -1,0 +1,22 @@
+{% extends 'erp_framework/base_site.html' %}
+{% load crispy_forms_tags i18n static erp_reporting_tags %}
+
+{% block title %}{{ report_title }}{% endblock %}
+{#{% block page_title %} {{ report_title }} {% endblock %}#}
+
+
+
+
+
+
+{% block breadcrumbs %}
+    <ul class="breadcrumb heading-text">
+        <a href="{% url 'admin:index' %}" class="breadcrumb-item">
+            <i class="icon-home2 mx-2"></i> {% trans 'Home' %} </a>
+        <a class="breadcrumb-item"> {% trans 'Reports' %}</a>
+{#        <a class="breadcrumb-item"> {% get_model_verbose_name_plural base_model %} </a>#}
+        <a class="breadcrumb-item"> {{ title }}</a>
+    </ul>
+
+{% endblock %}
+

@@ -31,7 +31,6 @@ class ReportView(ReportViewBase):
     hidden = False
 
     admin_site_name = "erp_framework"
-    template_name = "erp_framework/report.html"
 
     def get_base_template(self):
         """
