@@ -210,7 +210,7 @@ class ListReportView(SlickReportingListViewMixin, ReportView):
 
 # pragma: no cover
 # todo add
-class TimeSeriesSelectorReportView(UserPassesTestMixin, ReportViewBase):
+class TimeSeriesSelectorReportView(ReportViewBase):
     @staticmethod
     def form_filter_func(fkeys_dict):
         output = {}

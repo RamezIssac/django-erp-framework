@@ -8,7 +8,7 @@
         <a href="{% url 'admin:index' %}" class="breadcrumb-item">
             <i class="icon-home2 mx-2"></i> {% trans 'Home' %} </a>
         <a class="breadcrumb-item"> {% trans 'Reports' %}</a>
-{#        <a class="breadcrumb-item"> {% get_model_verbose_name_plural base_model %} </a>#}
+        {#        <a class="breadcrumb-item"> {% get_model_verbose_name_plural base_model %} </a>#}
         <a class="breadcrumb-item"> {{ title }}</a>
     </ul>
 
@@ -21,8 +21,8 @@
             <h4>{% trans "Filters" %}</h4>
             <form id="reportForm">
                 {% crispy form crispy_helper %}
-                <input type="submit" value="Filter" class="btn btn-primary btn-lg btn-block refreshReport ">
-            <input type="button" value="Export Csv" class="btn btn-secondary btn-lg btn-block exportCsvBtn">
+                <input type="submit" value="Filter" class="btn btn-primary btn-lg btn-block refreshReport" data-get-results-button>
+                <input type="button" value="Export Csv" class="btn btn-secondary btn-lg btn-block exportCsvBtn">
             </form>
         {% endif %}
 
@@ -33,20 +33,14 @@
                 <div class="card" id="{{ report_data.report_slug }}">
                     <div class="card-body">
                         <div data-report-widget
-                             data-report-url="{% get_report_url report %}"
+                             data-report-url="{{ request.path }}"
                              data-extra-params=""
-                             data-success-callback=""
-
-                             report-form-selector="#reportForm"
-
-                                {#             data-chart-id="{{ data_chart_id|default:'' }}"#}
-                        >
-                            {% if report.chart_settings and not no_chart %}
-                                <div id="container" data-report-chart style="width:100%; height:400px;"></div>
-                                {#                <canvas data-report-chart height="100"></canvas>#}
-                            {% endif %}
+                             data-form-selector="#reportForm"
+                                {% if not auto_load %} data-no-auto-load{% endif %}
+                             data-display-chart-selector="True">
+                            <div data-report-chart>
+                            </div>
                             <div data-report-table>
-
                             </div>
                         </div>
 

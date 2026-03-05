@@ -24,6 +24,7 @@
         }
 
     </style>
+    {% include "erp_framework/js_resources.html" %}
 
 {% endblock %}
 {#{% block sidebar %}#}
@@ -34,20 +35,22 @@
     {% include "erp_framework/js_resources.html" %}
 {% endblock %}
 
-
 {% block sidebar %}
     {% if jazzmin_settings.show_sidebar %}
         {% get_side_menu as side_menu_list %}
 
-        <aside class="main-sidebar elevation-4 {{ jazzmin_ui.sidebar_classes }}" id="jazzy-sidebar">
-            <a href="{% url 'admin:index' %}" class="brand-link {{ jazzmin_ui.brand_classes }}" id="jazzy-logo">
-                <img src="{% static jazzmin_settings.site_logo %}" alt="{{ jazzmin_settings.site_header }} Logo"
-                     class="{{ jazzmin_settings.site_logo_classes }} brand-image elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">{{ jazzmin_settings.site_brand }}</span>
-            </a>
+        <aside class="app-sidebar bg-body-secondary shadow {{ jazzmin_ui.sidebar_classes }}" id="jazzy-sidebar"
+               data-bs-theme="dark">
+            <div class="sidebar-brand">
+                <a href="{% url 'admin:index' %}" class="brand-link {{ jazzmin_ui.brand_classes }}" id="jazzy-logo">
+                    <img src="{% static jazzmin_settings.site_logo %}" alt="{{ jazzmin_settings.site_header }} Logo"
+                         class="{{ jazzmin_settings.site_logo_classes }} brand-image opacity-75 shadow">
+                    <span class="brand-text fw-light">{{ jazzmin_settings.site_brand }}</span>
+                </a>
+            </div>
 
-            <div class="sidebar">
-                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+            <div class="sidebar-wrapper">
+                <div class="user-panel d-flex">
                     <div class="image">
                         {% if jazzmin_settings|has_jazzmin_setting:"user_avatar" %}
                             <img src="{% get_user_avatar request.user %}" width="160px" class="img-circle elevation-2"
@@ -61,14 +64,15 @@
                             <a href="{% jazzy_admin_url request.user request.current_app|default:"admin" %}"
                                class="d-block">{{ request.user }}</a>
                         {% else %}
-                            <span class="d-block" style="color: white;">{{ request.user }}</span>
+                            <span class="d-block opacity-75">{{ request.user }}</span>
                         {% endif %}
                     </div>
                 </div>
 
                 <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column {{ jazzmin_ui.sidebar_list_classes }}"
-                        data-widget="treeview" role="menu" data-collapsible="false">
+                    <ul class="nav sidebar-menu flex-column {{ jazzmin_ui.sidebar_list_classes }}"
+                        data-lte-toggle="treeview" role="navigation" aria-label="Main navigation" data-accordion="false"
+                        id="jazzy-navigation">
 
                         <li class="nav-item">
                             <a href="{% url 'admin:index' %}" class="nav-link">
@@ -100,9 +104,10 @@
                                 <li class="nav-item has-treeview">
                                     <a href="#" class="nav-link">
                                         <i class="nav-icon {{ app.icon }}"></i>
-                                        <p>{{ app.name|truncatechars:21 }} <i class="fas fa-angle-left right"></i></p>
+                                        <p>{{ app.name|truncatechars:21 }} <i class="nav-arrow fas fa-chevron-right"
+                                                                              aria-hidden="true"></i></p>
                                     </a>
-                                    <ul class="nav nav-treeview" style="display: none;">
+                                    <ul class="nav nav-treeview">
                                         {% for model in app.models %}
                                             <li class="nav-item">
                                                 <a href="{% if model.url %}{{ model.url }}{% else %}javascript:void(0){% endif %}"
@@ -116,10 +121,11 @@
                                 </li>
                             {% endfor %}
                         {% endif %}
-                        <li class="nav-header">{% translate "Reports" %}</li>
-                        {% render_reports_menu template_name="reporting/flat_menu.html" %}
+{#                                Customisation for jazzmin #}
+                            <li class="nav-header">{% translate "Reports" %}</li>
+                            {% render_reports_menu template_name="reporting/flat_menu.html" %}
+{#                                End customization #}
                     </ul>
-
                 </nav>
             </div>
         </aside>
