@@ -121,10 +121,10 @@
                                 </li>
                             {% endfor %}
                         {% endif %}
-{#                                Customisation for jazzmin #}
-                            <li class="nav-header">{% translate "Reports" %}</li>
-                            {% render_reports_menu template_name="reporting/flat_menu.html" %}
-{#                                End customization #}
+                        {#                                Customisation for jazzmin #}
+                        <li class="nav-header">{% translate "Reports" %}</li>
+                        {% render_reports_menu template_name="reporting/flat_menu.html" %}
+                        {#                                End customization #}
                     </ul>
                 </nav>
             </div>
@@ -133,5 +133,10 @@
 {% endblock %}
 
 {% block footer %}
-
+    <script>
+        document.querySelector('.nav-link.active').scrollIntoView({
+            behavior: 'instant',
+            block: 'center'
+        });
+    </script>
 {% endblock %}
