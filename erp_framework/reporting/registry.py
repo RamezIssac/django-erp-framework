@@ -84,11 +84,7 @@ class ReportRegistry(object):
         ]
 
         if not getattr(report_class, "hidden", False):
-            # try:
-            #     namespace = report_class.get_base_model_name()
-            # except AttributeError:
-            #     # namespace = report_class.get_report_model()._meta.model_name
-            namespace = report_class.__module__.split(".")[0]
+            namespace = report_class.get_base_model_name()
             try:
                 if not report_class.report_title:
                     raise AttributeError
@@ -121,15 +117,13 @@ class ReportRegistry(object):
 
         for admin_site in erp_admin_sites_names:
             full_name = f"{namespace}.{report.get_report_slug()}"
+            base_model = report.get_base_model_name()
             self._registry.setdefault(admin_site, OrderedDict())
-            self._registry[admin_site].setdefault(namespace, [])
+            self._registry[admin_site].setdefault(base_model, [])
+            self._registry[admin_site][base_model].append(report)
             self._store.setdefault(admin_site, OrderedDict())
-            reports_registered = self._registry[admin_site][namespace]
-            if report not in reports_registered:
-                reports_registered.append(report)
-
-                if report.base_model not in self._base_models:
-                    self._base_models.append(report.base_model)
+            if report.base_model not in self._base_models:
+                self._base_models.append(report.base_model)
             self._slugs_registry.append(full_name)
             self._store[admin_site][full_name] = report
 
@@ -196,11 +190,12 @@ class ReportRegistry(object):
     def get_base_models(self):
         return self._base_models
 
-    def get_base_models_with_reports(self):
+    def get_base_models_with_reports(self, admin_site):
         output = []
-        for i, k in enumerate(self._registry.keys()):
-            v = self._registry[k]
-            output.append((self._base_models[i], v))
+        registry = self._registry.get(admin_site, {})
+        for k, v in registry.items():
+            bm = v[0].base_model if v else None
+            output.append((bm._meta if bm else k, v))
         return output
 
     @staticmethod

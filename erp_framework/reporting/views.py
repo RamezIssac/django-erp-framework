@@ -93,11 +93,10 @@ class ReportView(ReportViewBase):
         A convenience method to get the base model name
         :return:
         """
-        # try:
-        #     return cls.base_model._meta.model_name
-        # except:
-        app_label = cls.__module__.split(".")[0]
-        return app_label
+        try:
+            return cls.base_model._meta.model_name
+        except:
+            return cls.__module__.split(".")[-1]
 
     @classmethod
     def get_report_code(cls):

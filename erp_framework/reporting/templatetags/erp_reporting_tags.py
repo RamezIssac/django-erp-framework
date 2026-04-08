@@ -16,12 +16,12 @@ def get_report_url(context, report):
     request = context.get("request", None)
     return report.get_url(request=request)
 
-
 @register.simple_tag(takes_context=True)
-def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=True):
+def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=False):
     request = context["request"]
     base_models = []
     reports = []
+
 
     from erp_framework.reporting.registry import report_registry
 
@@ -33,12 +33,12 @@ def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=
     if flat:
         reports = report_registry.get_all_reports(admin_site=current_app)
     else:
-        base_models = report_registry.get_base_models_with_reports()
-    # if base_models:
+        base_models = report_registry.get_base_models_with_reports(admin_site=current_app)
     output = render_to_string(
         template_name,
         {
             "reports": reports,
+            "is_flat": flat,
             "base_models_reports_tuple": base_models,
             "is_report": context.get("is_report", False),
             "base_model": context.get("base_model", False),

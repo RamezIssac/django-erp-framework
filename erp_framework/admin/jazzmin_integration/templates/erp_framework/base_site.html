@@ -24,16 +24,11 @@
         }
 
     </style>
-{#    {% include "erp_framework/js_resources.html" %}#}
 
 {% endblock %}
 {#{% block sidebar %}#}
 {#    {% include 'erp_framework/sidebar.html' %}#}
 {#{% endblock %}#}
-
-{% block extrajs %}
-    {% include "erp_framework/js_resources.html" %}
-{% endblock %}
 
 {% block sidebar %}
     {% if jazzmin_settings.show_sidebar %}
@@ -132,15 +127,21 @@
     {% endif %}
 {% endblock %}
 
-{% block footer %}
+{% block extrajs %}
+    {% include "erp_framework/js_resources.html" %}
     <script>
-        try {
-            document.querySelector('.nav-link.active').scrollIntoView({
-                behavior: 'instant',
-                block: 'center'
-            })
-        } catch (e) {
-            console.warn('Could not scroll active nav item into view:', e);
-        }
+        (function () {
+            try {
+                setTimeout(function () {
+                    document.querySelector('.nav-link.active').scrollIntoView({
+                        behavior: 'instant',
+                        block: 'center'
+                    })
+                }, 100);
+
+            } catch (e) {
+                console.warn('Could not scroll active nav item into view:', e);
+            }
+        })();
     </script>
 {% endblock %}

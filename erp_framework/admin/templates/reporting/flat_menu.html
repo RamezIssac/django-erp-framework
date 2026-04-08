@@ -1,0 +1,37 @@
+{% load erp_reporting_tags %}
+
+{% if is_flat %}
+    {% for report in reports %}
+        {% is_active_report report as is_active %}
+        <li class="nav-item">
+            <a class="nav-link {% if is_active %}active{% endif %}" href="{% get_report_url report %}">
+                {{ report.get_report_title }}
+            </a>
+        </li>
+    {% endfor %}
+{% else %}
+
+    {% for base_model, reports in base_models_reports_tuple %}
+        <li class="nav-item has-treeview {% if CURRENT_REPORT and CURRENT_REPORT.base_model == base_model %}menu-open{% endif %}">
+            <a class="nav-link {% if CURRENT_REPORT and CURRENT_REPORT.base_model == base_model %}active{% endif %}"
+               href="#">
+                <p>
+                    {{ base_model.verbose_name|capfirst }}
+                    <i class="nav-arrow fas fa-chevron-right" aria-hidden="true"></i>
+                </p>
+            </a>
+            <ul class="nav nav-treeview">
+                {% for report in reports %}
+                    {% is_active_report report as is_active %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if is_active %}active{% endif %}"
+                           href="{% get_report_url report %}">
+                            <p>{{ report.get_report_title }}</p>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </li>
+    {% endfor %}
+
+{% endif %}
