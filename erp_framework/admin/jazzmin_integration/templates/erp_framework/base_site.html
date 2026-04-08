@@ -134,9 +134,13 @@
 
 {% block footer %}
     <script>
-        document.querySelector('.nav-link.active').scrollIntoView({
-            behavior: 'instant',
-            block: 'center'
-        });
+        try {
+            document.querySelector('.nav-link.active').scrollIntoView({
+                behavior: 'instant',
+                block: 'center'
+            })
+        } catch (e) {
+            console.warn('Could not scroll active nav item into view:', e);
+        }
     </script>
 {% endblock %}

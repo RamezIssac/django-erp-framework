@@ -141,7 +141,7 @@ class ReportView(ReportViewBase):
     def form_filter_func(fkeys_dict):
         output = {}
         for k, v in fkeys_dict.items():
-            if k not in ["owner_id", "polymorphic_ctype_id", "lastmod_user_id"]:
+            if not k.endswith("ptr_id") and k not in ["owner_id", "polymorphic_ctype_id", "lastmod_user_id"]:
                 output[k] = v
         return output
 
