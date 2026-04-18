@@ -1,0 +1,61 @@
+{% load erp_reporting_tags i18n %}
+
+
+<li class="nav-item">
+    <a class="nav-link">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                <i class="fas fa-chart-area"></i>
+                            </span>
+                                        <span class="nav-link-title">
+                                            {% translate "Reports" %}
+                                        </span>
+                                    </a>
+
+
+</li>
+
+{% if is_flat %}
+    {% for report in reports %}
+        {% is_active_report report as is_active %}
+        <li class="nav-item">
+            <a class="nav-link {% if is_active %}active{% endif %}" href="{% get_report_url report %}">
+                {{ report.get_report_title }}
+            </a>
+        </li>
+    {% endfor %}
+{% else %}
+
+    {% for base_model, reports in base_models_reports_tuple %}
+        <li class="nav-item dropdown {% if CURRENT_REPORT and CURRENT_REPORT.base_model == base_model %}active{% endif %}">
+            <a class="nav-link dropdown-toggle {% if CURRENT_REPORT and CURRENT_REPORT.base_model == base_model %}show{% endif %}"
+               href="#" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="true">
+
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/lifebuoy -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"></path>
+                      <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                      <path d="M15 15l3.35 3.35"></path>
+                      <path d="M9 15l-3.35 3.35"></path>
+                      <path d="M5.65 5.65l3.35 3.35"></path>
+                      <path d="M18.35 5.65l-3.35 3.35"></path></svg></span>
+
+            <span class="nav-link-title">
+                    {{ base_model.verbose_name|capfirst }} </span>
+{#                    <i class="nav-arrow fas fa-chevron-right" aria-hidden="true"></i>#}
+
+            </a>
+            <div class="dropdown-menu">
+                {% for report in reports %}
+                    {% is_active_report report as is_active %}
+{#                    <li class="nav-item">#}
+                        <a class="dropdown-item {% if is_active %}active{% endif %}"
+                           href="{% get_report_url report %}">
+                            <p>{{ report.get_report_title }}</p>
+                        </a>
+{#                    </li>#}
+                {% endfor %}
+            </div>
+        </li>
+    {% endfor %}
+
+{% endif %}
