@@ -1,6 +1,8 @@
 include LICENSE
-include README.md
-recursive-include ra/static *
-recursive-include ra/admin/templates *
-recursive-include ra/project_template *
+include README.rst
+recursive-include erp_framework/static *
+recursive-include erp_framework/locale *
+recursive-include erp_framework/admin/templates *
+recursive-include erp_framework/admin/jazzmin_integration/templates *
+recursive-include erp_framework/admin/jazzy_tabler_integration/templates *
 recursive-exclude project_files/ *
