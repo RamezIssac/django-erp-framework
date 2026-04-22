@@ -22,7 +22,8 @@ class ReportGroupPermissionInline(admin.TabularInline):
 
 
 class CustomUserAdmin(UserAdmin):
-    inlines = [ReportingPermissionInline]
+    pass
+    # inlines = [ReportingPermissionInline]
 
 
 try:
