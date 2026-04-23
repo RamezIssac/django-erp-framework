@@ -33,6 +33,65 @@ A subclass of admin.ModelAdmin with various different options
    Where you'll get a chance to validate the whole page forms and formsets
 
 
+.. _fk_autocomplete:
+
+FK Autocomplete (Select2 / AJAX)
+---------------------------------
+
+All ``EntityAdmin`` subclasses automatically render ForeignKey fields as
+Select2 AJAX widgets — no manual ``autocomplete_fields`` declaration needed.
+
+**How it works**
+
+Django's built-in ``autocomplete_fields`` uses Select2 and an AJAX endpoint
+that is registered automatically on each admin class. The framework's
+``EntityAdmin`` overrides ``get_autocomplete_fields()`` to detect eligible FK
+fields at runtime:
+
+- ``EntityAdmin`` already declares ``search_fields = ["name", "slug"]``, so
+  every registered entity admin is autocomplete-eligible by default.
+- At form render time, each FK field is checked: if the related model's admin
+  is registered *and* has ``search_fields``, the field becomes a Select2 widget.
+
+No changes are needed in your own admin classes — it just works.
+
+**Fine-tuning**
+
+1. **Opt a field out** — add its name to ``autocomplete_exclude_fields``:
+
+   .. code-block:: python
+
+       class SalesAdmin(TransactionAdmin):
+           autocomplete_exclude_fields = ["agent"]  # agent keeps plain <select>
+
+2. **Full explicit control** — set ``autocomplete_fields`` directly;
+   auto-detection is skipped entirely for that admin:
+
+   .. code-block:: python
+
+       class SalesAdmin(TransactionAdmin):
+           autocomplete_fields = ["client"]  # only client gets Select2
+
+3. **Customise what is searchable via AJAX** — override ``search_fields`` on
+   the *related* model's admin (the default ``["name", "slug"]`` covers most
+   cases, but you can extend it):
+
+   .. code-block:: python
+
+       @admin.register(Product)
+       class ProductAdmin(EntityAdmin):
+           search_fields = ["name", "barcode", "sku"]
+
+   Setting ``search_fields = []`` on a related admin disables autocomplete for
+   any FK pointing to that model.
+
+**Inline support**
+
+``TransactionItemAdmin`` (``TabularInline``) applies the same auto-detection,
+so inline FK fields (e.g. ``product``, ``store`` on movement lines) also render
+as Select2 widgets. The same ``autocomplete_exclude_fields`` attribute and
+``autocomplete_fields`` override work on inline classes.
+
 .. _entity_admin:
 
 EntityAdmin

@@ -255,6 +255,54 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     print_title = ""
     print_class = HTMLPrintingClass
 
+    autocomplete_exclude_fields = []
+
+    def get_autocomplete_fields(self, request):
+        """
+        Auto-enables AJAX autocomplete (Select2) for all FK fields whose related
+        model admin is registered and has ``search_fields`` defined.
+
+        Fine-tuning options:
+
+        1. **Opt a field out** — add its name to ``autocomplete_exclude_fields``:
+
+           .. code-block:: python
+
+               class SalesAdmin(TransactionAdmin):
+                   autocomplete_exclude_fields = ["agent"]  # agent stays as plain select
+
+        2. **Explicit control** — set ``autocomplete_fields`` directly; auto-detect is skipped:
+
+           .. code-block:: python
+
+               class SalesAdmin(TransactionAdmin):
+                   autocomplete_fields = ["client"]  # only client gets Select2
+
+        3. **Enable for a related model** — add ``search_fields`` to its admin
+           (``EntityAdmin`` already has ``search_fields = ["name", "slug"]`` so all
+           entity admins are eligible by default):
+
+           .. code-block:: python
+
+               @admin.register(Product)
+               class ProductAdmin(EntityAdmin):
+                   search_fields = ["name", "barcode"]  # used by autocomplete AJAX
+        """
+        if "autocomplete_fields" in type(self).__dict__:
+            return super().get_autocomplete_fields(request)
+
+        exclude = set(self.autocomplete_exclude_fields or [])
+        result = []
+        for field in self.model._meta.fields:
+            if not isinstance(field, models.ForeignKey):
+                continue
+            if field.name in exclude:
+                continue
+            related_admin = self.admin_site._registry.get(field.remote_field.model)
+            if related_admin and related_admin.search_fields:
+                result.append(field.name)
+        return result
+
     def reversion_register(self, model, **kwargs):
         kwargs["for_concrete_model"] = False
         super(EntityAdmin, self).reversion_register(model, **kwargs)
@@ -708,6 +756,25 @@ class TransactionItemAdmin(admin.TabularInline):
         # ForeignKey: {'widget': RaBootstrapForeignKeyWidget},
     }
     view_on_site = False
+
+    autocomplete_exclude_fields = []
+
+    def get_autocomplete_fields(self, request):
+        """See ``EntityAdmin.get_autocomplete_fields`` for fine-tuning options."""
+        if "autocomplete_fields" in type(self).__dict__:
+            return super().get_autocomplete_fields(request)
+
+        exclude = set(self.autocomplete_exclude_fields or [])
+        result = []
+        for field in self.model._meta.fields:
+            if not isinstance(field, models.ForeignKey):
+                continue
+            if field.name in exclude:
+                continue
+            related_admin = self.admin_site._registry.get(field.remote_field.model)
+            if related_admin and related_admin.search_fields:
+                result.append(field.name)
+        return result
 
     """
     To simplify complex forms with inline , making inline permission reflect base form permission
