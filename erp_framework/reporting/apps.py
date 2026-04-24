@@ -25,7 +25,7 @@ def autodiscover():
 def sync_reports():
     from .models import Report
     from .registry import report_registry
-
+    return # todo
     reports = report_registry.get_all_reports(all_sites=True)
 
     try:
@@ -35,6 +35,7 @@ def sync_reports():
         return
 
     for report_klass in reports:
+
         try:
             base_model_name = report_klass.get_base_model_name()
         except AttributeError:

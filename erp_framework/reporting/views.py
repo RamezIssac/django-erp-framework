@@ -121,9 +121,8 @@ class ReportView(ReportViewBase):
         """
         return self.test_func
 
-    @classmethod
-    def test_func(cls, request=None, permission="view"):
-        return app_settings.report_access_function(request, permission, cls)
+    def test_func(self):
+        return app_settings.report_access_function(self.request, "view",self.__class__)
 
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
@@ -164,13 +163,13 @@ class ReportView(ReportViewBase):
     #         time_series_selector_default=cls.time_series_selector_default,
     #         time_series_selector_allow_empty=cls.time_series_selector_allow_empty,
     #     )
-
-    def dispatch(self, request, *args, **kwargs):
-        user_test_result = self.get_test_func()(request)
-        if not user_test_result:
-            return self.handle_no_permission()
-
-        return super().dispatch(request, *args, **kwargs)
+    #
+    # def dispatch(self, request, *args, **kwargs):
+    #     user_test_result = self.get_test_func()(request)
+    #     if not user_test_result:
+    #         return self.handle_no_permission()
+    #
+    #     return super().dispatch(request, *args, **kwargs)
 
     @classmethod
     def get_report_title(cls):
