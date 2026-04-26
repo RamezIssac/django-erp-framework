@@ -227,17 +227,36 @@ def flatten_list(items):
 
 
 def admin_site_access_permission(request):
-    if settings.DEBUG:
+    if settings.DEBUG and request.user.is_authenticated:
         return True
     return request.user.is_active and request.user.is_staff
 
 
-def report_access_function(request, permission, report):
-    from erp_framework.reporting.registry import report_registry
+def report_access_function(request, permission, report_class):
+    from erp_framework.reporting.models import GroupReportPermission, UserReportPermission
 
-    if settings.DEBUG:
+    user = request.user
+    if not user.is_active:
+        return False
+    if user.is_superuser:
         return True
 
-    return report_registry.has_perm(
-        request.user, report.get_report_code(), permission=permission
+    report_code = report_class.get_report_code()
+
+    user_perm = UserReportPermission.objects.filter(user=user, report_id=report_code).first()
+    if user_perm is not None:
+        return getattr(user_perm, permission)
+
+    group_ids = user.groups.values_list("pk", flat=True)
+    group_perms = GroupReportPermission.objects.filter(
+        group_id__in=group_ids, report_id=report_code
+    )
+    if group_perms.exists():
+        return group_perms.filter(**{permission: True}).exists()
+
+    base_model = getattr(report_class, "base_model", None)
+    if base_model is None:
+        return False
+    return user.has_perm(
+        f"{base_model._meta.app_label}.view_{base_model._meta.model_name}"
     )

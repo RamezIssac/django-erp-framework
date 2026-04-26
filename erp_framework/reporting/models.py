@@ -24,9 +24,11 @@ class Report(models.Model):
 
     def __str__(self):
         from .registry import report_registry
-
-        report_klass = report_registry._store[self.code]
-        return report_klass.get_report_title()
+        try:
+            report_klass = report_registry._store[self.code]
+            return report_klass.get_report_title()
+        except KeyError:
+            return self.code
 
 
 class ReportPermissionMixin(models.Model):
