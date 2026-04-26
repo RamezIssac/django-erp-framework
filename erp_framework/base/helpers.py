@@ -243,13 +243,13 @@ def report_access_function(request, permission, report_class):
 
     report_code = report_class.get_report_code()
 
-    user_perm = UserReportPermission.objects.filter(user=user, report_id=report_code).first()
+    user_perm = UserReportPermission.objects.filter(user=user, report_code=report_code).first()
     if user_perm is not None:
         return getattr(user_perm, permission)
 
     group_ids = user.groups.values_list("pk", flat=True)
     group_perms = GroupReportPermission.objects.filter(
-        group_id__in=group_ids, report_id=report_code
+        group_id__in=group_ids, report_code=report_code
     )
     if group_perms.exists():
         return group_perms.filter(**{permission: True}).exists()

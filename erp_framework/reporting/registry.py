@@ -8,30 +8,6 @@ from django.core.exceptions import ImproperlyConfigured
 from erp_framework.base import app_settings
 
 
-def _check_permissions(record, permissions_list):
-    if record["view"]:
-        permissions_list.append(record["report_id"] + ".view")
-    if record["print"]:
-        permissions_list.append(record["report_id"] + ".print")
-    if record["export"]:
-        permissions_list.append(record["report_id"] + ".export")
-    return permissions_list
-
-
-def get_user_permissions(user):
-    from .models import UserReportPermission, GroupReportPermission
-
-    records = UserReportPermission.objects.filter(user=user).values()
-    permissions = []
-    for record in records:
-        _check_permissions(record, permissions)
-
-    groups = user.groups.all().values_list("pk", flat=True)
-    group_records = GroupReportPermission.objects.filter(group_id__in=groups)
-    for record in group_records:
-        _check_permissions(record, permissions)
-    return set(permissions)
-
 
 class ReportRegistry(object):
     def __init__(self):
@@ -197,23 +173,6 @@ class ReportRegistry(object):
             bm = v[0].base_model if v else None
             output.append((bm._meta if bm else k, v))
         return output
-
-    @staticmethod
-    def has_perm(user, report_code, permission):
-        """
-        Check if user has permission to access report
-        :param user:
-        :param report_code: basemodel.report_slug
-        :param permission:
-        :return:
-        """
-        if not user.is_active:
-            return False
-
-        if user.is_superuser:
-            return True
-        permissions = get_user_permissions(user)
-        return "%s.%s" % (report_code, permission) in permissions
 
 
 report_registry = ReportRegistry()

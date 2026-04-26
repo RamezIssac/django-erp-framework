@@ -36,9 +36,10 @@ class ReportPermissionMixin(models.Model):
     print = models.BooleanField(default=True, verbose_name=_("Print"))
     export = models.BooleanField(default=True, verbose_name=_("Export"))
 
+    report_code = models.CharField(max_length=255, db_index=True, default="", verbose_name=_("Report code"))
     deleted = models.BooleanField(default=False, verbose_name=_("deleted"))
     report = models.ForeignKey(
-        Report, on_delete=models.CASCADE, verbose_name=_("Report")
+        Report, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Report")
     )
 
     class Meta:
