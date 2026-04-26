@@ -24,6 +24,8 @@ def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=
 
 
     from erp_framework.reporting.registry import report_registry
+    # todo enhance me: i should load all users reports first,
+    #  then use the list to allow
 
     try:
         current_app = request.current_app
@@ -31,9 +33,16 @@ def render_reports_menu(context, template_name="reporting/flat_menu.html", flat=
         current_app = None
 
     if flat:
-        reports = report_registry.get_all_reports(admin_site=current_app)
+        reports = [
+            r for r in report_registry.get_all_reports(admin_site=current_app)
+            if app_settings.report_access_function(request, "view", r)
+        ]
     else:
-        base_models = report_registry.get_base_models_with_reports(admin_site=current_app)
+        base_models = [
+            (meta, allowed)
+            for meta, rpts in report_registry.get_base_models_with_reports(admin_site=current_app)
+            if (allowed := [r for r in rpts if app_settings.report_access_function(request, "view", r)])
+        ]
     output = render_to_string(
         template_name,
         {
