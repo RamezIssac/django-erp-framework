@@ -136,7 +136,7 @@ class ReportView(ReportViewBase):
         )
 
     @staticmethod
-    def form_filter_func(fkeys_dict):
+    def fkeys_filter_func_hook(fkeys_dict):
         output = {}
         for k, v in fkeys_dict.items():
             if not k.endswith("ptr_id") and k not in ["owner_id", "polymorphic_ctype_id", "lastmod_user_id"]:
@@ -156,7 +156,7 @@ class ReportView(ReportViewBase):
     #         crosstab_model=cls.crosstab_field,
     #         display_compute_remainder=cls.crosstab_compute_remainder,
     #         excluded_fields=cls.excluded_fields,
-    #         fkeys_filter_func=cls.form_filter_func,
+    #         fkeys_filter_func=cls.fkeys_filter_func_hook,
     #         initial=cls.get_form_initial(),
     #         show_time_series_selector=cls.time_series_selector,
     #         time_series_selector_choices=cls.time_series_selector_choices,
