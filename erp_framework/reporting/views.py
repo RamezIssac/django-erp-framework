@@ -32,6 +32,7 @@ class ReportView(ReportViewBase):
 
     admin_site_name = "erp_framework"
     template_name = "erp_framework/report.html"
+    with_type = True
 
     def get_base_template(self):
         """
