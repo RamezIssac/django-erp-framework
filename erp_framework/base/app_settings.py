@@ -24,6 +24,13 @@ ERP_FRAMEWORK_SETTINGS = {
     "reports_list_view_class": "",  # todo
     "reports_root_view_class": "",  # todo
     "sites": {},
+    # __str__ format strings. Use {field_name} placeholders.
+    # EntityModel subclasses expose: name, slug, verbose_name, pk
+    # TransactionModel subclasses expose: verbose_name, slug, date, type, value, pk
+    "ENTITY_STR_FORMAT": "{name}",
+    "TRANSACTION_STR_FORMAT": "{verbose_name}-{slug}",
+    # Per-model overrides keyed by "app_label.model_name" (lowercase), e.g. "store.client"
+    "STR_FORMATS": {},
 }
 
 USER_FRAMEWORK_SETTINGS = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {})
@@ -121,3 +128,8 @@ def get_template(name, site=None):
     if site:
         template = ERP_FRAMEWORK_SETTINGS["sites"].get(site, {}).get(name, template)
     return template
+
+
+ENTITY_STR_FORMAT = ERP_FRAMEWORK_SETTINGS.get("ENTITY_STR_FORMAT", "{name}")
+TRANSACTION_STR_FORMAT = ERP_FRAMEWORK_SETTINGS.get("TRANSACTION_STR_FORMAT", "{verbose_name}-{slug}")
+STR_FORMATS = ERP_FRAMEWORK_SETTINGS.get("STR_FORMATS", {})

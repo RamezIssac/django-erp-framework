@@ -1,5 +1,6 @@
 import datetime
 import logging
+from collections import defaultdict
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -115,8 +116,20 @@ class EntityModel(ERPMixin, RAModel):
         if not getattr(self, "pk_name", False):
             self.pk_name = None
 
+    def _str_context(self):
+        return {
+            "name": self.name or "",
+            "slug": self.slug or "",
+            "verbose_name": str(self._meta.verbose_name),
+            "pk": self.pk or "",
+        }
+
+    def _get_str_format(self):
+        key = f"{self._meta.app_label}.{self._meta.model_name}"
+        return app_settings.STR_FORMATS.get(key) or app_settings.ENTITY_STR_FORMAT
+
     def __str__(self):
-        return self.name
+        return self._get_str_format().format_map(defaultdict(str, self._str_context()))
 
     def get_absolute_url(self):
         model_name = self._meta.model_name.lower()
@@ -203,8 +216,19 @@ class TransactionModel(EntityModel):
         """
         return cls.__name__.lower()
 
-    def __str__(self):
-        return "%s-%s" % (self._meta.verbose_name, self.slug)
+    def _str_context(self):
+        return {
+            "verbose_name": str(self._meta.verbose_name),
+            "slug": self.slug or "",
+            "date": self.date.strftime("%Y/%m/%d") if self.date else "",
+            "type": self.type or "",
+            "value": self.value,
+            "pk": self.pk or "",
+        }
+
+    def _get_str_format(self):
+        key = f"{self._meta.app_label}.{self._meta.model_name}"
+        return app_settings.STR_FORMATS.get(key) or app_settings.TRANSACTION_STR_FORMAT
 
     def __repr__(self):
         return "<%s pk:%s slug:%s type:%s>" % (
