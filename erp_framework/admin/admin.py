@@ -125,11 +125,14 @@ class AdminViewMixin(admin.ModelAdmin):
         return my_urls + urls
 
     def has_view_permission(self, request, obj=None):
-        if not self.enable_view_view:
-            return False
+        # Standard Django check: view OR change permission grants view access.
+        # enable_view_view controls only the stats page, not the change form submit row.
         opts = self.opts
-        codename = get_permission_codename("view", opts)
-        return request.user.has_perm("%s.%s" % (opts.app_label, codename))
+        codename_view = get_permission_codename("view", opts)
+        codename_change = get_permission_codename("change", opts)
+        return request.user.has_perm("%s.%s" % (opts.app_label, codename_view)) or request.user.has_perm(
+            "%s.%s" % (opts.app_label, codename_change)
+        )
 
     def view_view(self, request, object_id, form_url="", extra_context=None):
         extra_context = extra_context or {}
@@ -146,7 +149,7 @@ class AdminViewMixin(admin.ModelAdmin):
 
         obj = self.get_object(request, unquote(object_id), to_field)
 
-        if not self.has_view_permission(request, obj):  # pragma: no cover
+        if not self.enable_view_view or not self.has_view_permission(request, obj):  # pragma: no cover
             raise PermissionDenied
 
         if obj is None:  # pragma: no cover
@@ -665,7 +668,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     def get_list_display(self, request):
         list_display = super(EntityAdmin, self).get_list_display(request)
 
-        if self.has_view_permission(request):
+        if self.enable_view_view and self.has_view_permission(request):
             list_display = ("get_stats_icon",) + list_display
 
         return list_display
