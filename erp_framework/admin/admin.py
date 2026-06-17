@@ -257,6 +257,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     autocomplete_exclude_fields = []
 
+    class Media:
+        js = ("erp_framework/js/select2_compat.js",)
+
     def get_autocomplete_fields(self, request):
         """
         Auto-enables AJAX autocomplete (Select2) for all FK fields whose related
