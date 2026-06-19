@@ -7,3 +7,11 @@ class MyActivity(LogEntry):
         proxy = True
         verbose_name = _("My Activity")
         verbose_name_plural = _("My Activities")
+
+
+class SystemLog(LogEntry):
+    class Meta:
+        proxy = True
+        app_label = "activity"
+        verbose_name = _("System Log")
+        verbose_name_plural = _("System Logs")

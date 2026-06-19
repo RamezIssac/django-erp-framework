@@ -8,7 +8,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from erp_framework.activity.models import MyActivity
+from erp_framework.activity.models import MyActivity, SystemLog
 from erp_framework.admin.admin import RaThemeMixin
 from erp_framework.sites import erp_admin_site
 from erp_framework.base import app_settings
@@ -230,15 +230,18 @@ class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
             )
             return mark_safe(link)
         elif obj.action_flag == 3:
-            url = reverse(
-                "%s:%s_%s_recover"
-                % (
-                    app_settings.ERP_FRAMEWORK_SITE_NAME,
-                    obj.content_type.app_label,
-                    obj.content_type.model,
-                ),
-                args=(obj.object_id,),
-            )
+            try:
+                url = reverse(
+                    "%s:%s_%s_recover"
+                    % (
+                        app_settings.ERP_FRAMEWORK_SITE_NAME,
+                        obj.content_type.app_label,
+                        obj.content_type.model,
+                    ),
+                    args=(obj.object_id,),
+                )
+            except NoReverseMatch:
+                return ""
             link = """<a href="%s" class="legitRipple" data-popup="tooltip" title="%s">
                     <i class="fas fa-undo text-indigo-800"></i>
                     <span class="legitRipple-ripple"></span></a>""" % (
@@ -268,6 +271,6 @@ class MyActivityAdmin(LogEntryAdmin):
         return qs
 
 
-# erp_admin_site.register(LogEntry, LogEntryAdmin)
+erp_admin_site.register(SystemLog, LogEntryAdmin)
 
 erp_admin_site.register(MyActivity, MyActivityAdmin)
