@@ -7,7 +7,7 @@
     {% if has_absolute_url %}
         <a href="{{ absolute_url }}" class="btn w-100 {{ jazzy_ui.button_classes.secondary }} btn-sm">{% trans "View on site" %}</a>
     {% endif %}
-    {% if not add and original %}
+    {% if not add and original and enable_view_view %}
         {% url opts|admin_urlname:'view' original.pk|admin_urlquote as view_url %}
         {% if view_url %}
             <a href="{{ view_url }}" class="btn w-100 {{ jazzy_ui.button_classes.secondary }} btn-sm">{% trans "View Statistics" %}</a>

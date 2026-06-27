@@ -263,6 +263,12 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     class Media:
         js = ("erp_framework/js/select2_compat.js",)
 
+    def render_change_form(self, request, context, *args, **kwargs):
+        # Expose enable_view_view so the change form's object tools can hide the
+        # "View Statistics" button when the stats view is disabled (it would 403).
+        context["enable_view_view"] = self.enable_view_view
+        return super().render_change_form(request, context, *args, **kwargs)
+
     def get_autocomplete_fields(self, request):
         """
         Auto-enables AJAX autocomplete (Select2) for all FK fields whose related
