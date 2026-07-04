@@ -227,6 +227,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     view_on_site = False
     list_per_page = 25
     save_on_top = True
+    save_as = True
     list_select_related = True
     fields = default_fields
     list_display = ("get_enhanced_obj_title", "slug", "notes", "get_history_link")
