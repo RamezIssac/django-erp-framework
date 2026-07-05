@@ -701,6 +701,12 @@ class TransactionAdmin(EntityAdmin):
     copy_form_notes_to_formset = False
     search_fields = ["date", "slug"]
 
+    @admin.display(description=_("Notes"), ordering="notes")
+    def notes_summary(self, obj):
+        from django.template.defaultfilters import truncatechars
+
+        return truncatechars(obj.notes, 60) if obj.notes else ""
+
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         form_field = super(TransactionAdmin, self).formfield_for_dbfield(
             db_field, request, **kwargs

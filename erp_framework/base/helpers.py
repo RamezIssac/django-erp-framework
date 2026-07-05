@@ -192,17 +192,32 @@ def dictsort(value, arg, desc=False):
 
 def get_next_serial(model, slug_field="slug"):
     """
-    Get the next serial to put in the slug based on the maximum slug found + 1
+    Get the next serial to put in the slug based on the maximum *numeric* slug found + 1.
+
+    ``slug`` is a text column, so a plain ``Max`` orders lexicographically
+    ("9" > "10") and would stall the counter at 10 (duplicate slugs on
+    non-unique columns, IntegrityError on unique ones). We restrict to
+    purely-numeric slugs and take the numeric maximum instead. This is
+    portable across sqlite and Postgres because the regex filter guarantees
+    only digit strings reach ``Cast``.
+
     :param model: the model to get the next serial for
-    :return: a string
+    :return: an int (or a timestamp string when no numeric slug can be derived)
     """
     import time
 
-    qs = model.objects.aggregate(Max(slug_field))
-    max_slug = qs.get(f"{slug_field}__max", 0) or 0
-    if type(max_slug) is str and not max_slug.isdigit():
+    from django.db.models import BigIntegerField
+    from django.db.models.functions import Cast
+
+    numeric = model.objects.filter(**{f"{slug_field}__regex": r"^\d+$"})
+    max_slug = numeric.aggregate(_max=Max(Cast(slug_field, BigIntegerField()))).get("_max")
+    if max_slug is not None:
+        return max_slug + 1
+    # No numeric slugs to increment. If rows exist with non-numeric slugs we
+    # can't safely derive a serial, so fall back to a timestamp-based one.
+    if model.objects.exists():
         return str(time.time()).split(".")[0]
-    return int(max_slug) + 1
+    return 1
 
 
 def default_formfield_for_dbfield(model_admin, db_field, form_field, request, **kwargs):
