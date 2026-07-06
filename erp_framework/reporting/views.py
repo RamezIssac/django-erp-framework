@@ -50,6 +50,7 @@ class ReportView(ReportViewBase):
         context.update(extra_context)
         context["is_report"] = True
 
+        context["title"] = self.get_report_title()
         context["base_model"] = self.base_model
         context["report_slug"] = self.get_report_slug()
         context["CURRENT_REPORT"] = self.__class__
