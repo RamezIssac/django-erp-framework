@@ -4,11 +4,16 @@ from urllib.parse import urljoin
 
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from pyquery import PyQuery as pq
+
+from erp_framework.activity.admin import ActionFilter, RAContentTypeFilter
+from erp_framework.activity.models import MyActivity
 
 from .models import Client, Product, SimpleSales, InvoiceLine, Journal
 
@@ -527,6 +532,29 @@ class TestAdmin(BaseTestData, TestCase):
             reverse("erp_framework:activity_myactivity_changelist")
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_my_activity_for_non_superuser_is_repeatable(self):
+        """A non-superuser hides the user filter; make sure doing so does not
+        eat into list_filter permanently (used to raise "pop from empty list")."""
+        permission = Permission.objects.get(
+            content_type=ContentType.objects.get_for_model(
+                MyActivity, for_concrete_model=False
+            ),
+            codename="view_myactivity",
+        )
+        self.limited_user.user_permissions.add(permission)
+        self.client.login(username="limited", password="password")
+
+        url = reverse("erp_framework:activity_myactivity_changelist")
+        for _i in range(3):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(
+                response.context["cl"].model_admin.get_list_filter(
+                    response.wsgi_request
+                ),
+                [ActionFilter, RAContentTypeFilter],
+            )
 
     @skip
     def test_logentry(self):

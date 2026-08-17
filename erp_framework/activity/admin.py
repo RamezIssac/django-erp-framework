@@ -188,9 +188,10 @@ class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
         return queryset
 
     def get_list_filter(self, request):
-        filters = super(LogEntryAdmin, self).get_list_filter(request)
+        # ModelAdmin.get_list_filter returns the class attribute itself; copy before removing.
+        filters = list(super(LogEntryAdmin, self).get_list_filter(request))
         if not request.user.is_superuser:
-            filters.pop(0)
+            filters = [f for f in filters if f is not UserFilter]
         return filters
 
     def action_description(self, obj):
