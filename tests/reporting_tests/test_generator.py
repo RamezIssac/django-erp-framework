@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pytz
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils.timezone import now
 
 from slick_reporting.generator import ReportGenerator
@@ -13,6 +13,7 @@ from .tests import BaseTestData
 from .models import SimpleSales
 
 
+@override_settings(USE_TZ=False)
 class MatrixTests(BaseTestData, TestCase):
     def test_matrix_column_included(self):
         report = CrosstabOnClient(
@@ -65,6 +66,7 @@ class GeneratorReportStructureTest(TestCase):
     def test_time_series_and_cros_tab(self):
         pass
 
+    @override_settings(USE_TZ=False)
     def test_attr_as_column(self):
         report = GeneratorWithAttrAsColumn()
         columns_data = report.get_list_display_columns()
@@ -85,6 +87,7 @@ class GeneratorReportStructureTest(TestCase):
         data = report.get_report_data()
         # self.assertEqual(len(report.get_list_display_columns()), 3)
 
+    @override_settings(USE_TZ=False)
     def test_gather_dependencies_for_time_series(self):
         report = ReportGenerator(
             report_model=SimpleSales,
