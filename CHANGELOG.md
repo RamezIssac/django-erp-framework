@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project are/will be documented in this file.
 
+## [1.6.0] - 2026-09-21
+- Fixed MANIFEST.in so the package actually ships erp_framework templates, static files and locale (the v1.5.2 PyPI package shipped none: its manifest still pointed at the retired `ra/` layout)
+- Added jazzy_tabler admin integration alongside the existing jazzmin one, and added `ar` locale
+- Added system logs and a stats view fix
+- Added an option to customize model `__str__` globally or per model
+- Enhanced user/report permissions; added autocomplete and report menu icon
+- Enabled save_as by default; report start/end dates are now dynamic; fixed CSV export encoding
+- Changed report registry namespace (and report URLs) to `<base_model_name>/<report_slug>` (was `<app_label>/<report_slug>`)
+- Compatibility with Django 5.2 and django-slick-reporting 1.4.0
+- Fixes: IndexError "pop from empty list" on activity changelists, report title, slug generation, duplicated slick-reporting js inclusion, scroll-into-view navigation
+
 ## [1.5.2] - 2023-06-07
 - Added Jazzmin integration as an option
 - Added settings for custom dashboard base template, admin_site_access_permission, report_access_function 

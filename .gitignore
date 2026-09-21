@@ -329,6 +329,9 @@ tags
 [Ll]ib
 [Ll]ib64
 [Ss]cripts
+# But do track the repo's own helper scripts (used by .github/workflows/release.yml)
+!scripts/
+!scripts/**
 pyvenv.cfg
 pip-selfcheck.json
 .env
