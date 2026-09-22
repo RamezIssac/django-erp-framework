@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from erp_framework.reporting.registry import register_report_view
 from slick_reporting.forms import report_form_factory
-from erp_framework.reporting.views import ReportView
+from erp_framework.reporting.views import ReportView, ListReportView
 from slick_reporting.generator import ReportGenerator
 from .models import Client, SimpleSales, Product
 
@@ -164,6 +164,7 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
     report_title = _("Client Sales Monthly")
     base_model = Client
     report_model = SimpleSales
+    date_field = "date"
 
     group_by = "client"
     columns = ["slug", "name"]
@@ -175,7 +176,7 @@ class ClientSalesMonthlySeries(ClientReportMixin, ReportView):
 
 
 @register_report_view
-class ClientDetailedStatement(ReportView):
+class ClientDetailedStatement(ListReportView):
     report_title = _("client statement")
     base_model = Client
     report_model = SimpleSales
@@ -188,7 +189,7 @@ class ClientDetailedStatement(ReportView):
 
 
 @register_report_view
-class ClientDetailedStatement2(ReportView):
+class ClientDetailedStatement2(ListReportView):
     report_title = _("client statement")
     base_model = Client
     report_model = SimpleSales

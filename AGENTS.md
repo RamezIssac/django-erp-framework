@@ -15,8 +15,9 @@ When updating this file, preserve this bar for all agents and keep entries conci
 
 - Run the suite from the repo root: `python tests/runtests.py --noinput`. Deps: `pip install -e . -r tests/requirements.txt`; `pylibmc` needs system `libmemcached-dev` and `pywatchman` is optional — both can be skipped, this suite never touches memcached/watchman.
 - Despite the name, `tests/test_postgres.py` defaults to sqlite (the Postgres block is commented out).
-- `runtests.py` escalates `RuntimeWarning` to errors, so under Django >= 5 (default `USE_TZ=True`) naive datetimes in test fixtures are fatal.
-- Known-red on develop as of v1.6.0 (pre-existing, not a regression signal): `reporting_tests` has 19 errors — 16 from stale `reporting_tests.*` registry namespaces (commit 717f7ba re-keyed the registry/URLs from app_label to base-model `model_name`) and 3 from the USE_TZ issue above. `registry_tests` is green.
+- `runtests.py` escalates `RuntimeWarning` to errors, so under Django >= 5 (default `USE_TZ=True`) naive datetimes in test fixtures are fatal. Suite convention: naive-datetime tests opt out per class/method with `@override_settings(USE_TZ=False)` (see `tests/reporting_tests/test_generator.py`); do not flip `USE_TZ` globally — `test_time_series_columns_inclusion` needs it `True`.
+- Report registry/URL namespace is `<base_model_name>/<report_slug>` (commit 717f7ba re-keyed it from app_label; announced in the v1.6.0 CHANGELOG). Test fixtures must reverse/get with the base-model name (`client`, `product`), never `reporting_tests`.
+- With django-slick-reporting >= 1.3: list reports (`group_by=None`) must subclass `ListReportView` (plain `ReportView` returns a single empty totals row), and time-series reports must set `date_field` explicitly.
 
 ## Release
 
