@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project are/will be documented in this file.
 
+## [1.7.0] - 2026-10-14
+- Swapped the hard admin-theme dependency from `django-jazzmin` to `django-jazzy-tabler>=0.1.1`; `erp_framework.admin.jazzmin_integration` stays available as an opt-in integration (install `django-jazzmin` yourself to use it)
+- Dropped unused dependencies: `pytz`, `simplejson`, `dateutils`, `django-compressor`
+- Fixed stale reporting test fixtures so the suite runs green for the release workflow (PR #51: report registry namespace, naive datetimes under `USE_TZ=True`, django-slick-reporting 1.4 alignment)
+- Refreshed package metadata: `python_requires >= 3.10`, Django 5.2/6.1-era classifiers, corrected project URLs
+
 ## [1.6.0] - 2026-09-21
 - Fixed MANIFEST.in so the package actually ships erp_framework templates, static files and locale (the v1.5.2 PyPI package shipped none: its manifest still pointed at the retired `ra/` layout)
 - Added jazzy_tabler admin integration alongside the existing jazzmin one, and added `ar` locale

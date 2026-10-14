@@ -31,14 +31,20 @@ Usage
         'tabular_permissions', # better a permission widget , Optional
 
         'erp_framework',
-        "erp_framework.admin.jazzmin_integration", # if you want to use jazzmin theme, otherwise remove this line
+        "erp_framework.admin.jazzy_tabler_integration", # if you want to use the jazzy-tabler theme, otherwise remove this line
         'erp_framework.admin',
         'erp_framework.reporting',
         'slick_reporting',
 
-        'jazzmin', # optional
+        'jazzy_tabler', # the admin theme, installed with the package
         'django.contrib.admin', # comes at the end because the theme is replaced
     }
+
+.. note::
+
+    The legacy `django-jazzmin <https://github.com/RamezIssac/django-jazzmin>`_ theme stays supported as an opt-in
+    integration with no hard dependency: ``pip install django-jazzmin`` yourself and use
+    ``erp_framework.admin.jazzmin_integration`` + ``'jazzmin'`` in place of the jazzy-tabler lines above.
 
 
 * Add the following entries to ``MIDDLEWARE``:

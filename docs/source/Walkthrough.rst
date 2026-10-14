@@ -4,7 +4,7 @@ Walkthrough
 =============
 
 
-Log in to "My Shop", our demo site  https://my-shop.django-erp-framework.com/  with the following credentials:
+Log in to "My Shop", our demo site  https://demo.django-erp.com/  with the following credentials:
 
 Username `test`
 
@@ -14,10 +14,10 @@ This is a custom admin site with a dashboard and reporting. :ref:`erp_admin`
 
 The demo site contains 3 dashboards:
 
-1. The default dashboard, with jazzmin theme (https://my-shop.django-erp-framework.com/)
+1. The default dashboard, with jazzy-tabler theme (https://demo.django-erp.com/)
    The dashboard is for a sample ERP site, with a few widgets and reports.
 
-2. A custom dashboard with a custom index template (https://my-shop.django-erp-framework.com/requests-dashboard/)
+2. A custom dashboard with a custom index template (https://demo.django-erp.com/requests-dashboard/)
    This dashboard is for the requests app https://github.com/django-request/django-request
    It's using a custom base template, like what you'd need to integrate this project into your own site.
 
@@ -45,7 +45,7 @@ In the default dashboard You see reports displayed as widgets:
 *Links*
 
 * How to add a widget :ref:`widgets`
-* Check the demo index template on github https://github.com/ra-systems/my-shop/blob/main/templates/admin/custom_index.html
+* Check the demo index template on github https://github.com/RamezIssac/my-shop/blob/main/templates/admin/custom_index.html
 * Create a Time Series <link here>
 
 Apps

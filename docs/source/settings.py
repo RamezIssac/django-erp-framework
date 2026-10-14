@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     # "erp_framework.activity",
     "erp_framework.reporting",
     "slick_reporting",
-    "jazzmin",
+    "jazzy_tabler",
     "django.contrib.admin",
 ]
 
