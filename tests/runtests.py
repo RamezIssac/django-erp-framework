@@ -61,7 +61,7 @@ ALWAYS_INSTALLED_APPS = [
     "django.contrib.messages",
     # 'django.contrib.admin.apps.SimpleAdminConfig',
     "django.contrib.staticfiles",
-    "jazzmin",
+    "jazzy_tabler",
     "crequest",
     "crispy_forms",
     "crispy_bootstrap4",

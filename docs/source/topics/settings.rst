@@ -67,39 +67,34 @@ The function should have this signature.
 
 
 
-Jazzmin settings
-================
+Jazzy Tabler settings
+=====================
 
-Jazzmin is a modern responsive skin for the Django admin interface based on the excellent AdminLTE project.
-Here is a glimpse f its settings.
+`Jazzy Tabler <https://github.com/RamezIssac/django-jazzy-tabler>`_ is a modern responsive theme for the Django
+admin interface, built on Tabler (Bootstrap 5) with light and dark mode. Here is a glimpse of its settings.
 
-To know more head over to the `Jazzmin Configuration documentation <https://django-jazzmin.readthedocs.io/configuration/>`_
+To know more head over to the `django-jazzy-tabler package <https://pypi.org/project/django-jazzy-tabler/>`_
 
 
-``JAZZMIN_SETTINGS``
+``JAZZY_SETTINGS``
 .. code-block:: python
 
-    JAZZMIN_SETTINGS = {
-        'navigation_expanded': False,
+    JAZZY_SETTINGS = {
+        "site_title": "ERP Framework",
+        "site_header": "ERP Framework",
+        "site_brand": "ERP Framework System",
+        "welcome_sign": "Welcome",
+        "navigation_expanded": False,
         "changeform_format": "single",
     }
 
-    JAZZMIN_UI_TWEAKS = {
-        "navbar": "navbar-primary navbar-dark",
-        "no_navbar_border": True,
-        "body_small_text": False,
-        "navbar_small_text": False,
-        "sidebar_nav_small_text": False,
-        "accent": "accent-primary",
-        "sidebar": "sidebar-dark-primary",
-        "brand_colour": "navbar-primary",
-        "brand_small_text": False,
-        "sidebar_disable_expand": False,
-        "sidebar_nav_child_indent": True,
-        "sidebar_nav_compact_style": False,
-        "sidebar_nav_legacy_style": False,
-        "sidebar_nav_flat_style": False,
-        "footer_small_text": False
+    JAZZY_UI_TWEAKS = {
+        "default_theme_mode": "light",  # "light", "dark" or "auto"
     }
+
+Migrating from django-jazzmin: when ``JAZZY_SETTINGS`` is not defined, jazzy-tabler reads your existing
+``JAZZMIN_SETTINGS`` as a fallback, so your current configuration keeps working. ``JAZZY_UI_TWEAKS`` has no
+such fallback; its keys are new (e.g. ``default_theme_mode``, ``navbar_fixed``) and the old
+``JAZZMIN_UI_TWEAKS`` keys do not apply.
 
 

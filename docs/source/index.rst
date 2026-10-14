@@ -11,9 +11,9 @@ Features
 - Widget system to display bits of the reports results or its charts on any page you want.
 - A Dashboard system allowing you to create different dashboards for different users/ cases .
 - Customizable and easily extensible.
-- Django Jazzmin theme ready (& can be used with any django admin theme)
-- Python 3.8 / 3.9 / 3.10
-- Django 3.2 +
+- Django Jazzy Tabler theme ready (& can be used with any django admin theme)
+- Python 3.10+
+- Django 5.2 / 6.1
 
 
 .. toctree::

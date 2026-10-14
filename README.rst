@@ -7,8 +7,8 @@
 .. image:: https://img.shields.io/readthedocs/django-erp-framework
     :target: https://django-erp-framework.readthedocs.io/
 
-.. image:: https://img.shields.io/codecov/c/github/ra-systems/django-erp-framework
-    :target: https://codecov.io/gh/ra-systems/django-erp-framework
+.. image:: https://img.shields.io/codecov/c/github/RamezIssac/django-erp-framework
+    :target: https://codecov.io/gh/RamezIssac/django-erp-framework
 
 
 
@@ -28,8 +28,8 @@ Features
 * Charting capabilities to represent the data in the reports.
 * Widget system to create dashboards and display bits of the reports results and/or its charts on any page you want.
 * Customizable and easily extensible.
-* Django Jazzmin admin theme integration ready to use.
-* Python 3.8 / 3.9 / 3.10 , Django 3.2 +
+* Django Jazzy Tabler admin theme integration ready to use.
+* Python 3.10+, Django 5.2 / 6.1
 
 
 
@@ -49,7 +49,7 @@ Check out the `getting started <https://django-erp-framework.readthedocs.io/en/l
 Demo
 ----
 
-You can checkout a demo application `here <https://my-shop.django-erp-framework.com>`_.
+You can checkout a demo application `here <https://demo.django-erp.com>`_.
 
 Code is available on `Github <https://github.com/RamezIssac/my-shop>`_.
 
@@ -79,7 +79,7 @@ To run the test suite, first, create and activate a virtual environment. Then
 clone the repo, install the test requirements and run the tests::
 
     # 1. Clone and install requirements
-    $ git clone git+git@github.com:ra-systems/django-erp-framework.git
+    $ git clone git+git@github.com:RamezIssac/django-erp-framework.git
     $ cd tests
     $ pip install -e ..
     $ pip install -r requirements.txt
