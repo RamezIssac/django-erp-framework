@@ -11,6 +11,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from pyquery import PyQuery as pq
+from slick_reporting.generator import ReportGenerator
 
 from erp_framework.activity.admin import ActionFilter, RAContentTypeFilter
 from erp_framework.activity.models import MyActivity
@@ -20,6 +21,18 @@ from .models import Client, Product, SimpleSales, InvoiceLine, Journal
 User = get_user_model()
 SUPER_LOGIN = dict(username="superlogin", password="password")
 year = now().year
+
+
+def get_rows(data):
+    """
+    Reassemble a report JSON response into a list of row dicts.
+
+    django-slick-reporting >= 1.5.0 returns ``data`` columnar (a dict mapping
+    column name -> list of values, one per row); the assertions here are
+    written against the row-oriented list, rebuilt via the shipped helper.
+    """
+    columns = [column["name"] for column in data["columns"]]
+    return ReportGenerator.columns_to_rows(data["data"], columns)
 
 
 class BaseTestData:
@@ -143,8 +156,8 @@ class ReportTest(BaseTestData, TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["data"][0].get("__balance__"), 300, data["data"][0])
+        rows = get_rows(response.json())
+        self.assertEqual(rows[0].get("__balance__"), 300, rows[0])
 
     def test_product_total_sales(self):
         self.client.login(username="super", password="secret")
@@ -153,8 +166,8 @@ class ReportTest(BaseTestData, TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["data"][0]["__balance__"], -1800)
+        rows = get_rows(response.json())
+        self.assertEqual(rows[0]["__balance__"], -1800)
 
     def test_client_client_sales_monthly(self):
         self.client.login(username="super", password="secret")
@@ -167,17 +180,13 @@ class ReportTest(BaseTestData, TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        # import pdb; pdb.set_trace()
-        # print(data['data'][0])
-        self.assertEqual(
-            data["data"][0].get("__balance__TS%s0301" % year), 200, data["data"][0]
-        )
-        self.assertEqual(data["data"][0]["__balance__TS%s0201" % year], 100)
+        rows = get_rows(response.json())
+        self.assertEqual(rows[0].get("__balance__TS%s0301" % year), 200, rows[0])
+        self.assertEqual(rows[0]["__balance__TS%s0201" % year], 100)
 
-        self.assertEqual(data["data"][0]["__total__TS%s0401" % year], 100)
-        self.assertEqual(data["data"][0]["__total__TS%s0301" % year], 100)
-        self.assertEqual(data["data"][0]["__total__TS%s0201" % year], 100)
+        self.assertEqual(rows[0]["__total__TS%s0401" % year], 100)
+        self.assertEqual(rows[0]["__total__TS%s0301" % year], 100)
+        self.assertEqual(rows[0]["__total__TS%s0201" % year], 100)
 
         # todo add __fb__ to time series and check the balance
 
@@ -246,8 +255,7 @@ class ReportTest(BaseTestData, TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
-        response_json = response.json()
-        rows = len(response_json["data"])
+        rows = len(get_rows(response.json()))
 
         without_filter = self.client.get(
             reverse(
@@ -256,7 +264,7 @@ class ReportTest(BaseTestData, TestCase):
             ),
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
-        self.assertNotEqual(rows, len(without_filter.json()["data"]))
+        self.assertNotEqual(rows, len(get_rows(without_filter.json())))
 
     @skip("Feature Halted: No redirect url now")
     def test_report_movement_redirect(self):
@@ -274,9 +282,9 @@ class ReportTest(BaseTestData, TestCase):
             data={"client_id": self.client1.pk},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
-        data = response.json()
-        a_elem = pq(data["data"][0]["slug"])
-        type = data["data"][0]["type"]
+        rows = get_rows(response.json())
+        a_elem = pq(rows[0]["slug"])
+        type = rows[0]["type"]
         url = a_elem.attr("href")
         response = self.client.get(url, follow=True)
         self.assertEqual(response.status_code, 200)
@@ -350,10 +358,10 @@ class ReportTest(BaseTestData, TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
+        rows = get_rows(response.json())
         previous_balance = 0
-        self.assertTrue(len(data["data"]) > 1)
-        for i, line in enumerate(data["data"]):
+        self.assertTrue(len(rows) > 1)
+        for i, line in enumerate(rows):
             if i == 0:
                 previous_balance = line["__balance__"]
             else:
@@ -370,10 +378,10 @@ class ReportTest(BaseTestData, TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
+        rows = get_rows(response.json())
         previous_balance = 0
-        self.assertTrue(len(data["data"]) > 1)
-        for i, line in enumerate(data["data"]):
+        self.assertTrue(len(rows) > 1)
+        for i, line in enumerate(rows):
             if i == 0:
                 previous_balance = line["__balance__"]
             else:

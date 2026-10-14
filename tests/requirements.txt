@@ -14,3 +14,6 @@ tblib >= 1.5.0
 psycopg2-binary>=2.5.4
 coverage
 pyquery
+# The report JSON response is columnar since 1.5.0; tests rely on
+# ReportGenerator.columns_to_rows() shipped by that release.
+django-slick-reporting >= 1.5.0
