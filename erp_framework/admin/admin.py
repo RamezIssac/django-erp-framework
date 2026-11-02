@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 import logging
+from dataclasses import dataclass, field
+from typing import Any
 
 from crequest.middleware import CrequestMiddleware
 from django.contrib import admin
@@ -52,6 +54,22 @@ logger = logging.getLogger(__name__)
 # todo bring back
 # changeform_saved = Signal(providing_args=["instance", "created", 'using'])
 changeform_saved = Signal()
+
+
+@dataclass
+class ChangeformResult:
+    """Outcome of :meth:`EntityAdmin.process_changeform`.
+
+    Same attributes as ``admin_api.writes.ChangeformResult`` so the JSON API
+    (django-admin-api) can run the very same pipeline as the HTML change form.
+    """
+
+    valid: bool
+    obj: Any
+    form: Any
+    formsets: list = field(default_factory=list)
+    change: bool = False
+    inline_instances: list = field(default_factory=list)
 
 
 class ERPFrameworkAdminSite(ERPFrameworkAdminSiteBase):
@@ -512,13 +530,58 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         pass
 
     ###
+    def process_changeform(self, request, obj, change):
+        """
+        Validate and save a submitted change form. No rendering, no redirect.
+
+        ``request`` is a POST request carrying the change form data in ``request.POST`` /
+        ``request.FILES``. Called by :meth:`_changeform_view` (HTML admin) and by
+        django-admin-api (JSON API), so both run the same hooks:
+
+        1. ``whole_changeform_validation``
+        2. ``pre_save()`` before saving
+        3. ``post_save()`` after saving
+        4. the ``changeform_saved`` signal
+
+        :return: :class:`ChangeformResult`
+        """
+        add = not change
+        ModelForm = self.get_form(request, obj, change=change)
+        form = ModelForm(request.POST, request.FILES, instance=obj)
+        form_validated = form.is_valid()
+        if form_validated:
+            new_object = self.save_form(request, form, change=change)
+        else:
+            new_object = form.instance
+        formsets, inline_instances = self._create_formsets(
+            request, new_object, change=change
+        )
+        if (
+            all_valid(formsets)
+            and form_validated
+            and self.whole_changeform_validation(request, form, formsets, change)
+        ):
+            self.pre_save(form, formsets, change=change)
+            self.save_model(request, new_object, form, change)
+            self.save_related(request, form, formsets, change)
+            self.post_save(request, new_object, form, formsets, change)
+            changeform_saved.send(self.model, instance=new_object, created=add)
+
+            change_message = self.construct_change_message(request, form, formsets, add)
+            if add:
+                self.log_addition(request, new_object, change_message)
+            else:
+                self.log_change(request, new_object, change_message)
+            return ChangeformResult(
+                True, new_object, form, formsets, change, inline_instances
+            )
+        return ChangeformResult(False, None, form, formsets, change, inline_instances)
+
     def _changeform_view(self, request, object_id, form_url, extra_context):
         """
-        A copy of original django method with 4 tricks
-        1. Calls whole_changeform_validation
-        2. Calls pre_save() before saving
-        3. Calls post_save() after saving
-        4. emits the signal changeform_saved signal
+        A copy of original django method; validation and saving are delegated to
+        :meth:`process_changeform` (whole_changeform_validation, pre_save, post_save,
+        changeform_saved signal).
 
         :param request:
         :param object_id:
@@ -554,40 +617,17 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             if obj is None:
                 return self._get_obj_does_not_exist_redirect(request, opts, object_id)
 
-        ModelForm = self.get_form(request, obj, change=not add)
         if request.method == "POST":
-            form = ModelForm(request.POST, request.FILES, instance=obj)
-            form_validated = form.is_valid()
-            if form_validated:
-                new_object = self.save_form(request, form, change=not add)
-            else:
-                new_object = form.instance
-            formsets, inline_instances = self._create_formsets(
-                request, new_object, change=not add
-            )
-            if (
-                all_valid(formsets)
-                and form_validated
-                and self.whole_changeform_validation(request, form, formsets, not add)
-            ):
-                self.pre_save(form, formsets, change=not add)
-                self.save_model(request, new_object, form, not add)
-                self.save_related(request, form, formsets, not add)
-                self.post_save(request, new_object, form, formsets, not add)
-                changeform_saved.send(self.model, instance=new_object, created=add)
-
-                change_message = self.construct_change_message(
-                    request, form, formsets, add
-                )
+            result = self.process_changeform(request, obj, change=not add)
+            form, formsets = result.form, result.formsets
+            inline_instances = result.inline_instances
+            if result.valid:
                 if add:
-                    self.log_addition(request, new_object, change_message)
-                    return self.response_add(request, new_object)
-                else:
-                    self.log_change(request, new_object, change_message)
-                    return self.response_change(request, new_object)
-            else:
-                form_validated = False
+                    return self.response_add(request, result.obj)
+                return self.response_change(request, result.obj)
+            form_validated = False
         else:
+            ModelForm = self.get_form(request, obj, change=not add)
             if add:
                 initial = self.get_changeform_initial_data(request)
                 form = ModelForm(initial=initial)
