@@ -167,6 +167,24 @@ class ErpApiTests(TestCase):
         self.assertEqual(detail["customer"], {"pk": self.customer.pk, "str": "Ahmed"})
         self.assertEqual(len(detail["inlines"]["lines"]), 2)
 
+    def test_token_auth_against_erp_site(self):
+        from django.test import Client as HttpClient
+
+        from admin_api.models import ApiToken
+
+        _, raw = ApiToken.objects.create_token(self.user, "ci")
+        resp = HttpClient(enforce_csrf_checks=True).post(
+            LIST,
+            data=json.dumps({"slug": "9", "date": "2025-03-01T10:00:00+00:00", "customer": self.customer.pk}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {raw}",
+        )
+        self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertEqual(Order.objects.get(slug="9").owner, self.user)
+
+    def test_token_admin_on_erp_site(self):
+        self.assertEqual(self.client.get("/admin/admin_api/apitoken/").status_code, 200)
+
     def test_registry_lists_erp_models(self):
         status, body = self.api("get", "/api/v1/")
         self.assertEqual(status, 200)
