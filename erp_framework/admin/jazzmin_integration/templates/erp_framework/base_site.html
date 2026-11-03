@@ -133,7 +133,8 @@
         (function () {
             try {
                 setTimeout(function () {
-                    document.querySelector('.nav-link.active').scrollIntoView({
+                    var active = document.querySelector('.nav-link.active');
+                    if (active) active.scrollIntoView({
                         behavior: 'instant',
                         block: 'center'
                     })

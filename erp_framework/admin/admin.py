@@ -967,6 +967,12 @@ class ERPFrameworkGenericTabularInline(GenericTabularInline):
 
 
 class PrepopulatedAdmin(object):
+    """
+    Deprecated: use ``erp_framework.admin.prepopulated.PrepopulatedInlineMixin``
+    on the inline instead. This class overrides Django's private
+    ``_create_formsets`` and misses Django's handling of view-only inlines.
+    """
+
     prepopulation_querysets = None
     prepopulation_fields = None
     prepopulation_fields_from = None
@@ -974,6 +980,14 @@ class PrepopulatedAdmin(object):
     prepopulation_extra_data = None  # to do A list of fields
 
     def add_view(self, request, form_url="", extra_context=None):
+        import warnings
+
+        warnings.warn(
+            "PrepopulatedAdmin is deprecated; use "
+            "erp_framework.admin.prepopulated.PrepopulatedInlineMixin.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         extra_context = extra_context or {}
         extra_context["prepopulation_fields"] = self.prepopulation_fields
         return super(PrepopulatedAdmin, self).add_view(request, form_url, extra_context)

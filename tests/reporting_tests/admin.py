@@ -4,7 +4,10 @@ from erp_framework.admin.admin import (
     EntityAdmin,
     TransactionAdmin,
     TransactionItemAdmin,
-    RaPrePopulatedAdmin,
+)
+from erp_framework.admin.prepopulated import (
+    HeaderLookupAdminMixin,
+    PrepopulatedInlineMixin,
 )
 from .models import (
     Client,
@@ -50,37 +53,25 @@ class InvoiceAdmin(TransactionAdmin):
 erp_admin_site.register(Invoice, InvoiceAdmin)
 
 
-class BaseInfoInlineAdmin(TransactionItemAdmin):
+class JournalItemInline(PrepopulatedInlineMixin, TransactionItemAdmin):
     model = JournalItem
+    can_delete = False
+    fields = ("client", "value", "data")
+    prepopulation_field = "client"
+    prepopulation_queryset = Client.objects.order_by("pk")
+    computed_fields = {"value": "1 + 1"}
+    total_fields = ("value",)
+
+    def get_prepopulation_extra_data(self, request, obj, entity_ids):
+        return {pk: {"data": f"row-{pk}"} for pk in entity_ids}
 
 
-#
-# class Journal2Admin(RaPrePopulatedAdmin):
-#     inlines = [
-#         BaseInfoInlineAdmin
-#     ]
-#     prepopulation_fields = {
-#         BaseInfoInlineAdmin: 'client'
-#     }
-#     prepopulation_querysets = {
-#         BaseInfoInlineAdmin: Client.objects.all()
-#     }
-#
-#     def get_prepopulation_queryset(self, inline, inline_queryset, request, obj, change):
-#         queryset = self.prepopulation_querysets.get(inline.__class__, None)
-#         if queryset:
-#             queryset = queryset.filter(criteria=obj.criteria)
-#         return queryset
-#
-
-
-class MovementPrepopulatedAdmin(RaPrePopulatedAdmin):
-    fields = ("data", "date")
+class MovementPrepopulatedAdmin(HeaderLookupAdminMixin, TransactionAdmin):
+    fields = ("slug", "date", "data")
     date_hierarchy = None
-    list_display = []
-    inlines = [BaseInfoInlineAdmin]
-    prepopulation_fields = {BaseInfoInlineAdmin: "client"}
-    prepopulation_querysets = {BaseInfoInlineAdmin: Client.objects.all()}
+    inlines = [JournalItemInline]
+    header_lookup_fields = ("data",)
+    reload_add_on_header_change = True
 
 
 erp_admin_site.register(Journal, MovementPrepopulatedAdmin)
