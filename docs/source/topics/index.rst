@@ -5,6 +5,7 @@ Topics
    :maxdepth: 2
 
    admin
+   prepopulated_inlines
    reporting
    widgets
    javascript

@@ -1,0 +1,8 @@
+{% comment %}
+Wraps the inline's original tabular template (theme-agnostic) and attaches the
+grid config consumed by erp_framework/js/prepopulated_inline.js.
+{% endcomment %}
+{% include inline_admin_formset.opts.grid_base_template %}
+{% with grid_id=inline_admin_formset.formset.prefix|add:"-erp-grid" %}
+{{ inline_admin_formset.opts.grid_config|json_script:grid_id }}
+{% endwith %}

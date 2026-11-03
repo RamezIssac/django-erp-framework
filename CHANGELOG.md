@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project are/will be documented in this file.
 
+## [Unreleased]
+- Added `erp_framework.admin.prepopulated`: `PrepopulatedInlineMixin` (one inline row per entity, locked sheet,
+  read-only entity widget, live computed fields, sticky totals, Enter-as-Tab) and `HeaderLookupAdminMixin`
+  (htmx redirect to an existing document when its header is chosen). Ships htmx 2.0.4.
+- Deprecated `PrepopulatedAdmin` / `RaPrePopulatedAdmin` (they override Django's private `_create_formsets`).
+- Fixed a JS error on pages without an active sidebar link.
+
 ## [1.7.0] - 2026-10-14
 - Swapped the hard admin-theme dependency from `django-jazzmin` to `django-jazzy-tabler>=0.1.1`; `erp_framework.admin.jazzmin_integration` stays available as an opt-in integration (install `django-jazzmin` yourself to use it)
 - Dropped unused dependencies: `pytz`, `simplejson`, `dateutils`, `django-compressor`

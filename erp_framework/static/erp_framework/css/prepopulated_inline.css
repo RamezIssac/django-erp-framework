@@ -1,0 +1,68 @@
+/* erp_framework — prepopulated inline grid */
+.erp-readonly-entity {
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.erp-grid td input.erp-computed,
+.erp-grid td input.erp-computed:disabled {
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    font-weight: 600;
+}
+
+tr.form-row.erp-row-active > td {
+    background-color: rgba(32, 107, 196, 0.08);
+}
+
+/* Compact numeric cells, no spinners. */
+.erp-grid td input[type=number] {
+    width: 6.5rem;
+    min-width: 4rem;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.erp-grid td input[type=number]::-webkit-outer-spin-button,
+.erp-grid td input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.erp-grid td input[type=text] {
+    min-width: 8rem;
+}
+
+.erp-grid-totals {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.5rem;
+    background: var(--tblr-bg-surface, #fff);
+    border-top: 2px solid var(--tblr-border-color, #dee2e6);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.erp-grid-total {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: baseline;
+    white-space: nowrap;
+}
+
+.erp-grid-total-label {
+    color: var(--tblr-secondary, #6c757d);
+    font-size: 0.85em;
+}
+
+.erp-grid-total-value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
