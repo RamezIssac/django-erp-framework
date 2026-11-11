@@ -78,3 +78,48 @@ Authentication
 The API accepts the admin session (with CSRF) or a personal access token
 (``Authorization: Bearer aapi_…``). Tokens are created in the admin under "API tokens", or with
 ``manage.py create_api_token <username>``. A token has exactly its user's permissions.
+
+MCP: AI agents
+--------------
+
+The same admins can be used by AI agents (Claude Code, Claude Desktop, any MCP client) through
+django-admin-api's MCP add-on, with the same permissions, ``whole_changeform_validation``,
+``pre_save``/``post_save`` hooks, LogEntry and reversion.
+
+.. code-block:: bash
+
+    pip install "django-admin-api[mcp]"
+
+.. code-block:: python
+
+    # urls.py
+    from erp_framework.api import erp_mcp_site
+
+    urlpatterns += [path("mcp/", erp_mcp_site.urls)]   # Streamable HTTP
+
+.. code-block:: bash
+
+    # a token for the agent, narrowed with scopes
+    python manage.py create_api_token alice --kind mcp --name claude --scope "store.*:view"
+    # local agent over stdio
+    claude mcp add erp -e ADMIN_API_TOKEN=aapi_... -- python manage.py mcp_serve
+
+Tools: ``list_models``, ``describe_model``, ``list_objects``, ``get_object``,
+``create_object``/``update_object`` (with ``dry_run``), ``delete_object`` (preview unless
+``confirm``), ``run_action``. Give the agent context with ``mcp_description = "..."`` on an
+admin; hide an admin from MCP only with ``mcp_enabled = False``.
+
+**Dry runs and side effects.** ``dry_run`` runs the whole changeform pipeline, including
+``pre_save``, ``post_save`` and the ``changeform_saved`` signal, then rolls the database back.
+Side effects outside the database (e-mails, queued jobs) still happen unless you guard them:
+use ``transaction.on_commit`` (discarded by a dry run), or check ``request.is_dry_run``. The
+``changeform_saved`` signal now passes ``request`` for this purpose:
+
+.. code-block:: python
+
+    @receiver(changeform_saved)
+    def notify(sender, instance, created, request=None, **kwargs):
+        if request is not None and request.is_dry_run:
+            return
+        transaction.on_commit(lambda: send_invoice_mail(instance))
+

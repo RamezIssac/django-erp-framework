@@ -565,7 +565,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             self.save_model(request, new_object, form, change)
             self.save_related(request, form, formsets, change)
             self.post_save(request, new_object, form, formsets, change)
-            changeform_saved.send(self.model, instance=new_object, created=add)
+            changeform_saved.send(self.model, instance=new_object, created=add, request=request)
 
             change_message = self.construct_change_message(request, form, formsets, add)
             if add:

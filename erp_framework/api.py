@@ -18,10 +18,19 @@ Setup::
 
     urlpatterns += [path("api/", erp_api_site.urls)]   # -> /api/v1/<app>/<model>/
 
+MCP (AI agents), with the same permissions and hooks. Needs ``django-admin-api[mcp]`` for the
+transports::
+
+    from erp_framework.api import erp_mcp_site
+
+    urlpatterns += [path("mcp/", erp_mcp_site.urls)]   # Streamable HTTP
+    # stdio: ADMIN_API_TOKEN=aapi_... python manage.py mcp_serve
+
 This module requires django-admin-api; erp_framework itself does not.
 """
 
 from admin_api import AdminApiSite
+from admin_api.mcp import AdminMcpSite
 
 from erp_framework.sites import erp_admin_site
 
@@ -31,3 +40,10 @@ class ERPApiSite(AdminApiSite):
 
 
 erp_api_site = ERPApiSite(admin_site=erp_admin_site, name="erp_api")
+
+
+class ERPMcpSite(AdminMcpSite):
+    """Subclass to change MCP behaviour (read_only, instructions, exposure)."""
+
+
+erp_mcp_site = ERPMcpSite(erp_api_site, name="erp_mcp", server_name="erp")
