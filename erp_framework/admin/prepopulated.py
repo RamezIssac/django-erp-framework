@@ -6,19 +6,19 @@ The whole behaviour lives on the inline, using public Django admin hooks only
 (``get_extra`` / ``get_min_num`` / ``get_max_num`` / ``get_formset`` /
 ``formfield_for_dbfield``). No ``ModelAdmin`` mixin is required::
 
-    class MilkJournalItemInline(PrepopulatedInlineMixin, admin.TabularInline):
-        model = MilkJournalItem
+    class StockCountLineInline(PrepopulatedInlineMixin, admin.TabularInline):
+        model = StockCountLine
         can_delete = False
-        prepopulation_field = "supplier"
-        prepopulation_queryset = Supplier.objects.filter(active=True).order_by("slug")
+        prepopulation_field = "product"
+        prepopulation_queryset = Product.objects.filter(active=True).order_by("code")
         computed_fields = {
-            "b_value": "b_quan * b_price",
-            "total_value": "b_value + g_value",
+            "value": "quantity * unit_price",
         }
-        total_fields = ("b_quan", "b_value", "total_value")
+        total_fields = ("quantity", "value", ("total_weight", None, "quantity * unit_weight"))
+        total_summaries = (("Avg price", "value / quantity"),)
 
         def get_prepopulation_extra_data(self, request, obj, entity_ids):
-            return {pk: {"b_price": 10} for pk in entity_ids}
+            return {pk: {"unit_price": 10} for pk in entity_ids}
 
 Notes
 -----

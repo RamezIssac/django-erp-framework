@@ -1,9 +1,9 @@
 Prepopulated inlines (data-entry sheets)
 =======================================
 
-Daily journals often need *one inline row per entity*: one row per supplier in a
-milk-collection sheet, one row per client on a distribution line, one row per
-employee. ``erp_framework.admin.prepopulated`` provides this on the **inline**,
+Daily journals often need *one inline row per entity*: one row per product on
+a stock-count sheet, one row per employee on a timesheet, one row per account
+on a budget. ``erp_framework.admin.prepopulated`` provides this on the **inline**,
 using public Django admin hooks only.
 
 .. code-block:: python
@@ -12,32 +12,31 @@ using public Django admin hooks only.
     from erp_framework.admin.prepopulated import HeaderLookupAdminMixin, PrepopulatedInlineMixin
 
 
-    class MilkJournalItemInline(PrepopulatedInlineMixin, admin.TabularInline):
-        model = MilkJournalItem
+    class StockCountLineInline(PrepopulatedInlineMixin, admin.TabularInline):
+        model = StockCountLine
         extra = 0
         can_delete = False
 
-        prepopulation_field = "supplier"                       # FK on the inline model
-        prepopulation_queryset = Supplier.objects.filter(active=True).order_by("slug")
+        prepopulation_field = "product"                       # FK on the inline model
+        prepopulation_queryset = Product.objects.filter(active=True).order_by("code")
 
         # Display-only, computed live in the browser (the model computes them on save)
         computed_fields = {
-            "b_value": "b_quan * b_price",
-            "total_value": "b_value + g_value",
+            "value": "quantity * unit_price",
         }
         # Sticky totals bar: field names, or (key, label, "row expression");
         # label=None keeps a helper sum hidden.
-        total_fields = ("b_quan", "b_value", ("b_quan_fat", None, "b_quan * b_fat"))
-        total_summaries = (("Avg b fat", "b_quan_fat / b_quan"),)
+        total_fields = ("quantity", "value", ("total_weight", None, "quantity * unit_weight"))
+        total_summaries = (("Avg price", "value / quantity"),)
 
         def get_prepopulation_extra_data(self, request, obj, entity_ids):
             # Extra initial data for new rows: {entity_pk: {field: value}}
-            return {pk: {"b_price": 10} for pk in entity_ids}
+            return {pk: {"unit_price": 10} for pk in entity_ids}
 
 
-    class MilkJournalAdmin(HeaderLookupAdminMixin, admin.ModelAdmin):
-        inlines = [MilkJournalItemInline]
-        header_lookup_fields = ("doc_date", "shift")
+    class StockCountAdmin(HeaderLookupAdminMixin, admin.ModelAdmin):
+        inlines = [StockCountLineInline]
+        header_lookup_fields = ("doc_date", "warehouse")
 
 Behaviour
 ---------

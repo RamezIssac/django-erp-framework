@@ -5,11 +5,11 @@
  * emitted by PrepopulatedInlineMixin (see erp_framework/admin/prepopulated.py):
  *
  *   {
- *     computed:  [["b_value", "b_quan * b_price"], ...],   // per row, in order
- *     totals:    [{name: "b_quan", label: "B quantity"},
- *                 {name: "b_quan_fat", label: null, expr: "b_quan * b_fat", hidden: true}],
- *     summaries: [{label: "Avg", expr: "b_value / b_quan"}],  // over totals
- *     decimals:  {b_value: 2, ...},
+ *     computed:  [["value", "quantity * unit_price"], ...],   // per row, in order
+ *     totals:    [{name: "quantity", label: "Quantity"},
+ *                 {name: "total_weight", label: null, expr: "quantity * unit_weight", hidden: true}],
+ *     summaries: [{label: "Avg price", expr: "value / quantity"}],  // over totals
+ *     decimals:  {value: 2, ...},
  *     enterAsTab: true
  *   }
  *
