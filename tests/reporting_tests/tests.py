@@ -679,64 +679,81 @@ class TestAdmin(BaseTestData, TestCase):
 
 @override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class TestPrePolutaedAdmin(BaseTestData, TestCase):
+    """erp_framework.admin.prepopulated.PrepopulatedInlineMixin / HeaderLookupAdminMixin"""
+
+    PREFIX = "journalitem_set"
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
         cls.journal = Journal.objects.create(
-            data="journal 1", lastmod_user=cls.user, date=now()
+            data="journal 1", lastmod_user=cls.user, date=now(), slug="j1"
         )
 
-    # def setUp(self):
-    #     # user = User.objects.create(is_superuser=True, is_staff=True, **SUPER_LOGIN)
-    #     # self.user = user
-    #     self.client1 = Client.objects.create(name='Client 1', lastmod_user=self.user)
-    #     self.client2 = Client.objects.create(name='Client 2', lastmod_user=user)
-    #     self.client3 = Client.objects.create(name='Client 3', lastmod_user=user)
-    #     self.client11 = Client.objects.create(name='Client special 1', lastmod_user=user, criteria='1')
-    #     self.client12 = Client.objects.create(name='Client special 2', lastmod_user=user, criteria='1')
-    #     self.client13 = Client.objects.create(name='Client special 3', lastmod_user=user, criteria='1')
-    #     self.journal = Journal.objects.create(data='journal 1', lastmod_user=user, date=now())
-    #     JournalItem.objects.create(client_id=self.client1.pk, journal_id=self.journal.pk, lastmod_user=user, date=now())
-    #     JournalItem.objects.create(client_id=self.client2.pk, journal_id=self.journal.pk, lastmod_user=user, date=now())
-    #     JournalItem.objects.create(client_id=self.client3.pk, journal_id=self.journal.pk, lastmod_user=user, date=now())
-
-    # @classmethod
-    # def setUpTestData(cls):
-    #     # pdb.set_trace()
-
-    # def test_new_entry_in_prepopulated(self):
-    #     Client.objects.create(name='New Client', lastmod_user=self.user)
-    #     # pdb.set_trace()
-    #     response = self.client.get(reverse('admin:admin_views_journal_add'))
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertContains(response, 'Client 1')
-    #     self.assertContains(response, 'Client 2')
-    #     self.assertContains(response, 'Client 3')
-    #     self.assertContains(response, 'New Client')
-
-    def test_prepopulated_formset_initial(self):
+    def setUp(self):
         self.client.login(username="super", password="secret")
 
+    def _formset(self, response):
+        inline_formsets = response.context["inline_admin_formsets"]
+        return inline_formsets[0].formset
+
+    def test_prepopulated_formset_initial(self):
         response = self.client.get(reverse("erp_framework:reporting_tests_journal_add"))
-        # import pdb; pdb.set_trace()
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Client 1")
         self.assertContains(response, "Client 2")
         self.assertContains(response, "Client 3")
+
+        formset = self._formset(response)
+        expected = list(Client.objects.order_by("pk").values_list("pk", flat=True))
+        self.assertEqual(len(formset.forms), len(expected))
+        self.assertEqual([f.initial["client"] for f in formset.forms], expected)
+        # extra data hook
+        self.assertEqual(formset.forms[0].initial["data"], f"row-{self.client1.pk}")
+
+    def test_rows_are_locked(self):
+        response = self.client.get(reverse("erp_framework:reporting_tests_journal_add"))
+        formset = self._formset(response)
+        n = len(formset.forms)
+        self.assertEqual(formset.min_num, n)
+        self.assertEqual(formset.max_num, n)
+        self.assertFalse(formset.can_delete)
+        self.assertContains(response, f'name="{self.PREFIX}-MAX_NUM_FORMS" value="{n}"')
+
+    def test_entity_rendered_readonly(self):
+        response = self.client.get(reverse("erp_framework:reporting_tests_journal_add"))
+        self.assertContains(
+            response,
+            f'<input type="hidden" name="{self.PREFIX}-0-client" value="{self.client1.pk}"',
+        )
+        self.assertNotContains(response, f'<select name="{self.PREFIX}-0-client"')
+
+    def test_grid_config_and_media(self):
+        response = self.client.get(reverse("erp_framework:reporting_tests_journal_add"))
+        self.assertContains(response, f'id="{self.PREFIX}-erp-grid"')
+        self.assertContains(response, "erp_framework/js/prepopulated_inline.js")
+        self.assertContains(response, "erp_framework/vendor/htmx/htmx.min.js")
+        formset = self._formset(response)
+        self.assertTrue(formset.forms[0].fields["value"].disabled)
 
     def test_new_addition_in_change(self):
         """
         Test if a new entry in client would be visible in
         an already saved prepopulated formset
         """
-        self.client.login(username="super", password="secret")
+        from .models import JournalItem
 
+        JournalItem.objects.create(
+            journal=self.journal,
+            client=self.client1,
+            lastmod_user=self.user,
+            date=now(),
+            slug="j1",
+        )
         Client.objects.create(name="New Client Here", lastmod_user=self.user)
 
         response = self.client.get(
-            reverse(
-                "erp_framework:reporting_tests_journal_change", args=(self.journal.pk,)
-            )
+            reverse("erp_framework:reporting_tests_journal_change", args=(self.journal.pk,))
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Client 1")
@@ -744,21 +761,67 @@ class TestPrePolutaedAdmin(BaseTestData, TestCase):
         self.assertContains(response, "Client 3")
         self.assertContains(response, "New Client Here")
 
-    def _test_saving_data(self):
-        change_dict = {
-            "id": 1,
-            "data": "My State Name 2",
-            "journalitem_set-0-name": "My City name 2",
-            "journalitem_set-0-id": 1,
-            "journalitem_set-TOTAL_FORMS": "6",
-            "journalitem_set-INITIAL_FORMS": "0",
-            "journalitem_set-MAX_NUM_FORMS": "0",
+        formset = self._formset(response)
+        # 1 saved row + one prepopulated row per remaining client
+        total = Client.objects.count()
+        self.assertEqual(formset.initial_form_count(), 1)
+        self.assertEqual(len(formset.forms), total)
+        self.assertEqual(formset.max_num, total)
+        clients = [f.initial.get("client") or f.instance.client_id for f in formset.forms]
+        self.assertEqual(clients.count(self.client1.pk), 1)
+
+    def test_post_saves_all_prepopulated_rows(self):
+        from .models import JournalItem
+
+        data = {
+            "slug": "j2",
+            "date_0": now().strftime("%Y-%m-%d"),
+            "date_1": "10:00:00",
+            "data": "journal 2",
+            f"{self.PREFIX}-TOTAL_FORMS": "3",
+            f"{self.PREFIX}-INITIAL_FORMS": "0",
+            f"{self.PREFIX}-MIN_NUM_FORMS": "3",
+            f"{self.PREFIX}-MAX_NUM_FORMS": "3",
         }
-        response = self.client.post(
-            reverse("admin:admin_views_journal_change", args=(self.journal.pk,)),
-            change_dict,
+        for i, c in enumerate([self.client1, self.client2, self.client3]):
+            data[f"{self.PREFIX}-{i}-client"] = c.pk
+            data[f"{self.PREFIX}-{i}-data"] = "x" if i == 0 else ""
+            # computed field: posted value must be ignored
+            data[f"{self.PREFIX}-{i}-value"] = "999"
+        response = self.client.post(reverse("erp_framework:reporting_tests_journal_add"), data)
+        self.assertEqual(response.status_code, 302, getattr(response, "context", None) and [
+            fs.formset.errors for fs in response.context["inline_admin_formsets"]
+        ])
+        journal = Journal.objects.get(data="journal 2")
+        items = JournalItem.objects.filter(journal=journal)
+        self.assertEqual(items.count(), 3)
+        self.assertFalse(items.filter(value=999).exists())
+
+    def test_header_lookup_redirects_to_existing(self):
+        url = reverse("erp_framework:reporting_tests_journal_header_lookup")
+        response = self.client.get(url, {"data": "journal 1", "_object_id": ""})
+        self.assertEqual(
+            response["HX-Redirect"],
+            reverse("erp_framework:reporting_tests_journal_change", args=(self.journal.pk,)),
         )
-        self.assertEqual(response.status_code, 200)
+
+    def test_header_lookup_reloads_add(self):
+        url = reverse("erp_framework:reporting_tests_journal_header_lookup")
+        response = self.client.get(url, {"data": "new one", "_object_id": ""})
+        self.assertTrue(
+            response["HX-Redirect"].startswith(
+                reverse("erp_framework:reporting_tests_journal_add") + "?data=new"
+            )
+        )
+
+    def test_header_lookup_ignores_self_on_change(self):
+        url = reverse("erp_framework:reporting_tests_journal_header_lookup")
+        response = self.client.get(url, {"data": "journal 1", "_object_id": self.journal.pk})
+        self.assertNotIn("HX-Redirect", response)
+
+    def test_header_lookup_attrs_on_form(self):
+        response = self.client.get(reverse("erp_framework:reporting_tests_journal_add"))
+        self.assertContains(response, 'hx-get="/reporting_tests/journal/header-lookup/"', html=False)
 
 
 class ReportRegistryTest(TestCase):
