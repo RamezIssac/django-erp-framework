@@ -84,6 +84,17 @@ ALWAYS_MIDDLEWARE = [
     "crequest.middleware.CrequestMiddleware",
 ]
 
+# django-admin-api (optional): JSON API over the erp admin site, tested in api_tests.
+try:
+    import admin_api  # noqa: F401
+except ImportError:
+    HAS_ADMIN_API = False
+    SUBDIRS_TO_SKIP.append("api_tests")
+else:
+    HAS_ADMIN_API = True
+    ALWAYS_INSTALLED_APPS.append("admin_api")
+    ALWAYS_MIDDLEWARE.append("admin_api.middleware.ApiRequestMiddleware")
+
 # Need to add the associated contrib app to INSTALLED_APPS in some cases to
 # avoid "RuntimeError: Model class X doesn't declare an explicit app_label
 # and isn't in an application in INSTALLED_APPS."
