@@ -255,8 +255,7 @@
                         </div>
                     {% endif %}
 
-                    {# erp_framework: built-in link to the in-app user guide (erp_docs),
-                       hidden unless the request passes the docs access function #}
+                    {# erp_framework: built-in link to the in-app user guide (erp_docs) #}
                     {% if 'erp_framework.docs'|app_is_installed %}
                         {% include 'erp_docs/includes/admin_navbar_link.html' %}
                     {% endif %}
