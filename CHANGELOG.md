@@ -2,6 +2,12 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+- Added `erp_framework.docs` (label `erp_docs`), an in-app user guide: Markdown pages rendered per request inside the
+  admin chrome for logged-in staff, no build step. Pages are collected from installed apps' `docs/` directories plus
+  `ERP_DOCS_SOURCE_DIRS` (later sources shadow earlier ones, so a client project overrides module pages), support YAML
+  front-matter (`title`, `order`, `perms` with any-of semantics; no perms = staff-only; denied URLs answer 404), a
+  per-language subdirectory, and images/files served through the same gated view. Whole-guide access is pluggable via
+  `ERP_DOCS_ACCESS_FUNCTION` (mirrors `report_access_function`). New dependencies: markdown-it-py, mdit-py-plugins, PyYAML.
 - Added `erp_framework.admin.prepopulated`: `PrepopulatedInlineMixin` (one inline row per entity, locked sheet,
   read-only entity widget, live computed fields, sticky totals, Enter-as-Tab) and `HeaderLookupAdminMixin`
   (htmx redirect to an existing document when its header is chosen). Ships htmx 2.0.4.

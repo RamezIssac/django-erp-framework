@@ -5,4 +5,5 @@ recursive-include erp_framework/locale *
 recursive-include erp_framework/admin/templates *
 recursive-include erp_framework/admin/jazzmin_integration/templates *
 recursive-include erp_framework/admin/jazzy_tabler_integration/templates *
+recursive-include erp_framework/docs/templates *
 recursive-exclude project_files/ *

@@ -14,5 +14,6 @@ Topics
    settings
    customizing_print
    permissions
+   in_app_docs
    themeing
    roadmap

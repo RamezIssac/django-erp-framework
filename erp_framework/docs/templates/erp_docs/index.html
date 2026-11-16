@@ -1,0 +1,15 @@
+{% extends "erp_docs/base.html" %}
+{% load i18n %}
+
+{% block docs_content %}
+    {% if pages %}
+        <p class="text-secondary">{% trans "Choose a page from the list to get started." %}</p>
+        <ul>
+            {% for nav_page in pages %}
+                <li><a href="{% url 'erp_docs:page' nav_page.slug %}">{{ nav_page.title }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-secondary">{% trans "No documentation pages are available yet." %}</p>
+    {% endif %}
+{% endblock %}

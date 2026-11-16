@@ -72,6 +72,7 @@ ALWAYS_INSTALLED_APPS = [
     "erp_framework.admin",
     "erp_framework.activity",
     "erp_framework.reporting",
+    "erp_framework.docs",
     "django.contrib.admin",
 ]
 
