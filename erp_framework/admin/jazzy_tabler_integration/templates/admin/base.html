@@ -1,0 +1,462 @@
+{# erp_framework jazzy_tabler integration: mirrors django-jazzy-tabler 0.1.1's admin/base.html #}
+{# (the theme's navbar has no override block) and adds the erp_docs "User guide" navbar link. #}
+{% load i18n static jazzy_tabler admin_urls %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_jazzy_settings request as jazzy_settings %}
+{% get_jazzy_ui_tweaks as jazzy_ui %}
+
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:"en-us" }}" {% if LANGUAGE_BIDI %}dir="rtl"{% endif %}>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="robots" content="none, noarchive">
+    <script>
+        (function () {
+            var mode = localStorage.getItem('jazzy-theme-mode') || '{{ jazzy_ui.default_theme_mode|default:"light" }}';
+            if (mode === 'auto') {
+                mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', mode);
+        })();
+    </script>
+
+    <title>{% block title %}{{ title }} | {{ jazzy_settings.site_title }}{% endblock %}</title>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="{% static "vendor/fontawesome-free/css/all.min.css" %}">
+
+    <!-- Tabler CSS -->
+    {% if LANGUAGE_BIDI %}
+        <link rel="stylesheet" href="{% static "vendor/tabler/css/tabler.rtl.min.css" %}" id="tabler-css">
+    {% else %}
+        <link rel="stylesheet" href="{% static "vendor/tabler/css/tabler.min.css" %}" id="tabler-css">
+    {% endif %}
+
+    <!-- Django-specific fixes -->
+    <link rel="stylesheet" href="{% static "jazzy_tabler/css/main.css" %}">
+
+    {% if jazzy_settings.custom_css %}
+        <link rel="stylesheet" href="{% static jazzy_settings.custom_css %}">
+    {% endif %}
+
+    {% if jazzy_settings.site_icon %}
+        <link rel="shortcut icon" href="{% static jazzy_settings.site_icon %}" type="image/png">
+        <link rel="icon" href="{% static jazzy_settings.site_icon %}" sizes="32x32" type="image/png">
+    {% endif %}
+
+    {% block extrastyle %}{% endblock %}
+    {% block extrahead %}{% endblock %}
+</head>
+<body class="{% if not jazzy_settings.show_sidebar or is_popup %}no-sidebar{% endif %} {% if is_popup %}popup{% endif %}
+        {% block bodyclass %}{% endblock %}" data-admin-utc-offset="{% now "Z" %}">
+
+<div class="page">
+
+    {% if not is_popup %}
+
+        {% block sidebar %}
+            {% if jazzy_settings.show_sidebar %}
+                {% get_side_menu as side_menu_list %}
+
+                <aside class="navbar navbar-vertical navbar-expand-lg"
+                       {% if jazzy_ui.sidebar_data_theme %}data-bs-theme="dark"{% endif %} id="jazzy-sidebar">
+                    <div class="container-fluid">
+                        <!-- Mobile toggle -->
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false"
+                                aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!-- Brand -->
+                        <div class="navbar-brand navbar-brand-autodark">
+                            <a href="{% url 'admin:index' %}">
+                                {% if jazzy_settings.site_logo %}
+                                    <img src="{% static jazzy_settings.site_logo %}"
+                                         alt="{{ jazzy_settings.site_header }}"
+                                         class="navbar-brand-image {{ jazzy_settings.site_logo_classes }}">
+                                {% endif %}
+                                <span class="d-none d-lg-inline">{{ jazzy_settings.site_brand }}</span>
+                            </a>
+                        </div>
+
+                        <!-- User (mobile) -->
+                        <div class="navbar-nav flex-row d-lg-none">
+                            <div class="nav-item dropdown">
+                                <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown"
+                                   aria-label="Open user menu">
+                                    {% if jazzy_settings|has_jazzy_setting:"user_avatar" %}
+                                        {% get_user_avatar request.user as avatar_url %}
+                                        {% if avatar_url %}
+                                            <span class="avatar avatar-sm"
+                                                  style="background-image: url({{ avatar_url }})"></span>
+                                        {% else %}
+                                            <span class="avatar avatar-sm"><i class="fas fa-user"></i></span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="avatar avatar-sm"><i class="fas fa-user"></i></span>
+                                    {% endif %}
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a href="{% url 'admin:password_change' %}" class="dropdown-item">
+                                        <i class="fas fa-key me-2"></i> {% trans 'Change password' %}
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <form method="post" action="{% url 'admin:logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt me-2"></i> {% translate 'Log out' %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar menu -->
+                        <div class="collapse navbar-collapse {% sidebar_status request %}" id="sidebar-menu">
+
+                            {% if jazzy_settings|has_jazzy_setting:"user_avatar" or True %}
+                                <div class="d-flex align-items-center py-3 d-none d-lg-flex border-bottom mb-3">
+                                    {% if jazzy_settings|has_jazzy_setting:"user_avatar" %}
+                                        {% get_user_avatar request.user as avatar_url %}
+                                        {% if avatar_url %}
+                                            <span class="avatar avatar-sm me-2"
+                                                  style="background-image: url({{ avatar_url }})"></span>
+                                        {% else %}
+                                            <span class="avatar avatar-sm me-2"><i class="fas fa-user"></i></span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="avatar avatar-sm me-2"><i class="fas fa-user"></i></span>
+                                    {% endif %}
+                                    <div class="flex-fill">
+                                        {% if perms|can_view_self %}
+                                            <a href="{% jazzy_admin_url request.user request.current_app|default:"admin" %}"
+                                               class="text-reset text-decoration-none">
+                                                <div class="fw-bold small">{{ request.user }}</div>
+                                            </a>
+                                        {% else %}
+                                            <div class="fw-bold small text-muted">{{ request.user }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <ul class="navbar-nav" id="jazzy-navigation">
+                                <li class="nav-item">
+                                    <a href="{% url 'admin:index' %}" class="nav-link">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                <i class="fas fa-th-large"></i>
+                            </span>
+                                        <span class="nav-link-title">{% trans 'Dashboard' %}</span>
+                                    </a>
+                                </li>
+
+                                {% for app in side_menu_list %}
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#navbar-app-{{ forloop.counter }}"
+                                           data-bs-toggle="dropdown" data-bs-auto-close="false" role="button"
+                                           aria-expanded="false">
+                                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                <i class="{{ app.icon }}"></i>
+                                            </span>
+                                            <span class="nav-link-title">{{ app.name }}</span>
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            {% for model in app.models %}
+                                                <a class="dropdown-item" href="{% if model.url %}{{ model.url }}{% else %}#{% endif %}">
+                                                    <i class="{{ model.icon }} me-2"></i> {{ model.name }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                                {% include 'jazzy_tabler/includes/sidebar_bottom.html' %}
+                            </ul>
+                        </div>
+                    </div>
+                </aside>
+
+            {% endif %}
+        {% endblock sidebar %}
+
+        <!-- Header (top navbar) -->
+        <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none"
+                {% if jazzy_ui.navbar_data_theme %}data-bs-theme="dark"{% endif %}>
+            <div class="container-fluid">
+                <div class="navbar-nav flex-row">
+                    {% if jazzy_settings.show_sidebar %}
+                        <li class="nav-item">
+                            <a class="nav-link px-0" href="#" id="jazzy-sidebar-toggle" role="button"
+                               title="{% trans 'Toggle sidebar' %}">
+                                <i class="fas fa-bars"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a href="{% url 'admin:index' %}" class="navbar-brand">
+                                {% if jazzy_settings.site_logo %}
+                                    <img src="{% static jazzy_settings.site_logo %}"
+                                         alt="{{ jazzy_settings.site_header }}"
+                                         class="navbar-brand-image {{ jazzy_settings.site_logo_classes }}">
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% get_top_menu user request.current_app|default:"admin" as top_menu %}
+                    {% for link in top_menu %}
+                        <li class="nav-item{% if link.children %} dropdown{% endif %}">
+                            {% if link.children %}
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button"
+                                   aria-expanded="false">
+                                    {{ link.name }}
+                                </a>
+                                <div class="dropdown-menu">
+                                    {% for child in link.children %}
+                                        <a class="dropdown-item" href="{{ child.url }}"
+                                           {% if link.new_window %}target="_blank"{% endif %}>{{ child.name }}</a>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <a href="{{ link.url }}" class="nav-link"
+                                   {% if link.new_window %}target="_blank"{% endif %}>{{ link.name }}</a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </div>
+
+                {% if jazzy_settings.search_model %}
+                    <div class="d-flex ms-auto">
+                        {% for search_model in jazzy_settings.search_models_parsed %}
+                            <form action="{{ search_model.search_url }}" method="GET" class="d-flex">
+                                <div class="input-icon">
+                        <span class="input-icon-addon">
+                            <i class="fas fa-search"></i>
+                        </span>
+                                    <input class="form-control form-control-sm" name="q" type="search"
+                                           placeholder="{% trans 'Search' %} {{ search_model.search_name }}..."
+                                           aria-label="{% trans 'Search' %}">
+                                </div>
+                            </form>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="navbar-nav flex-row order-md-last">
+                    {% if 'django.contrib.admindocs'|app_is_installed %}
+                        <div class="nav-item d-none d-md-flex me-3">
+                            <a class="btn btn-ghost-secondary btn-icon" href="{% url 'django-admindocs-docroot' %}"
+                               title="{% trans 'Documentation' %}">
+                                <i class="fas fa-book"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {# erp_framework: built-in link to the in-app user guide (erp_docs),
+                       hidden unless the request passes the docs access function #}
+                    {% if 'erp_framework.docs'|app_is_installed %}
+                        {% include 'erp_docs/includes/admin_navbar_link.html' %}
+                    {% endif %}
+
+                    {% if jazzy_settings.language_chooser %}
+                        {% get_available_languages as LANGUAGES %}
+                        {% get_language_info_list for LANGUAGES as languages %}
+                        <div class="nav-item dropdown d-none d-md-flex me-3">
+                            <a class="nav-link px-0" data-bs-toggle="dropdown" href="#" title="{% trans 'Language' %}">
+                                <i class="fas fa-globe"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <form action="{% url 'set_language' %}" method="post">
+                                    {% csrf_token %}
+                                    <input name="next" type="hidden"
+                                           value="{{ request.get_full_path|remove_lang:LANGUAGE_CODE }}"/>
+                                    {% for language in languages %}
+                                        <button type="submit" name="language" value="{{ language.code }}"
+                                                class="dropdown-item {% if language.code == LANGUAGE_CODE %}active{% endif %}"
+                                                lang="{{ language.code }}">
+                                            {{ language.name_local|title }}
+                                        </button>
+                                    {% endfor %}
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Dark/Light mode toggle -->
+                    <div class="nav-item d-none d-md-flex me-3">
+                        <a class="btn btn-ghost-secondary btn-icon" href="#" id="jazzy-mode-toggle"
+                           title="{% trans 'Toggle dark mode' %}">
+                            <i class="fas fa-moon" id="jazzy-mode-icon-dark"></i>
+                            <i class="fas fa-sun" id="jazzy-mode-icon-light" style="display:none"></i>
+                        </a>
+                    </div>
+
+                    <!-- User menu -->
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown"
+                           aria-label="{% trans 'Account' %}">
+                            {% if jazzy_settings|has_jazzy_setting:"user_avatar" %}
+                                {% get_user_avatar request.user as avatar_url %}
+                                {% if avatar_url %}
+                                    <span class="avatar avatar-sm"
+                                          style="background-image: url({{ avatar_url }})"></span>
+                                {% else %}
+                                    <span class="avatar avatar-sm"><i class="fas fa-user"></i></span>
+                                {% endif %}
+                            {% else %}
+                                <span class="avatar avatar-sm"><i class="fas fa-user"></i></span>
+                            {% endif %}
+                            <div class="d-none d-xl-block ps-2">
+                                <div class="small fw-bold">{{ request.user }}</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <span class="dropdown-header">{% trans 'Account' %}</span>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'admin:password_change' %}" class="dropdown-item">
+                                <i class="fas fa-key me-2"></i> {% trans 'Change password' %}
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt me-2"></i> {% translate 'Log out' %}
+                                </button>
+                            </form>
+                            {% get_user_menu user request.current_app|default:"admin" as user_menu %}
+                            {% for link in user_menu %}
+                                <div class="dropdown-divider"></div>
+                                <a href="{{ link.url }}" class="dropdown-item"
+                                   {% if link.new_window %}target="_blank"{% endif %}>
+                                    <i class="{{ link.icon }} me-2"></i> {% trans link.name %}
+                                </a>
+                            {% endfor %}
+                            <div class="dropdown-divider"></div>
+                            {% if perms|can_view_self %}
+                                <a href="{% jazzy_admin_url request.user request.current_app|default:"admin" %}"
+                                   class="dropdown-item">
+                                    <i class="fas fa-user me-2"></i> {% trans 'See Profile' %}
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+    {% endif %}{# not is_popup #}
+
+    <div class="page-wrapper" {% if is_popup %}style="margin-left:0;"{% endif %}>
+        {% block page_content %}
+            {% if not is_popup %}
+                <div class="page-header d-print-none">
+                    <div class="container-fluid">
+                        <div class="row g-2 align-items-center">
+                            <div class="col">
+                                <h2 class="page-title">{% block content_title %}{% endblock %}</h2>
+                            </div>
+                            <div class="col-auto ms-auto d-print-none">
+                                <div class="d-flex">
+                                    {% block breadcrumbs %}{% endblock %}
+                                </div>
+                                {% block page_actions %}{% endblock %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="page-body">
+                <div class="container-fluid">
+                    {% block messages %}
+                        {% for message in messages %}
+                            {% if message.tags == 'success' %}
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="fas fa-check me-2"></i></div>
+                                        <div>{{ message|capfirst }}</div>
+                                    </div>
+                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+                                </div>
+                            {% elif message.tags == 'error' %}
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="fas fa-exclamation-circle me-2"></i></div>
+                                        <div>{{ message|capfirst }}</div>
+                                    </div>
+                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+                                </div>
+                            {% elif message.tags == 'warning' %}
+                                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="fas fa-exclamation-triangle me-2"></i></div>
+                                        <div>{{ message|capfirst }}</div>
+                                    </div>
+                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+                                </div>
+                            {% elif message.tags == 'info' %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="fas fa-info-circle me-2"></i></div>
+                                        <div>{{ message|capfirst }}</div>
+                                    </div>
+                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endblock messages %}
+
+                    <div class="row">
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        {% endblock page_content %}
+
+        {% block footer %}
+            {% if not is_popup %}
+                <footer class="footer footer-transparent d-print-none">
+                    <div class="container-fluid">
+                        <div class="row text-center align-items-center flex-row-reverse">
+                            <div class="col-lg-auto ms-lg-auto">
+                        <span class="text-secondary">
+                            <b>{% trans 'Jazzy Tabler' %}</b> {% get_jazzy_version %}
+                        </span>
+                            </div>
+                            <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                                {% autoescape off %}
+                                    <span class="text-secondary">
+                            {% trans 'Copyright' %} &copy; {% now 'Y' %} {{ jazzy_settings.copyright }}. {% trans 'All rights reserved.' %}
+                        </span>
+                                {% endautoescape %}
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            {% endif %}
+        {% endblock footer %}
+    </div>
+    {# .page-wrapper #}
+
+</div>
+{# .page #}
+
+<!-- jQuery (for Django admin compatibility) -->
+<script src="{% static "admin/js/vendor/jquery/jquery.js" %}"></script>
+<!-- Tabler JS (includes Bootstrap 5) -->
+<script src="{% static "vendor/tabler/js/tabler.min.js" %}"></script>
+<!-- Django customisations -->
+<script src="{% static "jazzy_tabler/js/main.js" %}"></script>
+
+{% if jazzy_settings.custom_js %}
+    <script src="{% static jazzy_settings.custom_js %}"></script>
+{% endif %}
+
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

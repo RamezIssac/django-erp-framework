@@ -1,43 +1,145 @@
-{% extends "erp_framework/base_site.html" %}
-{% load i18n %}
+{% load i18n static %}
+{% load jazzy_tabler %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_jazzy_settings request as jazzy_settings %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:"en-us" }}" {% if LANGUAGE_BIDI %}dir="rtl"{% endif %}>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="robots" content="none, noarchive">
+    <script>
+        // Same theme mode as the jazzy_tabler admin: honor the user's stored choice.
+        (function () {
+            var mode = localStorage.getItem('jazzy-theme-mode') || 'light';
+            if (mode === 'auto') {
+                mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', mode);
+        })();
+    </script>
 
-{% block breadcrumbs %}
-    <ul class="breadcrumb heading-text">
-        <a href="{% url 'admin:index' %}" class="breadcrumb-item">
-            <i class="icon-home2 mx-2"></i> {% trans "Home" %}</a>
-        <a href="{% url 'erp_docs:index' %}" class="breadcrumb-item">{{ docs_title }}</a>
-        {% block docs_breadcrumb %}{% endblock %}
-    </ul>
-{% endblock %}
+    <title>{% block title %}{{ title }} | {{ docs_title }}{% endblock %}</title>
 
-{% block extrastyle %}
-    {{ block.super }}
-    <style>
-        .erp-docs-content img {
-            max-width: 100%;
-            height: auto;
-        }
-    </style>
-{% endblock %}
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="{% static "vendor/fontawesome-free/css/all.min.css" %}">
 
-{% block content %}
-    <div class="row g-3">
-        <div class="col-12 col-lg-3">
-            <div class="card">
-                <div class="list-group list-group-flush">
-                    {% for nav_page in pages %}
-                        <a href="{% url 'erp_docs:page' nav_page.slug %}"
-                           class="list-group-item list-group-item-action{% if nav_page.slug == current_slug %} active{% endif %}">{{ nav_page.title }}</a>
-                    {% endfor %}
+    <!-- Tabler CSS (same files the jazzy_tabler admin uses) -->
+    {% if LANGUAGE_BIDI %}
+        <link rel="stylesheet" href="{% static "vendor/tabler/css/tabler.rtl.min.css" %}" id="tabler-css">
+    {% else %}
+        <link rel="stylesheet" href="{% static "vendor/tabler/css/tabler.min.css" %}" id="tabler-css">
+    {% endif %}
+
+    <!-- Django-specific fixes -->
+    <link rel="stylesheet" href="{% static "jazzy_tabler/css/main.css" %}">
+
+    {% if jazzy_settings.custom_css %}
+        <link rel="stylesheet" href="{% static jazzy_settings.custom_css %}">
+    {% endif %}
+
+    {% if jazzy_settings.site_icon %}
+        <link rel="shortcut icon" href="{% static jazzy_settings.site_icon %}" type="image/png">
+        <link rel="icon" href="{% static jazzy_settings.site_icon %}" sizes="32x32" type="image/png">
+    {% endif %}
+
+    {% block extrastyle %}
+        <style>
+            .erp-docs-content img {
+                max-width: 100%;
+                height: auto;
+            }
+        </style>
+    {% endblock %}
+    {% block extrahead %}{% endblock %}
+</head>
+<body class="{% block bodyclass %}{% endblock %}">
+
+<div class="page">
+
+    {% block sidebar %}
+        <aside class="navbar navbar-vertical navbar-expand-lg" id="erp-docs-sidebar">
+            <div class="container-fluid">
+                <!-- Mobile toggle -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#erp-docs-sidebar-menu" aria-controls="erp-docs-sidebar-menu"
+                        aria-expanded="false" aria-label="{% trans 'Toggle navigation' %}">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Brand -->
+                <div class="navbar-brand navbar-brand-autodark">
+                    {% block branding %}
+                        <a href="{% url 'erp_docs:index' %}">
+                            {% if jazzy_settings.site_logo %}
+                                <img src="{% static jazzy_settings.site_logo %}" alt="{{ docs_title }}"
+                                     class="navbar-brand-image {{ jazzy_settings.site_logo_classes }}">
+                            {% endif %}
+                            <span>{{ docs_title }}</span>
+                        </a>
+                    {% endblock %}
+                </div>
+
+                <!-- Docs pages (the only navigation here) -->
+                <div class="collapse navbar-collapse" id="erp-docs-sidebar-menu">
+                    <ul class="navbar-nav" id="erp-docs-navigation">
+                        {% for nav_page in pages %}
+                            <li class="nav-item">
+                                <a href="{% url 'erp_docs:page' nav_page.slug %}"
+                                   class="nav-link{% if nav_page.slug == current_slug %} active{% endif %}">
+                                    <span class="nav-link-title">{{ nav_page.title }}</span>
+                                </a>
+                            </li>
+                        {% empty %}
+                            <li class="nav-item">
+                                <span class="nav-link text-secondary">{% trans "No pages available." %}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
-        </div>
-        <div class="col-12 col-lg-9">
-            <div class="card">
-                <div class="card-body erp-docs-content">
-                    {% block docs_content %}{% endblock %}
+        </aside>
+    {% endblock sidebar %}
+
+    <div class="page-wrapper">
+        {% block header %}
+            <header class="navbar navbar-expand-md d-flex d-print-none" id="erp-docs-topbar">
+                <div class="container-fluid">
+                    <span class="navbar-text fw-bold">{{ docs_title }}</span>
+                    <div class="navbar-nav flex-row order-md-last ms-auto">
+                        <a class="btn btn-ghost-secondary" href="{% url 'admin:index' %}">
+                            <i class="fas fa-arrow-left me-1"></i> {% trans "Back to the application" %}
+                        </a>
+                    </div>
+                </div>
+            </header>
+        {% endblock header %}
+
+        <div class="page-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body erp-docs-content">
+                                {% block docs_content %}{% endblock %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-{% endblock %}
+    {# .page-wrapper #}
+
+</div>
+{# .page #}
+
+<!-- Tabler JS (includes Bootstrap 5) -->
+<script src="{% static "vendor/tabler/js/tabler.min.js" %}"></script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

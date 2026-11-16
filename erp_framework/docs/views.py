@@ -51,7 +51,7 @@ def index(request):
 
 
 def page(request, page_path):
-    """Render a single Markdown page inside the admin chrome."""
+    """Render a single Markdown page in the standalone guide layout."""
     access.check_guide_access(request)
     doc_page = get_page(page_path.rstrip("/"))
     if doc_page is None or not access.user_can_view_page(request.user, doc_page):

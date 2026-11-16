@@ -1,9 +1,18 @@
 In-app user documentation (erp_docs)
 -------------------------------------
 
-``erp_framework.docs`` is a contrib app that serves a Markdown user guide
-from inside the admin, rendered per request - no build step. Pages live in
-plain directories, ship with the code, and can carry per-page permissions.
+``erp_framework.docs`` is a contrib app that serves a Markdown user guide,
+rendered per request - no build step. Pages live in plain directories, ship
+with the code, and can carry per-page permissions.
+
+Guide pages render in their own **standalone layout**: a slim top bar with
+the guide title and a "Back to the application" link, a left sidebar holding
+only the page list, and the page content in the main area. The layout loads
+the same Tabler/Bootstrap 5 assets as the jazzy_tabler admin (including the
+stored light/dark theme mode), honors RTL languages, and collapses the
+sidebar on small screens. A project can brand it by overriding
+``erp_docs/base.html`` blocks (``title``, ``branding``, ``extrastyle``,
+``header``...) or the whole template.
 
 Setup
 =====
@@ -76,7 +85,7 @@ YAML front-matter block::
 
     ![The stock form](images/receive-form.png)
 
-* ``title``: shown in the page list and breadcrumbs. Default: the first
+* ``title``: shown in the page list and the browser tab. Default: the first
   ``#`` heading, else the humanized file name.
 * ``order``: sort key of the page list (default: 100; ties broken by slug).
 * ``perms``: a list of Django permissions with **any-of** semantics - the
@@ -133,6 +142,13 @@ Settings
     whole guide (mirrors ``report_access_function``). Default:
     ``erp_framework.docs.settings.user_can_access_docs`` (any active staff
     member). Denied requests answer 404.
+
+``ERP_DOCS_SHOW_ADMIN_LINK``
+    Default ``True``. When enabled and
+    ``erp_framework.admin.jazzy_tabler_integration`` is installed, the admin
+    chrome shows a "User guide" entry (book icon + title) in the top navbar
+    and in the sidebar, opening the guide in a new tab. The entry is rendered
+    only for users who pass the access function. Set to ``False`` to hide it.
 
 Example
 =======

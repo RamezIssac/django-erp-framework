@@ -1,6 +1,8 @@
 {% extends "erp_docs/base.html" %}
 {% load i18n %}
 
+{% block title %}{{ docs_title }}{% endblock %}
+
 {% block docs_content %}
     {% if pages %}
         <p class="text-secondary">{% trans "Choose a page from the list to get started." %}</p>
