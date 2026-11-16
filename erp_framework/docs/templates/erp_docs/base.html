@@ -1,0 +1,43 @@
+{% extends "erp_framework/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+    <ul class="breadcrumb heading-text">
+        <a href="{% url 'admin:index' %}" class="breadcrumb-item">
+            <i class="icon-home2 mx-2"></i> {% trans "Home" %}</a>
+        <a href="{% url 'erp_docs:index' %}" class="breadcrumb-item">{{ docs_title }}</a>
+        {% block docs_breadcrumb %}{% endblock %}
+    </ul>
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .erp-docs-content img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row g-3">
+        <div class="col-12 col-lg-3">
+            <div class="card">
+                <div class="list-group list-group-flush">
+                    {% for nav_page in pages %}
+                        <a href="{% url 'erp_docs:page' nav_page.slug %}"
+                           class="list-group-item list-group-item-action{% if nav_page.slug == current_slug %} active{% endif %}">{{ nav_page.title }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-9">
+            <div class="card">
+                <div class="card-body erp-docs-content">
+                    {% block docs_content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
