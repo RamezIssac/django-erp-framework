@@ -131,7 +131,7 @@ Settings
 ``ERP_DOCS_ACCESS_FUNCTION``
     Dotted path to a callable ``(request) -> bool`` controlling access to the
     whole guide (mirrors ``report_access_function``). Default:
-    ``erp_framework.docs.helpers.user_can_access_docs`` (any active staff
+    ``erp_framework.docs.settings.user_can_access_docs`` (any active staff
     member). Denied requests answer 404.
 
 Example

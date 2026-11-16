@@ -33,8 +33,7 @@ Pages may start with a YAML block between ``---`` fences::
 
 ``title`` (default: first ``#`` heading, else the humanized slug) and
 ``order`` (default: 100) drive the page list; ``perms`` is a list of Django
-permissions with *any-of* semantics: the page is shown to users holding at
-least one of them. A page without ``perms`` is visible to any staff user.
+permissions (see ``erp_framework.docs.access`` for how they are enforced).
 """
 
 import logging
@@ -48,9 +47,10 @@ import yaml
 from django.apps import apps
 from django.conf import global_settings
 from django.conf import settings as django_settings
+from django.utils._os import safe_join
 from django.utils.translation import get_language
 
-from . import conf
+from . import settings
 
 logger = logging.getLogger(__name__)
 
@@ -75,12 +75,6 @@ class Page:
     def directory(self):
         """The slug's directory component ("" for top-level pages)."""
         return posixpath.dirname(self.slug)
-
-    def user_can_view(self, user):
-        """Any-of semantics over the declared perms; none => staff-only."""
-        if not self.perms:
-            return True
-        return any(user.has_perm(perm) for perm in self.perms)
 
 
 def _language_codes():
@@ -112,12 +106,12 @@ def _language_dir(source):
 def iter_source_dirs():
     """Ordered source directories, lowest priority first, de-duplicated."""
     dirs = []
-    if conf.autodiscover_enabled():
+    if settings.autodiscover_enabled():
         for app_config in apps.get_app_configs():
             candidate = Path(app_config.path) / "docs"
             if candidate.is_dir():
                 dirs.append(candidate)
-    dirs.extend(Path(directory) for directory in conf.get_source_dirs())
+    dirs.extend(Path(directory) for directory in settings.get_source_dirs())
     seen = set()
     for directory in dirs:
         key = str(directory)
@@ -206,15 +200,23 @@ def get_page(slug):
     return get_pages().get(slug)
 
 
-def get_visible_pages(user):
-    """Effective pages the user may see, ordered for the page list."""
-    pages = [page for page in get_pages().values() if page.user_can_view(user)]
-    return sorted(pages, key=lambda page: (page.order, page.slug))
-
-
 def read_body(page):
     """The page's Markdown body, front-matter stripped."""
     stat = page.path.stat()
     text = _read_text(str(page.path), stat.st_mtime_ns)
     match = FRONT_MATTER_RE.match(text)
     return text[match.end():] if match else text
+
+
+def find_asset(asset_path):
+    """
+    Locate ``asset_path`` in the source roots, highest priority first.
+
+    Returns ``(root, absolute_path)`` or None when no root holds the file.
+    Path traversal is refused by ``safe_join`` (SuspiciousFileOperation).
+    """
+    for root in reversed(list(iter_roots())):
+        candidate = Path(safe_join(str(root), asset_path))
+        if candidate.is_file():
+            return root, candidate
+    return None

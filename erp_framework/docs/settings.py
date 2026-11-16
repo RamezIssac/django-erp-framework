@@ -21,28 +21,39 @@ framework.
 ``ERP_DOCS_ACCESS_FUNCTION``
     Dotted path to a callable ``(request) -> bool`` controlling access to the
     whole guide (mirrors ``report_access_function``). Default:
-    ``erp_framework.docs.helpers.user_can_access_docs`` (active staff).
+    :func:`user_can_access_docs`.
 """
 
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
-DEFAULT_ACCESS_FUNCTION = "erp_framework.docs.helpers.user_can_access_docs"
+DEFAULT_ACCESS_FUNCTION = "erp_framework.docs.settings.user_can_access_docs"
 
 
 def get_title():
-    return getattr(settings, "ERP_DOCS_TITLE", _("User guide"))
+    return getattr(django_settings, "ERP_DOCS_TITLE", _("User guide"))
 
 
 def get_source_dirs():
-    return getattr(settings, "ERP_DOCS_SOURCE_DIRS", [])
+    return getattr(django_settings, "ERP_DOCS_SOURCE_DIRS", [])
 
 
 def autodiscover_enabled():
-    return getattr(settings, "ERP_DOCS_AUTODISCOVER", True)
+    return getattr(django_settings, "ERP_DOCS_AUTODISCOVER", True)
 
 
 def get_access_function():
-    path = getattr(settings, "ERP_DOCS_ACCESS_FUNCTION", DEFAULT_ACCESS_FUNCTION)
+    path = getattr(django_settings, "ERP_DOCS_ACCESS_FUNCTION", DEFAULT_ACCESS_FUNCTION)
     return import_string(path)
+
+
+def user_can_access_docs(request):
+    """
+    Default whole-guide access function: any active staff member.
+
+    The views are additionally wrapped in ``erp_admin_site.admin_view``, so
+    anonymous and non-staff users never reach this check.
+    """
+    user = request.user
+    return user.is_active and user.is_staff
