@@ -402,6 +402,12 @@ class AdminGuideLinkTest(TestCase):
         self.assertIn('id="erp-docs-admin-sidebar-link"', content)
         self.assertIn('href="/docs/"', content)
         self.assertIn('target="_blank"', content)
+        # ... rendered inside the sidebar's nav list, where it is visible.
+        from pyquery import PyQuery as pq
+
+        dom = pq(response.content)
+        self.assertEqual(len(dom("#jazzy-sidebar #erp-docs-admin-sidebar-link")), 1)
+        self.assertEqual(len(dom("#jazzy-navigation #erp-docs-admin-sidebar-link")), 1)
 
     @override_settings(ERP_DOCS_SHOW_ADMIN_LINK=False)
     def test_admin_link_hidden_when_disabled(self):
@@ -419,6 +425,42 @@ class AdminGuideLinkTest(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+
+    def test_project_sidebar_bottom_override_wins_and_renders(self):
+        """A project-level sidebar_bottom.html override shadows the framework's.
+
+        Projects may ship their own templates/jazzy_tabler/includes/
+        sidebar_bottom.html (e.g. adding their own guide link before the
+        reports menu); the framework's app-level include must not win over
+        the project's template directory.
+        """
+        import copy
+
+        with tempfile.TemporaryDirectory() as tmp:
+            include_dir = Path(tmp) / "jazzy_tabler" / "includes"
+            include_dir.mkdir(parents=True)
+            (include_dir / "sidebar_bottom.html").write_text(
+                '{% load i18n %}\n'
+                '<li class="nav-item" id="project-user-guide">'
+                '<a class="nav-link" href="/docs/" target="_blank" rel="noopener">'
+                '<span class="nav-link-title">{% translate "User guide" %}</span>'
+                "</a></li>\n",
+                encoding="utf-8",
+            )
+            templates = copy.deepcopy(settings.TEMPLATES)
+            templates[0]["DIRS"] = [tmp, *templates[0].get("DIRS", [])]
+            with override_settings(TEMPLATES=templates):
+                self.client.force_login(self.staff)
+                response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # The project override renders (and replaces the framework include).
+        self.assertIn('id="project-user-guide"', content)
+        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+        from pyquery import PyQuery as pq
+
+        dom = pq(response.content)
+        self.assertEqual(len(dom("#jazzy-navigation #project-user-guide")), 1)
 
     def test_admin_uses_the_theme_base_template(self):
         """Regression: no stale copy of the theme's admin/base.html may shadow it."""
