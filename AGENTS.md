@@ -23,3 +23,8 @@ When updating this file, preserve this bar for all agents and keep entries conci
 
 - Version lives only in `erp_framework/__init__.py` (`setup.cfg` reads it via `attr:`).
 - Pushing a `v*` tag runs `.github/workflows/release.yml`: tests, `python -m build`, PyPI publish via OIDC trusted publishing (needs a PyPI trusted publisher for workflow `release.yml` + a GitHub `release` environment), GitHub Release notes from `scripts/extract_changelog.py`, then merges the tag back into `develop`.
+
+## Admin grid (prepopulated sheets)
+
+- jazzy_tabler's change-form layouts render each inline's `management_form` and the inline template renders it again, so `<prefix>-INITIAL_FORMS` exists twice (Django reads the last). JS that edits management-form values must update every copy (`prepopulated_inline.js` `markSaved`).
+- `erp_grid.render_bound_field` must stay byte-equivalent to Django's widget templates; `TestPrepopulatedSheet.test_fast_renderer_matches_django_widgets` guards it.
