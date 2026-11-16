@@ -6,6 +6,7 @@ from erp_framework.admin.admin import (
     TransactionItemAdmin,
 )
 from erp_framework.admin.prepopulated import (
+    GridAutosaveAdminMixin,
     HeaderLookupAdminMixin,
     PrepopulatedInlineMixin,
 )
@@ -61,12 +62,13 @@ class JournalItemInline(PrepopulatedInlineMixin, TransactionItemAdmin):
     prepopulation_queryset = Client.objects.order_by("pk")
     computed_fields = {"value": "1 + 1"}
     total_fields = ("value",)
+    autosave = True
 
     def get_prepopulation_extra_data(self, request, obj, entity_ids):
         return {pk: {"data": f"row-{pk}"} for pk in entity_ids}
 
 
-class MovementPrepopulatedAdmin(HeaderLookupAdminMixin, TransactionAdmin):
+class MovementPrepopulatedAdmin(GridAutosaveAdminMixin, HeaderLookupAdminMixin, TransactionAdmin):
     fields = ("slug", "date", "data")
     date_hierarchy = None
     inlines = [JournalItemInline]

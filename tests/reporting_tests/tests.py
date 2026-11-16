@@ -824,6 +824,170 @@ class TestPrePolutaedAdmin(BaseTestData, TestCase):
         self.assertContains(response, 'hx-get="/reporting_tests/journal/header-lookup/"', html=False)
 
 
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class TestPrepopulatedSheet(BaseTestData, TestCase):
+    """Fast grid rendering + GridAutosaveAdminMixin."""
+
+    PREFIX = "journalitem_set"
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.journal = Journal.objects.create(data="journal 1", lastmod_user=cls.user, date=now(), slug="j1")
+
+    def setUp(self):
+        self.client.login(username="super", password="secret")
+        self.url = reverse("erp_framework:reporting_tests_journal_grid_autosave")
+
+    def _row(self, index, client, data="", **extra):
+        row = f"{self.PREFIX}-{index}"
+        post = {
+            "_prefix": self.PREFIX,
+            "_row": row,
+            f"{row}-client": client.pk,
+            f"{row}-data": data,
+            f"{row}-value": "999",  # computed field: ignored
+        }
+        post.update(extra)
+        return post
+
+    # ── Rendering ───────────────────────────────────────────────────────────
+
+    def test_fast_renderer_matches_django_widgets(self):
+        from erp_framework.admin.templatetags.erp_grid import render_bound_field
+
+        response = self.client.get(
+            reverse("erp_framework:reporting_tests_journal_change", args=(self.journal.pk,))
+        )
+        formset = response.context["inline_admin_formsets"][0].formset
+        checked = 0
+        for form in formset.forms:
+            for name in form.fields:
+                self.assertHTMLEqual(render_bound_field(form[name]), str(form[name]))
+                checked += 1
+        self.assertGreater(checked, 0)
+
+    def test_lean_grid_template(self):
+        response = self.client.get(reverse("erp_framework:reporting_tests_journal_add"))
+        self.assertTemplateUsed(response, "erp_framework/admin/edit_inline/prepopulated_grid.html")
+        self.assertContains(response, f'id="{self.PREFIX}-group"')
+        self.assertContains(response, f'id="{self.PREFIX}-0"')
+        self.assertNotContains(response, f'id="{self.PREFIX}-empty"')  # no template row
+        self.assertContains(response, 'data-erp-object-id=""')
+        self.assertContains(response, "grid-autosave")
+
+    def test_shortcuts_footer(self):
+        from unittest.mock import patch
+
+        from .admin import JournalItemInline
+
+        url = reverse("erp_framework:reporting_tests_journal_add")
+        response = self.client.get(url)
+        self.assertContains(response, 'class="erp-grid-shortcuts')
+        self.assertContains(response, "<kbd>Esc</kbd>")
+        self.assertContains(response, "<kbd>Enter</kbd>")  # enter_as_tab is on
+
+        with patch.object(JournalItemInline, "enter_as_tab", False):
+            response = self.client.get(url)
+            self.assertContains(response, 'class="erp-grid-shortcuts')
+            self.assertNotContains(response, "<kbd>Enter</kbd>")
+
+        with patch.object(JournalItemInline, "show_shortcuts_footer", False):
+            response = self.client.get(url)
+            self.assertNotContains(response, "erp-grid-shortcuts")
+
+    # ── Autosave ────────────────────────────────────────────────────────────
+
+    def test_autosave_creates_then_updates_same_item(self):
+        from .models import JournalItem
+
+        post = self._row(3, self.client2, data="first", _object_id=self.journal.pk)
+        response = self.client.post(self.url, post)
+        self.assertEqual(response.status_code, 200, response.content)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertFalse(payload["created"])
+        self.assertEqual(payload["objectId"], str(self.journal.pk))
+        item = JournalItem.objects.get(journal=self.journal, client=self.client2)
+        self.assertEqual(payload["pk"], item.pk)
+        self.assertEqual(item.data, "first")
+        self.assertEqual(item.value, 0)  # posted 999 ignored
+        # save_formset hooks ran (TransactionAdmin copies these from the parent)
+        self.assertEqual(item.slug, self.journal.slug)
+        self.assertEqual(item.lastmod_user.username, "super")
+
+        # Same row again (whatever its index): updated, never duplicated.
+        post = self._row(7, self.client2, data="second", _object_id=self.journal.pk)
+        response = self.client.post(self.url, post)
+        self.assertEqual(response.json()["pk"], item.pk)
+        self.assertEqual(JournalItem.objects.filter(journal=self.journal, client=self.client2).count(), 1)
+        item.refresh_from_db()
+        self.assertEqual(item.data, "second")
+        self.assertEqual(response.json()["values"]["data"], "second")
+
+    def test_autosave_on_add_page_creates_parent(self):
+        from .models import JournalItem
+
+        post = self._row(0, self.client1, data="x", _object_id="")
+        post.update({"slug": "j9", "date_0": now().strftime("%Y-%m-%d"), "date_1": "10:00:00", "data": "journal 9"})
+        response = self.client.post(self.url, post)
+        self.assertEqual(response.status_code, 200, response.content)
+        payload = response.json()
+        journal = Journal.objects.get(data="journal 9")
+        self.assertTrue(payload["created"])
+        self.assertEqual(payload["objectId"], str(journal.pk))
+        self.assertEqual(
+            payload["changeUrl"], reverse("erp_framework:reporting_tests_journal_change", args=(journal.pk,))
+        )
+        self.assertTrue(JournalItem.objects.filter(journal=journal, client=self.client1).exists())
+
+    def test_autosave_invalid_parent_returns_errors(self):
+        post = self._row(0, self.client1, _object_id="")  # no header fields
+        response = self.client.post(self.url, post)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+        self.assertFalse(Journal.objects.exclude(pk=self.journal.pk).exists())
+
+    def test_autosave_rejects_bad_requests(self):
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        post = self._row(0, self.client1, _object_id=self.journal.pk)
+        post["_row"] = "other-0"
+        self.assertEqual(self.client.post(self.url, post).status_code, 400)
+        post = self._row(0, self.client1, _object_id=self.journal.pk)
+        post[f"{self.PREFIX}-0-client"] = "999999"
+        self.assertEqual(self.client.post(self.url, post).status_code, 400)
+
+    def test_save_never_duplicates_saved_rows(self):
+        """A full Save posting rows as *new* (stale page / add page) updates saved items."""
+        from .models import JournalItem
+
+        self.client.post(self.url, self._row(1, self.client2, data="autosaved", _object_id=self.journal.pk))
+        data = {
+            "slug": "j1",
+            "date_0": now().strftime("%Y-%m-%d"),
+            "date_1": "10:00:00",
+            "data": "journal 1",
+            f"{self.PREFIX}-TOTAL_FORMS": "3",
+            f"{self.PREFIX}-INITIAL_FORMS": "0",
+            f"{self.PREFIX}-MIN_NUM_FORMS": "3",
+            f"{self.PREFIX}-MAX_NUM_FORMS": "4",
+        }
+        for i, c in enumerate([self.client1, self.client2, self.client3]):
+            data[f"{self.PREFIX}-{i}-client"] = c.pk
+            data[f"{self.PREFIX}-{i}-data"] = f"saved-{i}"
+        url = reverse("erp_framework:reporting_tests_journal_change", args=(self.journal.pk,))
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        items = JournalItem.objects.filter(journal=self.journal)
+        self.assertEqual(items.count(), 3)
+        self.assertEqual(items.get(client=self.client2).data, "saved-1")
+
+    def test_autosave_requires_change_permission(self):
+        self.client.login(username="limited", password="password")
+        post = self._row(0, self.client1, _object_id=self.journal.pk)
+        self.assertEqual(self.client.post(self.url, post).status_code, 403)
+
+
 class ReportRegistryTest(TestCase):
     def test_report_registery(self):
         from .reports import ProductClientSales

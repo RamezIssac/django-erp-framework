@@ -1,0 +1,19 @@
+{% load i18n %}{% comment %}
+Footer note listing the sheet's keyboard shortcuts (prepopulated_inline.js).
+Included by both grid templates; hidden when the inline sets
+``show_shortcuts_footer = False``. Keys are symbols/arrows, and the Left/Right
+line is phrased as "previous / next cell", so the note reads correctly in
+right-to-left layouts too.
+{% endcomment %}{% if inline_admin_formset.opts.show_shortcuts_footer %}
+<footer class="erp-grid-shortcuts text-secondary small">
+  <span class="erp-grid-shortcuts-title">{% translate "Keyboard:" %}</span>
+  <kbd>↑</kbd><kbd>↓</kbd> {% translate "previous / next row" %}<span class="erp-grid-sep">·</span>
+  <kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd> {% translate "first / last row" %}<span class="erp-grid-sep">·</span>
+  <kbd>PgUp</kbd><kbd>PgDn</kbd> {% translate "jump 10 rows" %}<span class="erp-grid-sep">·</span>
+  <kbd>←</kbd><kbd>→</kbd> {% translate "previous / next cell" %}<span class="erp-grid-sep">·</span>
+  <kbd>Home</kbd><kbd>End</kbd> {% translate "first / last cell in row" %}{% if inline_admin_formset.opts.enter_as_tab %}<span class="erp-grid-sep">·</span>
+  <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> {% translate "next / previous cell" %}{% endif %}<span class="erp-grid-sep">·</span>
+  <kbd>F2</kbd> {% translate "edit inside cell (or double-click)" %}<span class="erp-grid-sep">·</span>
+  <kbd>Esc</kbd> {% translate "revert cell" %}
+</footer>
+{% endif %}

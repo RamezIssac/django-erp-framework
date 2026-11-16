@@ -11,6 +11,14 @@ All notable changes to this project are/will be documented in this file.
 - Added `erp_framework.admin.prepopulated`: `PrepopulatedInlineMixin` (one inline row per entity, locked sheet,
   read-only entity widget, live computed fields, sticky totals, Enter-as-Tab) and `HeaderLookupAdminMixin`
   (htmx redirect to an existing document when its header is chosen). Ships htmx 2.0.4.
+- Prepopulated sheets behave like a spreadsheet: arrow keys move between cells/rows (RTL aware), Enter/Shift+Enter,
+  PageUp/PageDown, Ctrl+Up/Down, F2 to edit in a cell, Escape to revert; numeric cells are `inputmode="decimal"`
+  text inputs (arrows/wheel never change values); frozen header row and entity column.
+- `PrepopulatedInlineMixin.fast_rendering` (default on for locked sheets): lean grid template with rows rendered in
+  Python (`erp_grid` tag) — a 526-row journal renders in ~0.3 s / 1.6 MB instead of ~1.1 s / 6.4 MB.
+- `PrepopulatedInlineMixin.autosave` + `GridAutosaveAdminMixin`: each row is saved (htmx) when a cell is committed,
+  through the admin's own `save_formset`; on the add page the first save creates the document.
+- Saving a prepopulated sheet never duplicates rows: a new row whose entity is already saved updates that item.
 - Deprecated `PrepopulatedAdmin` / `RaPrePopulatedAdmin` (they override Django's private `_create_formsets`).
 - Fixed a JS error on pages without an active sidebar link.
 

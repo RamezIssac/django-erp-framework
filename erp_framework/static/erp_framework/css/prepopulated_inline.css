@@ -1,4 +1,4 @@
-/* erp_framework — prepopulated inline grid */
+/* erp_framework — prepopulated inline grid ("sheet") */
 .erp-readonly-entity {
     white-space: nowrap;
     font-weight: 500;
@@ -16,12 +16,15 @@ tr.form-row.erp-row-active > td {
     background-color: rgba(32, 107, 196, 0.08);
 }
 
-/* Compact numeric cells, no spinners. */
-.erp-grid td input[type=number] {
+/* Compact numeric cells (number inputs, or text + inputmode="decimal"). */
+.erp-grid td input[type=number],
+.erp-grid td input.erp-num {
     width: 6.5rem;
     min-width: 4rem;
     padding-left: 0.4rem;
     padding-right: 0.4rem;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
     -moz-appearance: textfield;
     appearance: textfield;
 }
@@ -32,10 +35,108 @@ tr.form-row.erp-row-active > td {
     margin: 0;
 }
 
-.erp-grid td input[type=text] {
+.erp-grid td input[type=text]:not(.erp-num) {
     min-width: 8rem;
 }
 
+/* ── Lean grid (fast_rendering): frozen header row and entity column ── */
+.erp-grid-group .erp-grid-scroll {
+    max-height: calc(100vh - 13rem);
+    overflow: auto;
+}
+
+.erp-grid-table {
+    margin-bottom: 0;
+}
+
+.erp-grid-table td,
+.erp-grid-table th {
+    padding: 0.2rem 0.3rem;
+}
+
+.erp-grid-table th.original,
+.erp-grid-table td.original {
+    display: none;
+}
+
+.erp-grid-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--tblr-bg-surface-secondary, #f6f8fb);
+}
+
+.erp-grid-table thead th:nth-child(2),
+.erp-grid-table tbody td:nth-child(2) {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 2;
+    background: var(--tblr-bg-surface, #fff);
+}
+
+.erp-grid-table thead th:nth-child(2) {
+    z-index: 4;
+    background: var(--tblr-bg-surface-secondary, #f6f8fb);
+}
+
+/* Keep the focused cell clear of the frozen header/column when scrolling. */
+.erp-grid-table td input,
+.erp-grid-table td select {
+    scroll-margin-top: 2.75rem;
+    scroll-margin-inline-start: 13rem;
+}
+
+/* ── Autosave state ── */
+.erp-grid-table tbody td:nth-child(2) {
+    border-inline-start: 3px solid transparent;
+}
+
+tr.form-row.erp-row-dirty > td:nth-child(2) { border-inline-start-color: var(--tblr-warning, #f59f00); }
+tr.form-row.erp-row-saving > td:nth-child(2) { border-inline-start-color: var(--tblr-primary, #206bc4); }
+tr.form-row.erp-row-saved > td:nth-child(2) { border-inline-start-color: var(--tblr-success, #2fb344); }
+
+tr.form-row.erp-row-error > td {
+    background-color: rgba(214, 57, 57, 0.08);
+}
+
+.erp-grid td input.is-invalid {
+    border-color: var(--tblr-danger, #d63939);
+    box-shadow: 0 0 0 0.15rem rgba(214, 57, 57, 0.25);
+}
+
+.erp-grid-status {
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-inline-end: auto;
+    white-space: nowrap;
+}
+
+.erp-grid-status:empty {
+    display: none;
+}
+
+.erp-grid-status.is-saving { color: var(--tblr-primary, #206bc4); }
+.erp-grid-status.is-saved { color: var(--tblr-success, #2fb344); }
+.erp-grid-status.is-error { color: var(--tblr-danger, #d63939); }
+
+/* ── Shortcuts footer ── */
+.erp-grid-shortcuts {
+    margin-top: 0.5rem;
+    line-height: 2;
+}
+
+.erp-grid-shortcuts kbd {
+    padding: 0.1em 0.4em;
+    margin-inline-end: 0.15em;
+    font-size: 0.85em;
+}
+
+.erp-grid-shortcuts .erp-grid-sep {
+    margin-inline: 0.75rem;
+    color: var(--tblr-border-color, #dee2e6);
+}
+
+/* ── Totals bar ── */
 .erp-grid-totals {
     position: sticky;
     bottom: 0;

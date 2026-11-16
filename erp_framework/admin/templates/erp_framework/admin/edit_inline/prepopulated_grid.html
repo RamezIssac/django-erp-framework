@@ -1,0 +1,24 @@
+{% load erp_grid %}{% comment %}
+Lean, locked spreadsheet grid for PrepopulatedInlineMixin (fast_rendering).
+Rows come from the erp_grid_rows tag; behaviour from prepopulated_inline.js.
+No "js-inline-admin-formset" class: rows are locked, so Django's add/delete
+inline JS is not needed.
+{% endcomment %}{% with formset=inline_admin_formset.formset %}
+<div class="inline-group erp-grid-group" id="{{ formset.prefix }}-group" data-inline-type="tabular"
+     data-erp-object-id="{{ original.pk|default_if_none:'' }}">
+<div class="tabular inline-related">
+{{ formset.management_form }}
+<fieldset class="module {{ inline_admin_formset.classes }}">
+{{ formset.non_form_errors }}
+<div class="table-responsive erp-grid-scroll">
+<table class="table table-vcenter table-nowrap erp-grid-table">
+<thead><tr><th class="original"></th>{% for field in inline_admin_formset.fields %}{% if not field.widget.is_hidden %}<th class="column-{{ field.name }}{% if field.required %} required{% endif %}"{% if field.help_text %} title="{{ field.help_text|striptags }}"{% endif %}>{{ field.label|capfirst }}</th>{% endif %}{% endfor %}</tr></thead>
+<tbody>{% erp_grid_rows inline_admin_formset %}</tbody>
+</table>
+</div>
+{% include "erp_framework/admin/edit_inline/prepopulated_shortcuts.html" %}
+</fieldset>
+</div>
+</div>
+{% with grid_id=formset.prefix|add:"-erp-grid" %}{{ inline_admin_formset.opts.grid_config|json_script:grid_id }}{% endwith %}
+{% endwith %}
