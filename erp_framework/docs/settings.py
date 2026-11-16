@@ -22,6 +22,11 @@ framework.
     Dotted path to a callable ``(request) -> bool`` controlling access to the
     whole guide (mirrors ``report_access_function``). Default:
     :func:`user_can_access_docs`.
+
+``ERP_DOCS_SHOW_ADMIN_LINK``
+    Default ``True``. When enabled, the admin chrome (the jazzy_tabler top
+    navbar) shows a link to the guide for users who pass the access
+    function. Set to ``False`` to hide it.
 """
 
 from django.conf import settings as django_settings
@@ -46,6 +51,10 @@ def autodiscover_enabled():
 def get_access_function():
     path = getattr(django_settings, "ERP_DOCS_ACCESS_FUNCTION", DEFAULT_ACCESS_FUNCTION)
     return import_string(path)
+
+
+def show_admin_link():
+    return getattr(django_settings, "ERP_DOCS_SHOW_ADMIN_LINK", True)
 
 
 def user_can_access_docs(request):

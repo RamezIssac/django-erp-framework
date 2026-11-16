@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase, override_settings
@@ -158,8 +159,48 @@ class DocsViewTest(TestCase):
         response = self.client.get(reverse("erp_docs:index"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Welcome to the user guide.")
-        # The admin chrome wraps the guide.
-        self.assertContains(response, 'id="jazzy-sidebar"')
+
+    def test_pages_use_the_standalone_layout(self):
+        self.client.force_login(self.staff)
+        for url in (
+            reverse("erp_docs:index"),
+            reverse("erp_docs:page", kwargs={"page_path": "guide"}),
+        ):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                content = response.content.decode()
+                # Standalone docs chrome, not the admin menu/navbar/breadcrumbs.
+                self.assertIn('id="erp-docs-sidebar"', content)
+                self.assertIn('id="erp-docs-topbar"', content)
+                self.assertNotIn('id="jazzy-sidebar"', content)
+                self.assertNotIn('id="jazzy-navigation"', content)
+                self.assertNotIn("breadcrumb", content)
+                # The sidebar holds the docs page list...
+                self.assertIn("Inventory (customized)", content)
+                # ... and the top bar links back to the application.
+                self.assertIn('href="/admin/"', content)
+                self.assertIn("Back to the application", content)
+
+    def test_current_page_is_highlighted_in_the_docs_nav(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(
+            reverse("erp_docs:page", kwargs={"page_path": "guide"})
+        )
+        content = response.content.decode()
+        self.assertIn('class="nav-link active"', content)
+        # exactly one highlighted entry, the current page
+        self.assertEqual(content.count('class="nav-link active"'), 1)
+
+    def test_rtl_direction_with_bidi_language(self):
+        self.client.force_login(self.staff)
+        with translation.override("ar"):
+            response = self.client.get(
+                reverse("erp_docs:page", kwargs={"page_path": "guide"})
+            )
+        content = response.content.decode()
+        self.assertIn('lang="ar"', content)
+        self.assertIn('dir="rtl"', content)
+        self.assertIn("tabler.rtl.min.css", content)
 
     def test_index_lists_only_visible_pages(self):
         self.client.force_login(self.staff)
@@ -326,6 +367,62 @@ class DocsViewTest(TestCase):
             ).status_code,
             404,
         )
+
+
+JAZZY_INTEGRATION_APP = "erp_framework.admin.jazzy_tabler_integration"
+
+
+def installed_apps_with_jazzy_integration():
+    """Test INSTALLED_APPS plus the jazzy_tabler integration app (before the theme)."""
+    apps = list(settings.INSTALLED_APPS)
+    if JAZZY_INTEGRATION_APP not in apps:
+        apps.insert(apps.index("jazzy_tabler"), JAZZY_INTEGRATION_APP)
+    return apps
+
+
+@override_settings(
+    ROOT_URLCONF="docs_tests.urls",
+    INSTALLED_APPS=installed_apps_with_jazzy_integration(),
+)
+class AdminGuideLinkTest(TestCase):
+    """The built-in "User guide" link in the admin chrome (jazzy_tabler)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff = User.objects.create_user(
+            username="staff-link", password="x", is_staff=True
+        )
+
+    def test_admin_shows_the_guide_link(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # Top navbar entry, opening the guide in a new tab...
+        self.assertIn('id="erp-docs-admin-link"', content)
+        self.assertIn('href="/docs/"', content)
+        self.assertIn('target="_blank"', content)
+        # ... and a sidebar entry (the only chrome on small screens).
+        self.assertIn('id="erp-docs-admin-sidebar-link"', content)
+
+    @override_settings(ERP_DOCS_SHOW_ADMIN_LINK=False)
+    def test_admin_link_hidden_when_disabled(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertNotIn('id="erp-docs-admin-link"', content)
+        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+        self.assertNotIn('href="/docs/"', content)
+
+    @override_settings(ERP_DOCS_ACCESS_FUNCTION="docs_tests.helpers.deny_all")
+    def test_admin_link_hidden_without_guide_access(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertNotIn('id="erp-docs-admin-link"', content)
+        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
 
 
 class LanguageSubdirTest(TestCase):

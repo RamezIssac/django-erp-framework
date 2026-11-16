@@ -1,3 +1,7 @@
-{% load erp_tags i18n erp_reporting_tags %}
+{% load i18n erp_reporting_tags jazzy_tabler %}
+
+{% if 'erp_framework.docs'|app_is_installed %}
+    {% include 'erp_docs/includes/admin_sidebar_link.html' %}
+{% endif %}
 
 {% render_reports_menu template_name="jazzy_tabler/report_menu.html" %}
