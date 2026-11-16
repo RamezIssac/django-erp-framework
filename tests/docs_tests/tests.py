@@ -398,12 +398,10 @@ class AdminGuideLinkTest(TestCase):
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        # Top navbar entry, opening the guide in a new tab...
-        self.assertIn('id="erp-docs-admin-link"', content)
+        # Sidebar entry, opening the guide in a new tab.
+        self.assertIn('id="erp-docs-admin-sidebar-link"', content)
         self.assertIn('href="/docs/"', content)
         self.assertIn('target="_blank"', content)
-        # ... and a sidebar entry (the only chrome on small screens).
-        self.assertIn('id="erp-docs-admin-sidebar-link"', content)
 
     @override_settings(ERP_DOCS_SHOW_ADMIN_LINK=False)
     def test_admin_link_hidden_when_disabled(self):
@@ -411,7 +409,6 @@ class AdminGuideLinkTest(TestCase):
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertNotIn('id="erp-docs-admin-link"', content)
         self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
         self.assertNotIn('href="/docs/"', content)
 
@@ -421,8 +418,16 @@ class AdminGuideLinkTest(TestCase):
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertNotIn('id="erp-docs-admin-link"', content)
         self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+
+    def test_admin_uses_the_theme_base_template(self):
+        """Regression: no stale copy of the theme's admin/base.html may shadow it."""
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        # Marker shipped by django-jazzy-tabler's own base.html (0.2.0+);
+        # the framework's deleted 0.1.1-era copy did not render it.
+        self.assertIn('data-bs-navbar-position="vertical"', response.content.decode())
 
 
 class LanguageSubdirTest(TestCase):
