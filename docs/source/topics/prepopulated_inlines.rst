@@ -82,6 +82,9 @@ F2 or double-click       edit inside the cell: Left / Right move the caret
 Escape                   revert the cell to its value when it got focus
 =======================  =====================================================
 
+The sheet shows a small footer note listing these shortcuts; set
+``show_shortcuts_footer = False`` on the inline to hide it.
+
 With ``numeric_text_inputs = True`` (default), number inputs are rendered as
 ``inputmode="decimal"`` text inputs, so arrow keys and the mouse wheel never
 change a value. The header row and the entity column stay visible while

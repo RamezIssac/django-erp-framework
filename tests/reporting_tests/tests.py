@@ -876,6 +876,26 @@ class TestPrepopulatedSheet(BaseTestData, TestCase):
         self.assertContains(response, 'data-erp-object-id=""')
         self.assertContains(response, "grid-autosave")
 
+    def test_shortcuts_footer(self):
+        from unittest.mock import patch
+
+        from .admin import JournalItemInline
+
+        url = reverse("erp_framework:reporting_tests_journal_add")
+        response = self.client.get(url)
+        self.assertContains(response, 'class="erp-grid-shortcuts')
+        self.assertContains(response, "<kbd>Esc</kbd>")
+        self.assertContains(response, "<kbd>Enter</kbd>")  # enter_as_tab is on
+
+        with patch.object(JournalItemInline, "enter_as_tab", False):
+            response = self.client.get(url)
+            self.assertContains(response, 'class="erp-grid-shortcuts')
+            self.assertNotContains(response, "<kbd>Enter</kbd>")
+
+        with patch.object(JournalItemInline, "show_shortcuts_footer", False):
+            response = self.client.get(url)
+            self.assertNotContains(response, "erp-grid-shortcuts")
+
     # ── Autosave ────────────────────────────────────────────────────────────
 
     def test_autosave_creates_then_updates_same_item(self):

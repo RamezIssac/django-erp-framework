@@ -119,6 +119,23 @@ tr.form-row.erp-row-error > td {
 .erp-grid-status.is-saved { color: var(--tblr-success, #2fb344); }
 .erp-grid-status.is-error { color: var(--tblr-danger, #d63939); }
 
+/* ── Shortcuts footer ── */
+.erp-grid-shortcuts {
+    margin-top: 0.5rem;
+    line-height: 2;
+}
+
+.erp-grid-shortcuts kbd {
+    padding: 0.1em 0.4em;
+    margin-inline-end: 0.15em;
+    font-size: 0.85em;
+}
+
+.erp-grid-shortcuts .erp-grid-sep {
+    margin-inline: 0.75rem;
+    color: var(--tblr-border-color, #dee2e6);
+}
+
 /* ── Totals bar ── */
 .erp-grid-totals {
     position: sticky;

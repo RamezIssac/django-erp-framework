@@ -40,6 +40,7 @@ Spreadsheet behaviour
 * Keyboard (prepopulated_inline.js): arrows move between cells/rows, Enter /
   Shift+Enter next/previous cell, PageUp/PageDown jump 10 rows, Ctrl+Up/Down
   first/last row, F2 edits inside a cell, Escape reverts the cell.
+  A footer note under the sheet lists these shortcuts (``show_shortcuts_footer``).
   Numeric inputs are rendered as ``inputmode="decimal"`` text inputs, so arrow
   keys and the mouse wheel never alter values.
 * ``autosave = True`` saves a row when one of its cells is committed (blur /
@@ -122,6 +123,8 @@ class PrepopulatedInlineMixin:
     total_summaries = ()
     #: Enter key moves to the next editable input instead of submitting.
     enter_as_tab = True
+    #: Show the keyboard-shortcuts footer note under the sheet.
+    show_shortcuts_footer = True
     #: Render rows with the lean Python-built grid (locked sheets only).
     fast_rendering = True
     #: Render numeric inputs as ``inputmode="decimal"`` text inputs.
