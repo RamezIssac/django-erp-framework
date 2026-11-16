@@ -7,9 +7,12 @@ All notable changes to this project are/will be documented in this file.
   "Back to the application" link, the same Tabler/Bootstrap 5 assets and theme mode as the jazzy_tabler admin,
   RTL-aware and responsive. Override `erp_docs/base.html` blocks (`title`, `branding`, ...) to brand it.
 - When `erp_docs` is installed and `erp_framework.admin.jazzy_tabler_integration` is active, the admin chrome shows
-  a "User guide" entry (top navbar + sidebar, new tab) for users who pass the docs access function; disable with
-  `ERP_DOCS_SHOW_ADMIN_LINK = False`. This adds a jazzy_tabler integration override of `admin/base.html`
-  (mirroring django-jazzy-tabler 0.1.1, whose navbar has no override block).
+  a "User guide" entry (sidebar, new tab) for users who pass the docs access function; disable with
+  `ERP_DOCS_SHOW_ADMIN_LINK = False`. A top-navbar entry will come via the theme's navbar extension point in a
+  later release.
+- Fixed the admin layout with django-jazzy-tabler 0.2.0 (main sidebar not visible): the jazzy_tabler integration
+  no longer ships a copied `admin/base.html` (a snapshot of the theme's 0.1.1 template taken for the navbar link);
+  the theme's own `base.html` is used again.
 - Fixed the jazzy_tabler integration's `jazzy_tabler/includes/sidebar_bottom.html` loading the nonexistent
   `erp_tags` template library (it crashed every admin page unless the project overrode that include).
 - Added `erp_framework.docs` (label `erp_docs`), an in-app user guide: Markdown pages rendered per request for
