@@ -380,6 +380,13 @@ def installed_apps_with_jazzy_integration():
     return apps
 
 
+def theme_has_navbar_hook():
+    """True when the installed jazzy_tabler ships the ``navbar_extra`` hook (post 0.2.0)."""
+    from django.template.loader import get_template
+
+    return "navbar_extra" in get_template("admin/base.html").template.source
+
+
 @override_settings(
     ROOT_URLCONF="docs_tests.urls",
     INSTALLED_APPS=installed_apps_with_jazzy_integration(),
@@ -393,17 +400,37 @@ class AdminGuideLinkTest(TestCase):
             username="staff-link", password="x", is_staff=True
         )
 
-    def test_admin_shows_the_guide_link(self):
+    def test_admin_shows_the_guide_link_in_the_top_navbar(self):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        # Top navbar entry, opening the guide in a new tab...
-        self.assertIn('id="erp-docs-admin-link"', content)
-        self.assertIn('href="/docs/"', content)
-        self.assertIn('target="_blank"', content)
-        # ... and a sidebar entry (the only chrome on small screens).
-        self.assertIn('id="erp-docs-admin-sidebar-link"', content)
+        self.assertNotIn("erp-docs-admin-sidebar-link", content)
+        if not theme_has_navbar_hook():
+            self.assertNotIn("erp-docs-admin-navbar-link", content)
+            return
+        from pyquery import PyQuery as pq
+
+        dom = pq(response.content)
+        links = dom(".erp-docs-admin-navbar-link a")
+        # Desktop top navbar plus the mobile navbar (inside the sidebar header).
+        self.assertEqual(len(links), 2)
+        self.assertEqual(len(dom("header.navbar .erp-docs-admin-navbar-link")), 1)
+        for link in links:
+            self.assertEqual(link.get("href"), "/docs/")
+            self.assertEqual(link.get("target"), "_blank")
+            self.assertIn("fa-book", pq(link)("i").attr("class"))
+            self.assertEqual(pq(link).text(), "User guide")
+
+    @override_settings(ERP_DOCS_TITLE="Handbook")
+    def test_navbar_link_uses_the_configured_title(self):
+        if not theme_has_navbar_hook():
+            self.skipTest("django-jazzy-tabler without the navbar_extra hook")
+        self.client.force_login(self.staff)
+        content = self.client.get(reverse("admin:index")).content.decode()
+        from pyquery import PyQuery as pq
+
+        self.assertEqual(pq(content)(".erp-docs-admin-navbar-link a").eq(0).text(), "Handbook")
 
     @override_settings(ERP_DOCS_SHOW_ADMIN_LINK=False)
     def test_admin_link_hidden_when_disabled(self):
@@ -411,8 +438,7 @@ class AdminGuideLinkTest(TestCase):
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertNotIn('id="erp-docs-admin-link"', content)
-        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+        self.assertNotIn("erp-docs-admin-navbar-link", content)
         self.assertNotIn('href="/docs/"', content)
 
     @override_settings(ERP_DOCS_ACCESS_FUNCTION="docs_tests.helpers.deny_all")
@@ -420,9 +446,24 @@ class AdminGuideLinkTest(TestCase):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode()
-        self.assertNotIn('id="erp-docs-admin-link"', content)
-        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+        self.assertNotIn("erp-docs-admin-navbar-link", response.content.decode())
+
+    def test_sidebar_has_no_guide_item(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        from pyquery import PyQuery as pq
+
+        self.assertEqual(len(pq(response.content)("#jazzy-navigation .erp-docs-admin-navbar-link")), 0)
+
+    def test_admin_uses_the_theme_base_template(self):
+        """Regression: no stale copy of the theme's admin/base.html may shadow it."""
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.status_code, 200)
+        # Marker shipped by django-jazzy-tabler's own base.html (0.2.0+);
+        # the framework's deleted 0.1.1-era copy did not render it.
+        self.assertIn('data-bs-navbar-position="vertical"', response.content.decode())
 
 
 class LanguageSubdirTest(TestCase):

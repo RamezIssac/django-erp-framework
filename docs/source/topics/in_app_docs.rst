@@ -146,9 +146,11 @@ Settings
 ``ERP_DOCS_SHOW_ADMIN_LINK``
     Default ``True``. When enabled and
     ``erp_framework.admin.jazzy_tabler_integration`` is installed, the admin
-    chrome shows a "User guide" entry (book icon + title) in the top navbar
-    and in the sidebar, opening the guide in a new tab. The entry is rendered
-    only for users who pass the access function. Set to ``False`` to hide it.
+    chrome shows a "User guide" link (book icon + title) in the top navbar,
+    opening the guide in a new tab. The link is rendered only for users who
+    pass the access function. Set to ``False`` to hide it. It uses
+    django-jazzy-tabler's ``navbar_extra`` hook, so it only appears with a
+    jazzy-tabler release that ships the hook (absent in 0.2.0).
 
 Example
 =======
