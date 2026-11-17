@@ -47,6 +47,10 @@ Coverage
   (``erp_framework/login.html``, the default ``login_template``) and on the
   in-app docs pages.
 
+Note: list ``erp_framework.admin`` before ``jazzy_tabler`` in ``INSTALLED_APPS``
+and not after it, because the theme's own ``admin/base_site.html`` then wins and
+the admin pages skip ``erp_framework/base_site.html`` and the snippet.
+
 A project that sets its own ``login_template`` includes the snippet in its
 ``extrahead`` block:
 
