@@ -2,14 +2,16 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+- Fixed `erp_framework/js/select2_compat.js` (listed in `EntityAdmin.Media`) missing from the repository, which made admin pages raise "Missing staticfiles manifest entry" (HTTP 500) under `ManifestStaticFilesStorage`.
 - `erp_docs` pages now render in a standalone full-page layout (no admin menu/navbar/breadcrumb chrome): a left
   sidebar with only the docs page list (current page highlighted), a slim top bar with the guide title and a
   "Back to the application" link, the same Tabler/Bootstrap 5 assets and theme mode as the jazzy_tabler admin,
   RTL-aware and responsive. Override `erp_docs/base.html` blocks (`title`, `branding`, ...) to brand it.
 - When `erp_docs` is installed and `erp_framework.admin.jazzy_tabler_integration` is active, the admin chrome shows
-  a "User guide" entry (sidebar, new tab) for users who pass the docs access function; disable with
-  `ERP_DOCS_SHOW_ADMIN_LINK = False`. A top-navbar entry will come via the theme's navbar extension point in a
-  later release.
+  a "User guide" link (book icon, `ERP_DOCS_TITLE` label, new tab) in the top navbar for users who pass the docs
+  access function, through django-jazzy-tabler's `navbar_extra` hook (`jazzy_tabler/includes/navbar_extra.html`);
+  disable with `ERP_DOCS_SHOW_ADMIN_LINK = False`. The hook is unreleased: with django-jazzy-tabler 0.2.0 the link is
+  absent and nothing breaks. The minimum jazzy-tabler version moves up once the hook is released.
 - Fixed the admin layout with django-jazzy-tabler 0.2.0 (main sidebar not visible): the jazzy_tabler integration
   no longer ships a copied `admin/base.html` (a snapshot of the theme's 0.1.1 template taken for the navbar link);
   the theme's own `base.html` is used again.

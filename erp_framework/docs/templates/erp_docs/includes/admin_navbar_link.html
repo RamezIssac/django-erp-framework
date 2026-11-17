@@ -1,0 +1,10 @@
+{% load i18n erp_docs_tags %}
+{% erp_docs_admin_link as erp_docs_link %}
+{% if erp_docs_link.visible %}
+    <div class="nav-item me-3 erp-docs-admin-navbar-link">
+        <a class="btn btn-ghost-secondary" href="{% url 'erp_docs:index' %}" target="_blank" rel="noopener"
+           title="{{ erp_docs_link.title }}">
+            <i class="fas fa-book me-1"></i><span class="d-none d-md-inline">{{ erp_docs_link.title }}</span>
+        </a>
+    </div>
+{% endif %}

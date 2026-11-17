@@ -380,6 +380,13 @@ def installed_apps_with_jazzy_integration():
     return apps
 
 
+def theme_has_navbar_hook():
+    """True when the installed jazzy_tabler ships the ``navbar_extra`` hook (post 0.2.0)."""
+    from django.template.loader import get_template
+
+    return "navbar_extra" in get_template("admin/base.html").template.source
+
+
 @override_settings(
     ROOT_URLCONF="docs_tests.urls",
     INSTALLED_APPS=installed_apps_with_jazzy_integration(),
@@ -393,21 +400,37 @@ class AdminGuideLinkTest(TestCase):
             username="staff-link", password="x", is_staff=True
         )
 
-    def test_admin_shows_the_guide_link(self):
+    def test_admin_shows_the_guide_link_in_the_top_navbar(self):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        # Sidebar entry, opening the guide in a new tab.
-        self.assertIn('id="erp-docs-admin-sidebar-link"', content)
-        self.assertIn('href="/docs/"', content)
-        self.assertIn('target="_blank"', content)
-        # ... rendered inside the sidebar's nav list, where it is visible.
+        self.assertNotIn("erp-docs-admin-sidebar-link", content)
+        if not theme_has_navbar_hook():
+            self.assertNotIn("erp-docs-admin-navbar-link", content)
+            return
         from pyquery import PyQuery as pq
 
         dom = pq(response.content)
-        self.assertEqual(len(dom("#jazzy-sidebar #erp-docs-admin-sidebar-link")), 1)
-        self.assertEqual(len(dom("#jazzy-navigation #erp-docs-admin-sidebar-link")), 1)
+        links = dom(".erp-docs-admin-navbar-link a")
+        # Desktop top navbar plus the mobile navbar (inside the sidebar header).
+        self.assertEqual(len(links), 2)
+        self.assertEqual(len(dom("header.navbar .erp-docs-admin-navbar-link")), 1)
+        for link in links:
+            self.assertEqual(link.get("href"), "/docs/")
+            self.assertEqual(link.get("target"), "_blank")
+            self.assertIn("fa-book", pq(link)("i").attr("class"))
+            self.assertEqual(pq(link).text(), "User guide")
+
+    @override_settings(ERP_DOCS_TITLE="Handbook")
+    def test_navbar_link_uses_the_configured_title(self):
+        if not theme_has_navbar_hook():
+            self.skipTest("django-jazzy-tabler without the navbar_extra hook")
+        self.client.force_login(self.staff)
+        content = self.client.get(reverse("admin:index")).content.decode()
+        from pyquery import PyQuery as pq
+
+        self.assertEqual(pq(content)(".erp-docs-admin-navbar-link a").eq(0).text(), "Handbook")
 
     @override_settings(ERP_DOCS_SHOW_ADMIN_LINK=False)
     def test_admin_link_hidden_when_disabled(self):
@@ -415,7 +438,7 @@ class AdminGuideLinkTest(TestCase):
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+        self.assertNotIn("erp-docs-admin-navbar-link", content)
         self.assertNotIn('href="/docs/"', content)
 
     @override_settings(ERP_DOCS_ACCESS_FUNCTION="docs_tests.helpers.deny_all")
@@ -423,44 +446,15 @@ class AdminGuideLinkTest(TestCase):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode()
-        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
+        self.assertNotIn("erp-docs-admin-navbar-link", response.content.decode())
 
-    def test_project_sidebar_bottom_override_wins_and_renders(self):
-        """A project-level sidebar_bottom.html override shadows the framework's.
-
-        Projects may ship their own templates/jazzy_tabler/includes/
-        sidebar_bottom.html (e.g. adding their own guide link before the
-        reports menu); the framework's app-level include must not win over
-        the project's template directory.
-        """
-        import copy
-
-        with tempfile.TemporaryDirectory() as tmp:
-            include_dir = Path(tmp) / "jazzy_tabler" / "includes"
-            include_dir.mkdir(parents=True)
-            (include_dir / "sidebar_bottom.html").write_text(
-                '{% load i18n %}\n'
-                '<li class="nav-item" id="project-user-guide">'
-                '<a class="nav-link" href="/docs/" target="_blank" rel="noopener">'
-                '<span class="nav-link-title">{% translate "User guide" %}</span>'
-                "</a></li>\n",
-                encoding="utf-8",
-            )
-            templates = copy.deepcopy(settings.TEMPLATES)
-            templates[0]["DIRS"] = [tmp, *templates[0].get("DIRS", [])]
-            with override_settings(TEMPLATES=templates):
-                self.client.force_login(self.staff)
-                response = self.client.get(reverse("admin:index"))
+    def test_sidebar_has_no_guide_item(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode()
-        # The project override renders (and replaces the framework include).
-        self.assertIn('id="project-user-guide"', content)
-        self.assertNotIn('id="erp-docs-admin-sidebar-link"', content)
         from pyquery import PyQuery as pq
 
-        dom = pq(response.content)
-        self.assertEqual(len(dom("#jazzy-navigation #project-user-guide")), 1)
+        self.assertEqual(len(pq(response.content)("#jazzy-navigation .erp-docs-admin-navbar-link")), 0)
 
     def test_admin_uses_the_theme_base_template(self):
         """Regression: no stale copy of the theme's admin/base.html may shadow it."""
