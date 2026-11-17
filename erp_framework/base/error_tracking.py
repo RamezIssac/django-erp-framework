@@ -30,6 +30,7 @@ def init_sentry(include_local_variables=False):
         environment=config["SENTRY_ENVIRONMENT"] or None,
         release=config["SENTRY_RELEASE"] or None,
         send_default_pii=False,
+        max_request_body_size="never",
         include_local_variables=include_local_variables,
         traces_sample_rate=0.0,
     )

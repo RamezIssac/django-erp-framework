@@ -55,6 +55,7 @@ class InitSentryTest(SimpleTestCase):
             environment="staging",
             release="my-app@abc123",
             send_default_pii=False,
+            max_request_body_size="never",
             include_local_variables=False,
             traces_sample_rate=0.0,
         )

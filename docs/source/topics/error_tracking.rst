@@ -64,12 +64,16 @@ A project that sets its own ``login_template`` includes the snippet in its
 Privacy defaults
 ================
 
+* ``max_request_body_size="never"``: request bodies (POSTed form data) are not
+  sent.
 * ``send_default_pii=False`` on the server and ``sendDefaultPii: false`` in the
-  browser: no user id, username, email, cookies or SQL parameters are sent.
+  browser: cookies, user data (id, username, email) and SQL parameters are not
+  sent.
 * ``traces_sample_rate=0.0``: errors only, no performance events.
-* Frame local variables are off. ``init_sentry(include_local_variables=True)``
-  turns them on: stack traces then show the values held in each frame, which
-  can include form data and customer records.
+* Frame local variables are off by default.
+  ``init_sentry(include_local_variables=True)`` turns them on: stack traces then
+  show the values held in each frame, which can include form data and customer
+  records.
 * The ``django.channels.server`` logger is ignored, the dev server would
   otherwise report every 500 a second time.
 
