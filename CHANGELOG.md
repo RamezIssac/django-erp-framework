@@ -2,6 +2,11 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+- Added optional Sentry/GlitchTip error tracking: `erp_framework.base.error_tracking.init_sentry()` (reads `SENTRY_DSN`,
+  `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`; errors only, `send_default_pii=False`, local variables off by default), the
+  `erp_framework.context_processors.sentry` context processor and a browser SDK snippet on every ERP admin page, the
+  login page and the in-app docs. Install with `pip install django-erp-framework[sentry]`. The default
+  `login_template` is now `erp_framework/login.html` (extends `admin/login.html`).
 - Fixed `erp_framework/js/select2_compat.js` (listed in `EntityAdmin.Media`) missing from the repository, which made admin pages raise "Missing staticfiles manifest entry" (HTTP 500) under `ManifestStaticFilesStorage`.
 - `erp_docs` pages now render in a standalone full-page layout (no admin menu/navbar/breadcrumb chrome): a left
   sidebar with only the docs page list (current page highlighted), a slim top bar with the guide title and a

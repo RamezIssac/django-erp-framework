@@ -15,7 +15,7 @@ ERP framework settings
             "site_header": "ERP Framework System",
             "index_title": "Dashboard Home",
             "index_template": "admin/index.html",
-            "login_template": "admin/login.html",
+            "login_template": "erp_framework/login.html",
             "logout_template": "admin/logout.html",
             "app_index_template": "admin/app_index.html",
             # a function to control be dbfield on all instances, Saves you time to subclass if
