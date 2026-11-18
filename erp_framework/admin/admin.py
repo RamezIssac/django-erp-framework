@@ -31,6 +31,7 @@ from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
+from django.utils.html import escape
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
@@ -112,7 +113,7 @@ class AdminViewMixin(admin.ModelAdmin):
         view_link = (
             '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> '
             '<i class="fas fa-chart-line"></i> </a>'
-            % (url, capfirst(_("Statistics for")), str(obj))
+            % (url, capfirst(_("Statistics for")), escape(str(obj)))
         )
         return mark_safe(view_link)
 
@@ -363,7 +364,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             )
             links.append(view_link)
             links = "<span class='go-to-change-form'>%s</span>" % "".join(links) + ""
-            obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.name)
+            obj_link_title = "<a href='%s'>%s</a>" % (main_url, escape(obj.name))
             return mark_safe("%s %s" % (obj_link_title, links))
 
         return obj.name
