@@ -6,7 +6,7 @@ django-tabular-permissions>=2.9.1
 django-crispy-forms
 dateutils
 django-reversion>=3.0.5
-django-slick-reporting
+django-slick-reporting>=1.5.1
 django-jazzy-tabler>=0.1.1
 django-compressor>=2.4
 markdown-it-py>=3.0
