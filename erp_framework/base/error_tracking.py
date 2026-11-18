@@ -1,37 +1,34 @@
-"""Optional Sentry/GlitchTip error tracking, configured from SENTRY_* environment variables."""
+"""Sentry/GlitchTip error tracking, configured by ERP_FRAMEWORK_SETTINGS["error_tracking"]."""
 
-import os
+import sentry_sdk
+from django.conf import settings
+from sentry_sdk.integrations.logging import ignore_logger
+
+DEFAULTS = {
+    "dsn": "",
+    "environment": "",
+    "release": "",
+    "include_local_variables": False,
+}
 
 
-def sentry_config():
-    return {
-        "SENTRY_DSN": os.environ.get("SENTRY_DSN", ""),
-        "SENTRY_ENVIRONMENT": os.environ.get("SENTRY_ENVIRONMENT", ""),
-        "SENTRY_RELEASE": os.environ.get("SENTRY_RELEASE", ""),
-    }
+def error_tracking_settings():
+    framework_settings = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {})
+    return {**DEFAULTS, **framework_settings.get("error_tracking", {})}
 
 
-def init_sentry(include_local_variables=False):
-    """Start sentry-sdk for errors only; return True when it was started.
-
-    A no-op returning False when SENTRY_DSN is empty or sentry-sdk is not installed.
-    """
-    config = sentry_config()
-    if not config["SENTRY_DSN"]:
+def start_error_tracking():
+    """Start sentry-sdk for errors only; return True when it was started (a DSN is set)."""
+    config = error_tracking_settings()
+    if not config["dsn"]:
         return False
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.logging import ignore_logger
-    except ImportError:
-        return False
-
     sentry_sdk.init(
-        dsn=config["SENTRY_DSN"],
-        environment=config["SENTRY_ENVIRONMENT"] or None,
-        release=config["SENTRY_RELEASE"] or None,
+        dsn=config["dsn"],
+        environment=config["environment"] or None,
+        release=config["release"] or None,
         send_default_pii=False,
         max_request_body_size="never",
-        include_local_variables=include_local_variables,
+        include_local_variables=config["include_local_variables"],
         traces_sample_rate=0.0,
     )
     # The dev server's access log repeats every 500 as a second issue.

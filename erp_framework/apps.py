@@ -10,3 +10,6 @@ class ERPFrameworkConfig(AppConfig):
     def ready(self):
         super().ready()
         from . import checks  # noqa
+        from .base.error_tracking import start_error_tracking
+
+        start_error_tracking()

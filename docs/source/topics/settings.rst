@@ -26,6 +26,12 @@ ERP framework settings
             "admin_site_class": "erp_framework.admin.admin.ERPFrameworkAdminSite",
             "admin_site_namespace": "erp_framework",
             "enable_delete_all": False,
+            "error_tracking": {
+                "dsn": "",
+                "environment": "",
+                "release": "",
+                "include_local_variables": False,
+            },
         }
 
 
@@ -38,6 +44,12 @@ Defaults ``'erp_framework.admin.admin.ERPFrameworkAdminSite'``
 
 A dotted path to the main Django ERP framework Admin Site class.
 Make sure to inherit from ``ERPFrameworkAdminSiteBase`` in your custom admin site.
+
+
+``error_tracking``
+------------------
+
+Sentry/GlitchTip error tracking, off while ``dsn`` is empty. See :doc:`error_tracking`.
 
 
 ``enable_delete_all``

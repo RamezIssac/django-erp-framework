@@ -8,44 +8,45 @@ loaded or sent.
 Setup
 =====
 
-Install the optional extra::
-
-    pip install django-erp-framework[sentry]
-
-In ``settings.py``, start the SDK and add the context processor:
+sentry-sdk is installed with the framework. Set the DSN in
+``ERP_FRAMEWORK_SETTINGS``, typically from the environment:
 
 .. code-block:: python
 
-    from erp_framework.base.error_tracking import init_sentry
+    ERP_FRAMEWORK_SETTINGS = {
+        # ...
+        "error_tracking": {
+            "dsn": os.getenv("SENTRY_DSN", ""),
+            "environment": os.getenv("SENTRY_ENVIRONMENT", ""),
+            "release": os.getenv("SENTRY_RELEASE", ""),
+        },
+    }
 
-    init_sentry()
+``dsn``
+    The project DSN. Empty: error tracking is off.
 
-    TEMPLATES[0]["OPTIONS"]["context_processors"].append(
-        "erp_framework.context_processors.sentry"
-    )
-
-Environment variables
-=====================
-
-``SENTRY_DSN``
-    The project DSN. Empty or unset: error tracking is off.
-
-``SENTRY_ENVIRONMENT``
+``environment``
     The environment name shown in the issue list, e.g. ``test``, ``staging``,
     ``production``.
 
-``SENTRY_RELEASE``
+``release``
     The deployed version, e.g. ``my-app@<commit sha>``. Events group per release.
+
+``include_local_variables``
+    Default ``False``. See the privacy defaults below.
 
 Coverage
 ========
 
-* Server: ``init_sentry()`` starts ``sentry-sdk`` with its Django integration.
+* Server: ``ERPFrameworkConfig.ready()`` starts ``sentry-sdk`` with its Django
+  integration. Errors raised before the apps are loaded (settings import, app
+  loading) are not captured.
 * Browser: ``erp_framework/sentry_browser.html`` loads the errors-only Sentry
   browser bundle (pinned version, SRI hash) on every page built on
   ``erp_framework/base_site.html``, on the login page
   (``erp_framework/login.html``, the default ``login_template``) and on the
-  in-app docs pages.
+  in-app docs pages. It reads ``error_tracking`` from the admin site's
+  ``each_context()``.
 
 Note: list ``erp_framework.admin`` before ``jazzy_tabler`` in ``INSTALLED_APPS``
 and not after it, because the theme's own ``admin/base_site.html`` then wins and
@@ -70,16 +71,14 @@ Privacy defaults
   browser: cookies, user data (id, username, email) and SQL parameters are not
   sent.
 * ``traces_sample_rate=0.0``: errors only, no performance events.
-* Frame local variables are off by default.
-  ``init_sentry(include_local_variables=True)`` turns them on: stack traces then
-  show the values held in each frame, which can include form data and customer
-  records.
+* Frame local variables are off by default. ``"include_local_variables": True``
+  turns them on: stack traces then show the values held in each frame, which
+  can include form data and customer records.
 * The ``django.channels.server`` logger is ignored, the dev server would
   otherwise report every 500 a second time.
 
 Disabling
 =========
 
-Unset ``SENTRY_DSN`` (or set it to an empty string) and restart. The
-context processor then renders no browser snippet and ``init_sentry()``
-returns ``False`` without starting the SDK.
+Set ``dsn`` to an empty string (or leave ``error_tracking`` out) and restart.
+The SDK is then not started and no browser snippet is rendered.
