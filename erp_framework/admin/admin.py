@@ -96,7 +96,18 @@ class RaThemeMixin:
     view_template = None  # Defaults to f'{app_settings.ERP_FRAMEWORK_THEME}/view.html'
 
 
-class AdminViewMixin(admin.ModelAdmin):
+class DescriptionMixin:
+    """Adds ``description`` to a ModelAdmin and passes it to the changelist template context."""
+
+    description = None  # Shown on the changelist under the title; also readable by other consumers
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["description"] = self.description
+        return super().changelist_view(request, extra_context)
+
+
+class AdminViewMixin(DescriptionMixin, admin.ModelAdmin):
     enable_view_view = True
     view_fields = ()
     view_template = "erp_framework/view.html"
@@ -266,7 +277,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     # ERP New Attributes
     # ------------------
-    description = None  # Description of the model to be displayed in hte changelist filter under the name
     enable_next_serial = True  # Enable the default slug to be a serial number
     enable_view_view = True  # If False there is no "DetailView ie Stats view"
     print_template = None
@@ -384,12 +394,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     get_enhanced_obj_title.short_description = _("name")
     get_enhanced_obj_title.admin_order_field = "name"
-
-    @csrf_protect_m
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context["description"] = self.description
-        return super(EntityAdmin, self).changelist_view(request, extra_context)
 
     def save_model(self, request, obj, form, change):
         obj.lastmod_user = request.user
