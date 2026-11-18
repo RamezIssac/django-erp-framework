@@ -2,6 +2,7 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+- `description` is now available on every framework admin base (`EntityAdmin`, `TransactionAdmin`, the prepopulated admins and the activity `LogEntryAdmin`) through the new `DescriptionMixin`; each passes it to the changelist context, `None` by default.
 - Fixed `erp_framework/js/select2_compat.js` (listed in `EntityAdmin.Media`) missing from the repository, which made admin pages raise "Missing staticfiles manifest entry" (HTTP 500) under `ManifestStaticFilesStorage`.
 - `erp_docs` pages now render in a standalone full-page layout (no admin menu/navbar/breadcrumb chrome): a left
   sidebar with only the docs page list (current page highlighted), a slim top bar with the guide title and a
