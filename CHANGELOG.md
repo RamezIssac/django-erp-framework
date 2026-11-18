@@ -2,6 +2,17 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+
+## [1.7.1]
+### Security hardening
+- Entity names are HTML-escaped in the admin changelist title and statistics columns (`get_enhanced_obj_title`, `get_stats_icon`), both now built with `format_html`. Thanks to p-w for the fix ([#63](https://github.com/RamezIssac/django-erp-framework/pull/63)).
+- Report `_export=csv` and `_export=print` requests now require the report's `export` / `print` permission through `report_access_function`; a denied request gets HTTP 403. Other `_export` actions require `export`.
+- Report URLs are wrapped in the admin site's `admin_view`: non-staff users are redirected to the admin login, and a custom `admin_site_access_permission` now applies to reports.
+- `admin_site_access_permission` no longer admits every authenticated user when `DEBUG=True`; access requires an active staff user in every mode.
+- `EntityAdmin.get_by_slug` requires view or change permission on the model (HTTP 403 otherwise) and looks the object up through `get_queryset(request)`.
+- Removed the unused `erp_framework/print_base.html` template.
+
+### Changes
 - `description` is now available on every framework admin base (`EntityAdmin`, `TransactionAdmin`, the prepopulated admins and the activity `LogEntryAdmin`) through the new `DescriptionMixin`; each passes it to the changelist context, `None` by default.
 - Fixed `erp_framework/js/select2_compat.js` (listed in `EntityAdmin.Media`) missing from the repository, which made admin pages raise "Missing staticfiles manifest entry" (HTTP 500) under `ManifestStaticFilesStorage`.
 - `erp_docs` pages now render in a standalone full-page layout (no admin menu/navbar/breadcrumb chrome): a left
