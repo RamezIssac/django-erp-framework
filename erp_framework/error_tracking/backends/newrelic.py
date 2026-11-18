@@ -8,15 +8,13 @@ class NewRelicBackend(AgentBackend):
     sdk_module = "newrelic"
     extra = "newrelic"
     browser_template = "erp_framework/error_tracking/newrelic.html"
-    agent_bootstrap_module = "newrelic.bootstrap.sitecustomize"
     start_hint = (
         "Start the process with `newrelic-admin run-program`, or call "
         "newrelic.agent.initialize() at the top of wsgi.py / asgi.py."
     )
 
     def agent_started(self):
-        if super().agent_started():
-            return True
+        # Set by newrelic.agent.initialize(), which newrelic-admin runs when a license key or config file is set.
         try:
             import newrelic.config
         except ImportError:

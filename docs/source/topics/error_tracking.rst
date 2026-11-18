@@ -148,7 +148,8 @@ Privacy defaults
 * Rollbar: ``capture_ip=False`` and ``captureIp: false``,
   ``include_request_body=False``.
 * Datadog RUM: session replay off, user interactions not tracked,
-  ``defaultPrivacyLevel: "mask"``.
+  ``defaultPrivacyLevel: "mask"``. RUM is not errors only: it records a view
+  event for every page and samples every session (``sessionSampleRate: 100``).
 * Sentry and Rollbar send frame local variables only with
   ``"include_local_variables": True``. Stack traces then show the values held in
   each frame, which can include form data and customer records.

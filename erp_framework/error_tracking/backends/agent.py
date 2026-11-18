@@ -1,5 +1,3 @@
-import sys
-
 from django.core.checks import Warning
 
 from .base import ErrorTrackingBackend
@@ -8,11 +6,10 @@ from .base import ErrorTrackingBackend
 class AgentBackend(ErrorTrackingBackend):
     """A tool whose agent starts before Django (wsgi/asgi or a wrapper command), not in ready()."""
 
-    agent_bootstrap_module = ""
     start_hint = ""
 
     def agent_started(self):
-        return self.agent_bootstrap_module in sys.modules
+        raise NotImplementedError
 
     def check(self):
         errors = super().check()

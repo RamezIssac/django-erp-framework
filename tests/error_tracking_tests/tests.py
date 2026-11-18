@@ -213,6 +213,17 @@ class RollbarBackendTest(TestCase):
 
 
 class AgentBackendsTest(TestCase):
+    def test_no_warning_when_agent_is_running(self):
+        cases = {
+            "newrelic": {"newrelic.config": {"_configuration_done": True}},
+            "datadog": {"ddtrace.bootstrap.sitecustomize": {}},
+        }
+        for name, spec in cases.items():
+            with self.subTest(backend=name), mock.patch.dict(
+                sys.modules, fake_modules(spec)
+            ), error_tracking(name, {}):
+                self.assertEqual(check_error_tracking(), [])
+
     def test_check_warns_when_agent_is_not_running(self):
         cases = {
             "newrelic": {"newrelic.agent": {}, "newrelic.config": {"_configuration_done": False}},
@@ -249,9 +260,10 @@ class CustomBackendsTest(TestCase):
                 [message.id for message in check_error_tracking()], ["erp_framework.E012"]
             )
 
-    def test_unknown_backend_fails_check_and_does_not_break_start_up(self):
+    def test_unknown_backend_fails_check_and_does_not_break_pages(self):
         with error_tracking("no.such.Backend", {}):
             start_server()
-            self.assertEqual(
-                [message.id for message in check_error_tracking()], ["erp_framework.E011"]
-            )
+            ids = [message.id for message in check_error_tracking()]
+            response = self.client.get(reverse("erp_framework:login"))
+        self.assertEqual(ids, ["erp_framework.E011"])
+        self.assertEqual(response.status_code, 200)

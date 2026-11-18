@@ -160,6 +160,9 @@ class ERPFrameworkAdminSiteBase(AdminSite):
             self.name
         )
         context.update(get_each_context(request, self))
-        backend = get_backend()
+        try:
+            backend = get_backend()
+        except ImportError:
+            backend = None  # reported by the erp_framework.E011 system check
         context["error_tracking"] = backend.browser_context(request) if backend else None
         return context
