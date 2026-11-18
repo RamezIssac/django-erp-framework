@@ -26,12 +26,7 @@ ERP framework settings
             "admin_site_class": "erp_framework.admin.admin.ERPFrameworkAdminSite",
             "admin_site_namespace": "erp_framework",
             "enable_delete_all": False,
-            "error_tracking": {
-                "dsn": "",
-                "environment": "",
-                "release": "",
-                "include_local_variables": False,
-            },
+            "error_tracking": {},  # e.g. {"backend": "sentry", "options": {"dsn": ...}}
         }
 
 
@@ -49,7 +44,8 @@ Make sure to inherit from ``ERPFrameworkAdminSiteBase`` in your custom admin sit
 ``error_tracking``
 ------------------
 
-Sentry/GlitchTip error tracking, off while ``dsn`` is empty. See :doc:`error_tracking`.
+Error tracking backend (``sentry``, ``rollbar``, ``newrelic``, ``datadog``, ``external`` or a dotted path) and its
+options, off while ``backend`` is unset. See :doc:`error_tracking`.
 
 
 ``enable_delete_all``

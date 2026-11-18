@@ -1,0 +1,11 @@
+<script src="https://browser.sentry-cdn.com/11.14.0/bundle.min.js"
+        integrity="sha384-jCAqT6eX+TSYGAhAPoGRdVSau37cLPr0E7njTbruV95FY3W1LVq5TAi+/QIwOIy5"
+        crossorigin="anonymous"></script>
+<script>
+    Sentry.init({
+        dsn: "{{ config.dsn|escapejs }}",
+        environment: "{{ config.environment|escapejs }}" || undefined,
+        release: "{{ config.release|escapejs }}" || undefined,
+        sendDefaultPii: false,
+    });
+</script>

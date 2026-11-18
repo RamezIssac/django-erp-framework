@@ -12,7 +12,7 @@
 {% block nav-global %}{% endblock %}
 {% block extrahead %}
     {{ block.super }}
-    {% include "erp_framework/sentry_browser.html" %}
+    {% include "erp_framework/error_tracking.html" %}
 {% endblock %}
 {% block extrastyle %}
     <link href="{% static "erp_framework/css/animate.min.css" %}" rel="stylesheet" type="text/css">
