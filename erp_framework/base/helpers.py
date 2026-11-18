@@ -2,7 +2,6 @@ import logging
 from collections.abc import Iterable
 
 from django.apps import apps
-from django.conf import settings
 from django.db.models import Max
 
 logger = logging.getLogger(__name__)
@@ -242,8 +241,6 @@ def flatten_list(items):
 
 
 def admin_site_access_permission(request):
-    if settings.DEBUG and request.user.is_authenticated:
-        return True
     return request.user.is_active and request.user.is_staff
 
 

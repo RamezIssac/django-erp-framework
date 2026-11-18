@@ -126,6 +126,14 @@ class ReportView(ReportViewBase):
     def test_func(self):
         return app_settings.report_access_function(self.request, "view",self.__class__)
 
+    def get(self, request, *args, **kwargs):
+        export_option = request.GET.get("_export", "")
+        if export_option:
+            permission = "print" if export_option == "print" else "export"
+            if not app_settings.report_access_function(request, permission, self.__class__):
+                raise PermissionDenied
+        return super().get(request, *args, **kwargs)
+
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
             if self.request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":

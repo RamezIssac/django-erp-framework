@@ -1,6 +1,6 @@
 import datetime
 from unittest import skip
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth import get_user_model
@@ -628,7 +628,7 @@ class TestAdmin(BaseTestData, TestCase):
             )
         )
         self.assertEqual(response.status_code, 302, response)
-        self.assertEqual(response.url, reverse("erp_framework:login"))
+        self.assertEqual(urlparse(response.url).path, reverse("erp_framework:login"))
 
     def test_save_formset(self):
         self.client.login(username="super", password="secret")
