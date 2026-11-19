@@ -85,7 +85,7 @@ ALWAYS_MIDDLEWARE = [
     "crequest.middleware.CrequestMiddleware",
 ]
 
-# django-admin-api (optional): JSON API over the erp admin site, tested in api_tests.
+# django-admin-api-mcp (optional): JSON API over the erp admin site, tested in api_tests.
 try:
     import admin_api  # noqa: F401
 except ImportError:

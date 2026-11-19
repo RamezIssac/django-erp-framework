@@ -1,4 +1,4 @@
-"""django-admin-api against erp_framework admins: same hooks for HTML and JSON writes."""
+"""django-admin-api-mcp against erp_framework admins: same hooks for HTML and JSON writes."""
 
 import datetime
 import json

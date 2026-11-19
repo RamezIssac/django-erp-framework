@@ -9,7 +9,7 @@ urlpatterns = [
     path("api/", erp_api_site.urls),
 ]
 
-try:  # the MCP transport needs django-admin-api[mcp]
+try:  # the MCP transport needs django-admin-api-mcp
     urlpatterns.append(path("mcp/", erp_mcp_site.urls))
 except ImproperlyConfigured:
     pass

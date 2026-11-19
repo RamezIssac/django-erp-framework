@@ -1,4 +1,4 @@
-"""MCP (django-admin-api's AdminMcpSite) over erp_framework admins: same hooks as HTML and JSON."""
+"""MCP (django-admin-api-mcp's AdminMcpSite) over erp_framework admins: same hooks as HTML and JSON."""
 
 import importlib.util
 import json
@@ -116,7 +116,7 @@ class ErpMcpTests(TestCase):
         self.assertEqual(out["error"], "validation_failed")
         self.assertFalse(Order.objects.exists())
 
-    @unittest.skipUnless(HAS_MCP_SDK, "needs django-admin-api[mcp]")
+    @unittest.skipUnless(HAS_MCP_SDK, "needs the MCP SDK (django-admin-api-mcp)")
     def test_http_endpoint(self):
         from admin_api.models import ApiToken
 
