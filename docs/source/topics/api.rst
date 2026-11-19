@@ -1,7 +1,7 @@
-JSON API (django-admin-api2)
-============================
+JSON API (django-admin-api-mcp)
+===============================
 
-The ERP admin can also be used as a JSON API through `django-admin-api2` (package ``admin_api``).
+The ERP admin can also be used as a JSON API through `django-admin-api-mcp` (package ``admin_api``).
 There is no second admin class to write. The same ``EntityAdmin`` / ``TransactionAdmin``
 drives the HTML admin and the API, and it differs only where you write an ``api_`` twin.
 
@@ -83,12 +83,12 @@ MCP: AI agents
 --------------
 
 The same admins can be used by AI agents (Claude Code, Claude Desktop, any MCP client) through
-django-admin-api2's MCP add-on, with the same permissions, ``whole_changeform_validation``,
+django-admin-api-mcp, with the same permissions, ``whole_changeform_validation``,
 ``pre_save``/``post_save`` hooks, LogEntry and reversion.
 
 .. code-block:: bash
 
-    pip install --pre "django-admin-api2[mcp]"
+    pip install django-admin-api-mcp
 
 .. code-block:: python
 

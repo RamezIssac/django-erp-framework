@@ -62,7 +62,7 @@ class ChangeformResult:
     """Outcome of :meth:`EntityAdmin.process_changeform`.
 
     Same attributes as ``admin_api.writes.ChangeformResult`` so the JSON API
-    (django-admin-api2) can run the very same pipeline as the HTML change form.
+    (django-admin-api-mcp) can run the very same pipeline as the HTML change form.
     """
 
     valid: bool
@@ -534,7 +534,7 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
         ``request`` is a POST request carrying the change form data in ``request.POST`` /
         ``request.FILES``. Called by :meth:`_changeform_view` (HTML admin) and by
-        django-admin-api2 (JSON API), so both run the same hooks:
+        django-admin-api-mcp (JSON API), so both run the same hooks:
 
         1. ``whole_changeform_validation``
         2. ``pre_save()`` before saving

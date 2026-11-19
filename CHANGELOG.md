@@ -3,7 +3,7 @@ All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
 
-## [1.8.0] - 2026-11-18
+## [1.8.0] - 2026-11-19
 ### Security
 - Report `_export=csv` and `_export=print` requests require the report's `export` / `print` permission through `report_access_function`; a denied request gets HTTP 403. Other `_export` actions require `export`.
 - Report URLs are wrapped in the admin site's `admin_view`: non-staff users are redirected to the admin login, and a custom `admin_site_access_permission` now applies to reports.
@@ -20,15 +20,15 @@ All notable changes to this project are/will be documented in this file.
 - Prepopulated sheets behave like a spreadsheet: arrow keys move between cells/rows (RTL aware), Enter/Shift+Enter, PageUp/PageDown, Ctrl+Up/Down, F2 to edit in a cell, Escape to revert. Numeric cells are `inputmode="decimal"` text inputs (arrows/wheel never change values), the header row and entity column are frozen, and a keyboard-shortcuts note shows under the sheet.
 - `PrepopulatedInlineMixin.fast_rendering` (default on for locked sheets): lean grid template with rows rendered in Python (`erp_grid` tag). A 526-row journal renders in ~0.3 s / 1.6 MB instead of ~1.1 s / 6.4 MB.
 - `PrepopulatedInlineMixin.autosave` + `GridAutosaveAdminMixin`: each row is saved (htmx) when a cell is committed, through the admin's own `save_formset`; on the add page the first save creates the document.
-- `erp_framework.api.erp_api_site`: an optional JSON API over `erp_admin_site` through django-admin-api2 (`admin_api`), with the same permissions, forms, inlines and actions as the admin. Requires `django-admin-api2` (alpha, install with `pip install --pre`); erp_framework itself does not.
-- `erp_framework.api.erp_mcp_site`: MCP access to the ERP admins for AI agents (`django-admin-api2[mcp]`), with the same permissions and hooks as the admin and the JSON API. The `changeform_saved` signal also sends `request=request`, so receivers can skip side effects during an MCP dry run (`request.is_dry_run`).
+- `erp_framework.api.erp_api_site`: an optional JSON API over `erp_admin_site` through django-admin-api-mcp (`admin_api`), with the same permissions, forms, inlines and actions as the admin. Requires `django-admin-api-mcp` (import name `admin_api`); erp_framework itself does not.
+- `erp_framework.api.erp_mcp_site`: MCP access to the ERP admins for AI agents (`django-admin-api-mcp`), with the same permissions and hooks as the admin and the JSON API. The `changeform_saved` signal also sends `request=request`, so receivers can skip side effects during an MCP dry run (`request.is_dry_run`).
 - `EntityAdmin.process_changeform(request, obj, change)`: validation and saving (`whole_changeform_validation`, `pre_save`, `save_model`, `save_related`, `post_save`, `changeform_saved`, LogEntry) extracted from `_changeform_view`; it returns a `ChangeformResult` and is the pipeline the JSON API and MCP writes run.
 - `description` on every framework admin base (`EntityAdmin`, `TransactionAdmin`, the prepopulated admins and the activity `LogEntryAdmin`) through the new `DescriptionMixin`; each passes it to the changelist context, `None` by default.
 
 ### Changed
 - Requires `django-slick-reporting>=1.5.1`.
 - New dependencies: `markdown-it-py`, `mdit-py-plugins`, `PyYAML` (for `erp_docs`).
-- The navbar link needs the unreleased `navbar_extra` hook of django-jazzy-tabler: with 0.2.0 the link is absent and nothing breaks. The minimum jazzy-tabler version moves up once the hook is released.
+- Requires `django-jazzy-tabler>=0.3.0`, which ships the `navbar_extra` hook used by the User guide link.
 - The jazzy_tabler integration no longer ships its own `admin/base.html` (a copy of the theme's 0.1.1 template); the theme's `base.html` is used.
 - `PrepopulatedAdmin` / `RaPrePopulatedAdmin` are deprecated (they override Django's private `_create_formsets`); use `PrepopulatedInlineMixin`.
 - Saving a prepopulated sheet never duplicates rows: a new row whose entity is already saved updates that item.

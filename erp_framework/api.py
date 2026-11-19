@@ -1,5 +1,5 @@
 """
-Optional JSON API over the ERP admin site, powered by django-admin-api2 (``admin_api``).
+Optional JSON API over the ERP admin site, powered by django-admin-api-mcp (``admin_api``).
 
 Every admin registered on ``erp_admin_site`` is exposed (``api_enabled = False`` hides one),
 with the same permissions, querysets, forms, inlines and actions as the HTML admin. Writes go
@@ -18,7 +18,7 @@ Setup::
 
     urlpatterns += [path("api/", erp_api_site.urls)]   # -> /api/v1/<app>/<model>/
 
-MCP (AI agents), with the same permissions and hooks. Needs ``django-admin-api2[mcp]`` for the
+MCP (AI agents), with the same permissions and hooks. Needs ``django-admin-api-mcp`` (MCP is part of it) for the
 transports::
 
     from erp_framework.api import erp_mcp_site
@@ -26,7 +26,7 @@ transports::
     urlpatterns += [path("mcp/", erp_mcp_site.urls)]   # Streamable HTTP
     # stdio: ADMIN_API_TOKEN=aapi_... python manage.py mcp_serve
 
-This module requires django-admin-api2; erp_framework itself does not.
+This module requires django-admin-api-mcp; erp_framework itself does not.
 """
 
 from admin_api import AdminApiSite

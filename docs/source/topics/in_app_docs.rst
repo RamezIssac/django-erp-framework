@@ -149,8 +149,7 @@ Settings
     chrome shows a "User guide" link (book icon + title) in the top navbar,
     opening the guide in a new tab. The link is rendered only for users who
     pass the access function. Set to ``False`` to hide it. It uses
-    django-jazzy-tabler's ``navbar_extra`` hook, so it only appears with a
-    jazzy-tabler release that ships the hook (absent in 0.2.0).
+    django-jazzy-tabler's ``navbar_extra`` hook (django-jazzy-tabler 0.3.0+).
 
 Example
 =======
