@@ -31,6 +31,7 @@ from django.template.response import TemplateResponse
 from django.urls import reverse, path
 from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
@@ -95,7 +96,18 @@ class RaThemeMixin:
     view_template = None  # Defaults to f'{app_settings.ERP_FRAMEWORK_THEME}/view.html'
 
 
-class AdminViewMixin(admin.ModelAdmin):
+class DescriptionMixin:
+    """Adds ``description`` to a ModelAdmin and passes it to the changelist template context."""
+
+    description = None  # Shown on the changelist under the title; also readable by other consumers
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["description"] = self.description
+        return super().changelist_view(request, extra_context)
+
+
+class AdminViewMixin(DescriptionMixin, admin.ModelAdmin):
     enable_view_view = True
     view_fields = ()
     view_template = "erp_framework/view.html"
@@ -108,13 +120,13 @@ class AdminViewMixin(admin.ModelAdmin):
             current_app=self.admin_site.name,
         )
 
-        # todo change the str obj
-        view_link = (
-            '<a href="%s" data-popup="tooltip" name="%s %s" data-placement="bottom"> '
-            '<i class="fas fa-chart-line"></i> </a>'
-            % (url, capfirst(_("Statistics for")), str(obj))
+        return format_html(
+            '<a href="{}" data-popup="tooltip" name="{} {}" data-placement="bottom"> '
+            '<i class="fas fa-chart-line"></i> </a>',
+            url,
+            capfirst(_("Statistics for")),
+            obj,
         )
-        return mark_safe(view_link)
 
     get_stats_icon.short_description = _("Stats")
 
@@ -265,7 +277,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     # ERP New Attributes
     # ------------------
-    description = None  # Description of the model to be displayed in hte changelist filter under the name
     enable_next_serial = True  # Enable the default slug to be a serial number
     enable_view_view = True  # If False there is no "DetailView ie Stats view"
     print_template = None
@@ -340,33 +351,27 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     def get_enhanced_obj_title(self, obj):
         request = CrequestMiddleware.get_request()
-        links = []
-        pk_attname = self.model._meta.pk.attname
-        pk = getattr(obj, pk_attname)
-        main_url = False
-        if self.has_change_permission(request, obj):
-            url = reverse(
-                "%s:%s_%s_change"
-                % (
-                    app_settings.ERP_FRAMEWORK_SITE_NAME,
-                    self.model._meta.app_label,
-                    self.model._meta.model_name,
-                ),
-                args=(quote(pk),),
-                current_app=self.admin_site.name,
-            )
-            if not main_url:
-                main_url = url
-            view_link = (
-                '<a href="%s" data-popup="tooltip" name="%s" data-placement="bottom">'
-                ' <i class="fas fa-edit"></i> </a>' % (url, capfirst(_("change")))
-            )
-            links.append(view_link)
-            links = "<span class='go-to-change-form'>%s</span>" % "".join(links) + ""
-            obj_link_title = "<a href='%s'>%s</a>" % (main_url, obj.name)
-            return mark_safe("%s %s" % (obj_link_title, links))
-
-        return obj.name
+        if not self.has_change_permission(request, obj):
+            return obj.name
+        url = reverse(
+            "%s:%s_%s_change"
+            % (
+                app_settings.ERP_FRAMEWORK_SITE_NAME,
+                self.model._meta.app_label,
+                self.model._meta.model_name,
+            ),
+            args=(quote(obj.pk),),
+            current_app=self.admin_site.name,
+        )
+        return format_html(
+            '<a href="{}">{}</a> <span class="go-to-change-form">'
+            '<a href="{}" data-popup="tooltip" name="{}" data-placement="bottom">'
+            ' <i class="fas fa-edit"></i> </a></span>',
+            url,
+            obj.name,
+            url,
+            capfirst(_("change")),
+        )
 
     def get_history_link(self, obj):
         info = self.model._meta.app_label, self.model._meta.model_name
@@ -383,12 +388,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     get_enhanced_obj_title.short_description = _("name")
     get_enhanced_obj_title.admin_order_field = "name"
-
-    @csrf_protect_m
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context["description"] = self.description
-        return super(EntityAdmin, self).changelist_view(request, extra_context)
 
     def save_model(self, request, obj, form, change):
         obj.lastmod_user = request.user
@@ -435,22 +434,21 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         return my_urls + reversion_urls + urlpatterns
 
     def get_by_slug(self, request, **kwargs):
-        query = self.model.objects.filter(**kwargs)
-        result = query.exists()
-        if result:
-            query = query[0]
-            admin_url = reverse(
-                "%s:%s_%s_change"
-                % (
-                    app_settings.ERP_FRAMEWORK_SITE_NAME,
-                    self.model._meta.app_label,
-                    self.model._meta.model_name,
-                ),
-                args=(query.id,),
-            )
-            return HttpResponseRedirect(admin_url)
-        else:
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
+        obj = self.get_queryset(request).filter(**kwargs).first()
+        if obj is None:
             raise Http404
+        admin_url = reverse(
+            "%s:%s_%s_change"
+            % (
+                app_settings.ERP_FRAMEWORK_SITE_NAME,
+                self.model._meta.app_label,
+                self.model._meta.model_name,
+            ),
+            args=(quote(obj.pk),),
+        )
+        return HttpResponseRedirect(admin_url)
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if isinstance(db_field, models.ForeignKey):

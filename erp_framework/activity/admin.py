@@ -9,7 +9,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from erp_framework.activity.models import MyActivity, SystemLog
-from erp_framework.admin.admin import RaThemeMixin
+from erp_framework.admin.admin import DescriptionMixin, RaThemeMixin
 from erp_framework.sites import erp_admin_site
 from erp_framework.base import app_settings
 from erp_framework.base.helpers import RaPermissionWidgetExclude
@@ -108,7 +108,7 @@ class RAContentTypeFilter(admin.SimpleListFilter):
         # return tuple((u.id, u.username) for u in User.objects.filter(is_staff=True))
 
 
-class LogEntryAdmin(RaThemeMixin, admin.ModelAdmin):
+class LogEntryAdmin(DescriptionMixin, RaThemeMixin, admin.ModelAdmin):
     date_hierarchy = "action_time"
     actions = None
     list_display_links = None

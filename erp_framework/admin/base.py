@@ -65,7 +65,7 @@ class ERPFrameworkAdminSiteBase(AdminSite):
             # ),
             url(
                 r"^reports/(?P<base_model>[\w-]+)/(?P<report_slug>[\w-]+)/$",
-                self.get_report_view,
+                self.admin_view(self.get_report_view),
                 name="report",
             ),
         ]

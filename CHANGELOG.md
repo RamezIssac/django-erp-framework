@@ -9,6 +9,18 @@ All notable changes to this project are/will be documented in this file.
   docs. SDKs are imported lazily; system checks report a missing SDK or agent. Optional extras `[sentry]`, `[rollbar]`,
   `[newrelic]`, `[datadog]`. Privacy defaults: no PII, request bodies or local variables. The default `login_template`
   is now `erp_framework/login.html` (extends `admin/login.html`).
+
+## [1.7.1]
+### Security hardening
+- Entity names are HTML-escaped in the admin changelist title and statistics columns (`get_enhanced_obj_title`, `get_stats_icon`), both now built with `format_html`. Thanks to p-w for the fix ([#63](https://github.com/RamezIssac/django-erp-framework/pull/63)).
+- Report `_export=csv` and `_export=print` requests now require the report's `export` / `print` permission through `report_access_function`; a denied request gets HTTP 403. Other `_export` actions require `export`.
+- Report URLs are wrapped in the admin site's `admin_view`: non-staff users are redirected to the admin login, and a custom `admin_site_access_permission` now applies to reports.
+- `admin_site_access_permission` no longer admits every authenticated user when `DEBUG=True`; access requires an active staff user in every mode.
+- `EntityAdmin.get_by_slug` requires view or change permission on the model (HTTP 403 otherwise) and looks the object up through `get_queryset(request)`.
+- Removed the unused `erp_framework/print_base.html` template.
+
+### Changes
+- `description` is now available on every framework admin base (`EntityAdmin`, `TransactionAdmin`, the prepopulated admins and the activity `LogEntryAdmin`) through the new `DescriptionMixin`; each passes it to the changelist context, `None` by default.
 - Fixed `erp_framework/js/select2_compat.js` (listed in `EntityAdmin.Media`) missing from the repository, which made admin pages raise "Missing staticfiles manifest entry" (HTTP 500) under `ManifestStaticFilesStorage`.
 - `erp_docs` pages now render in a standalone full-page layout (no admin menu/navbar/breadcrumb chrome): a left
   sidebar with only the docs page list (current page highlighted), a slim top bar with the guide title and a
@@ -43,6 +55,7 @@ All notable changes to this project are/will be documented in this file.
 - Saving a prepopulated sheet never duplicates rows: a new row whose entity is already saved updates that item.
 - Deprecated `PrepopulatedAdmin` / `RaPrePopulatedAdmin` (they override Django's private `_create_formsets`).
 - Fixed a JS error on pages without an active sidebar link.
+- Requires `django-slick-reporting>=1.5.1`.
 
 ## [1.7.0] - 2026-10-14
 - Swapped the hard admin-theme dependency from `django-jazzmin` to `django-jazzy-tabler>=0.1.1`; `erp_framework.admin.jazzmin_integration` stays available as an opt-in integration (install `django-jazzmin` yourself to use it)
