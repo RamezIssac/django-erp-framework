@@ -24,3 +24,21 @@ def check_crequest(app_configs=None, **kwargs):
             )
         )
     return errors
+
+
+@register()
+def check_error_tracking(app_configs=None, **kwargs):
+    from erp_framework.error_tracking import get_backend
+
+    try:
+        backend = get_backend()
+    except ImportError as error:
+        return [
+            Error(
+                f"Error tracking backend cannot be loaded: {error}",
+                hint="Use sentry, rollbar, newrelic, datadog, external or a dotted path to a backend class.",
+                obj="ERP_FRAMEWORK_SETTINGS['error_tracking']",
+                id="erp_framework.E011",
+            )
+        ]
+    return backend.check() if backend else []

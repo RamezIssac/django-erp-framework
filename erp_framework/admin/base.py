@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 
 from erp_framework.admin.helpers import get_each_context
 from erp_framework.base import app_settings
+from erp_framework.error_tracking import get_backend
 
 logger = logging.getLogger(__name__)
 
@@ -159,4 +160,9 @@ class ERPFrameworkAdminSiteBase(AdminSite):
             self.name
         )
         context.update(get_each_context(request, self))
+        try:
+            backend = get_backend()
+        except ImportError:
+            backend = None  # reported by the erp_framework.E011 system check
+        context["error_tracking"] = backend.browser_context(request) if backend else None
         return context

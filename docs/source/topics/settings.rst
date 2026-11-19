@@ -15,7 +15,7 @@ ERP framework settings
             "site_header": "ERP Framework System",
             "index_title": "Dashboard Home",
             "index_template": "admin/index.html",
-            "login_template": "admin/login.html",
+            "login_template": "erp_framework/login.html",
             "logout_template": "admin/logout.html",
             "app_index_template": "admin/app_index.html",
             # a function to control be dbfield on all instances, Saves you time to subclass if
@@ -26,6 +26,7 @@ ERP framework settings
             "admin_site_class": "erp_framework.admin.admin.ERPFrameworkAdminSite",
             "admin_site_namespace": "erp_framework",
             "enable_delete_all": False,
+            "error_tracking": {},  # e.g. {"backend": "sentry", "options": {"dsn": ...}}
         }
 
 
@@ -38,6 +39,13 @@ Defaults ``'erp_framework.admin.admin.ERPFrameworkAdminSite'``
 
 A dotted path to the main Django ERP framework Admin Site class.
 Make sure to inherit from ``ERPFrameworkAdminSiteBase`` in your custom admin site.
+
+
+``error_tracking``
+------------------
+
+Error tracking backend (``sentry``, ``rollbar``, ``newrelic``, ``datadog``, ``external`` or a dotted path) and its
+options, off while ``backend`` is unset. See :doc:`error_tracking`.
 
 
 ``enable_delete_all``

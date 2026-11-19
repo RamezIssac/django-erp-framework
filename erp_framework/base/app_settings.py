@@ -6,7 +6,7 @@ ERP_FRAMEWORK_SETTINGS = {
     "site_header": "ERP Framework System",
     "index_title": "Dashboard Home",
     "index_template": "admin/index.html",
-    "login_template": "admin/login.html",
+    "login_template": "erp_framework/login.html",
     "logout_template": "admin/logout.html",
     "app_index_template": "admin/app_index.html",
     # a function to control be dbfield on all instances, Saves you time to subclass if
@@ -71,7 +71,7 @@ ERP_FRAMEWORK_SITE_NAME = ERP_FRAMEWORK_SETTINGS.get(
 )
 
 ERP_FRAMEWORK_LOGIN_TEMPLATE = ERP_FRAMEWORK_SETTINGS.get(
-    "login_template", "admin/login.html"
+    "login_template", "erp_framework/login.html"
 )
 
 ERP_FRAMEWORK_APP_INDEX_TEMPLATE = ERP_FRAMEWORK_SETTINGS.get(
