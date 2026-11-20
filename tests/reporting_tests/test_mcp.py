@@ -1,0 +1,262 @@
+"""MCP report tools (erp_framework.reporting.mcp) over the registered test reports."""
+
+import importlib.util
+import unittest
+from decimal import Decimal
+
+from django.contrib.auth.models import Permission
+from django.test import RequestFactory, TestCase, override_settings
+
+from erp_framework.reporting.models import UserReportPermission
+
+from .reports import ClientTotalBalance
+from .tests import BaseTestData, year
+
+HAS_ADMIN_API = importlib.util.find_spec("admin_api") is not None
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class ReportToolsTests(BaseTestData, TestCase):
+    def call(self, name, arguments=None, user=None, token=None):
+        from erp_framework.api import erp_mcp_site
+
+        request = RequestFactory().post("/mcp/")
+        request.user = user or self.user
+        if token is not None:
+            request.api_token = token
+        result = erp_mcp_site.call_tool(request, name, arguments or {})
+        return result.data, result.is_error
+
+    def run_report(self, report, params=None, **kwargs):
+        out, err = self.call("run_report", {"report": report, "params": params or {}, **kwargs})
+        self.assertFalse(err, out)
+        return out
+
+    def column_names(self, out):
+        return [c["name"] for c in out["columns"]]
+
+    def test_tools_are_listed_read_only(self):
+        from erp_framework.api import erp_mcp_site
+
+        tools = {t.name: t for t in erp_mcp_site.get_tools()}
+        for name in ("list_reports", "describe_report", "run_report", "run_dynamic_report"):
+            self.assertTrue(tools[name].annotations["readOnlyHint"], name)
+            self.assertFalse(tools[name].writes, name)
+
+    def test_list_reports_exposes_every_registered_report(self):
+        out, err = self.call("list_reports")
+        self.assertFalse(err, out)
+        reports = {r["report"]: r for r in out["reports"]}
+        self.assertEqual(
+            reports["client.balances"],
+            {
+                "report": "client.balances",
+                "title": "Clients Balances",
+                "description": "Clients Balances",
+                "base_model": "reporting_tests.client",
+                "kind": "group",
+                "date_filter": False,
+            },
+        )
+        self.assertEqual(reports["product.productclientsalesmatrix"]["kind"], "crosstab")
+        self.assertEqual(reports["client.clientsalesmonthlyseries"]["kind"], "series")
+        self.assertEqual(reports["client.clientdetailedstatement"]["kind"], "list")
+
+    def test_describe_report(self):
+        out, err = self.call("describe_report", {"report": "product.productclientsalesmatrix"})
+        self.assertFalse(err, out)
+        self.assertEqual(out["kind"], "crosstab")
+        self.assertEqual(out["crosstab_field"], "client")
+        self.assertEqual(out["group_by"], "client")
+        self.assertEqual(out["columns"], ["slug", "name"])
+        properties = out["params_schema"]["properties"]
+        self.assertEqual(properties["client_id"]["x-related-model"], "reporting_tests.client")
+        self.assertIn("crosstab_compute_remainder", properties)
+
+    def test_run_group_report_with_filter(self):
+        out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
+        self.assertEqual(self.column_names(out), ["slug", "name", "__balance__", "__total__"])
+        self.assertEqual(out["row_count"], 1)
+        self.assertEqual(out["rows"][0][1], "Client 1")
+        self.assertFalse(out["truncated"])
+
+    def test_totals_cover_all_rows_when_truncated(self):
+        full = self.run_report("client.balances")
+        truncated = self.run_report("client.balances", max_rows=1)
+        self.assertGreater(full["row_count"], 1)
+        self.assertEqual(len(truncated["rows"]), 1)
+        self.assertTrue(truncated["truncated"])
+        self.assertEqual(truncated["row_count"], full["row_count"])
+        self.assertEqual(truncated["totals"], full["totals"])
+
+    def test_run_time_series_report_with_date_range(self):
+        out = self.run_report(
+            "client.clientsalesmonthlyseries",
+            {"client_id": [self.client1.pk], "start_date": f"{year}-02-01", "end_date": f"{year}-03-31"},
+        )
+        # A period column is keyed by the period's end: February ends {year}-03-01, March {year}-04-01.
+        periods = {n.split("TS")[1] for n in self.column_names(out) if "TS" in n}
+        self.assertEqual(periods, {f"{year}0301", f"{year}0401"})
+        self.assertEqual(out["row_count"], 1)
+
+    def test_run_crosstab_report(self):
+        out = self.run_report("product.productclientsalesmatrix", {"client_id": [self.client1.pk]})
+        self.assertIn(f"__total__CT{self.client1.pk}", self.column_names(out))
+        self.assertIn("__total__CT----", self.column_names(out))
+
+    def test_run_list_report_honors_date_range(self):
+        out = self.run_report(
+            "client.clientdatedstatement", {"start_date": f"{year}-02-01", "end_date": f"{year}-02-28"}
+        )
+        date_index = self.column_names(out).index("date")
+        self.assertEqual(out["row_count"], 3)
+        self.assertTrue(all(row[date_index].startswith(f"{year}-02") for row in out["rows"]), out["rows"])
+
+    def test_unknown_param_is_invalid(self):
+        out, err = self.call("run_report", {"report": "client.balances", "params": {"client": [self.client1.pk]}})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+
+    def test_bad_value_returns_field_errors(self):
+        out, err = self.call("run_report", {"report": "client.balances", "params": {"client_id": ["x"]}})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+        self.assertIn("client_id", out["fields"])
+
+    def test_max_rows_above_cap_is_capped(self):
+        out = self.run_report("client.balances", max_rows=10_000)
+        self.assertFalse(out["truncated"])
+
+    def test_unknown_report_is_not_found(self):
+        out, err = self.call("run_report", {"report": "client.nope"})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "not_found")
+
+    def test_user_without_view_permission_sees_no_reports(self):
+        out, err = self.call("list_reports", user=self.limited_user)
+        self.assertFalse(err, out)
+        self.assertEqual(out["reports"], [])
+        out, err = self.call("run_report", {"report": "client.balances"}, user=self.limited_user)
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "not_found")
+
+    def test_report_permission_row_grants_one_report(self):
+        UserReportPermission.objects.create(
+            user=self.limited_user, report_code=ClientTotalBalance.get_report_code(), view=True
+        )
+        out, err = self.call("list_reports", user=self.limited_user)
+        self.assertFalse(err, out)
+        self.assertEqual([r["report"] for r in out["reports"]], ["client.balances"])
+
+    def test_model_view_permission_grants_its_reports(self):
+        self.limited_user.user_permissions.add(Permission.objects.get(codename="view_client"))
+        out, err = self.call("list_reports", user=self.limited_user)
+        self.assertFalse(err, out)
+        self.assertTrue(out["reports"])
+        self.assertTrue(all(r["base_model"] == "reporting_tests.client" for r in out["reports"]))
+
+    def test_token_scope_narrows_reports(self):
+        token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
+        out, err = self.call("list_reports", token=token)
+        self.assertFalse(err, out)
+        self.assertTrue(out["reports"])
+        self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]))
+
+    def test_is_report_exposed_hides_reports(self):
+        from erp_framework.api import ERPMcpSite, erp_api_site
+
+        class ProductOnlySite(ERPMcpSite):
+            def is_report_exposed(self, report_class):
+                return report_class.get_base_model_name() == "product"
+
+        site = ProductOnlySite(erp_api_site, name="product_only_mcp")
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        result = site.call_tool(request, "list_reports", {})
+        self.assertFalse(result.is_error, result.data)
+        self.assertTrue(all(r["report"].startswith("product.") for r in result.data["reports"]))
+
+
+SALES_BY_CLIENT = {
+    "report_model": "reporting_tests.SimpleSales",
+    "group_by": "client",
+    "columns": ["name", {"method": "Sum", "field": "value", "name": "sales"}],
+}
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class DynamicReportToolTests(BaseTestData, TestCase):
+    call = ReportToolsTests.call
+
+    def grant(self, *codenames):
+        self.limited_user.user_permissions.add(*Permission.objects.filter(codename__in=codenames))
+        self.limited_user = type(self.limited_user).objects.get(pk=self.limited_user.pk)  # drop the perm cache
+
+    def test_group_by_with_aggregation_and_totals(self):
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
+        self.assertFalse(err, out)
+        self.assertEqual([c["name"] for c in out["columns"]], ["name", "sales"])
+        sales = {row[0]: row[1] for row in out["rows"]}
+        self.assertEqual(sales["Client 1"], "300")
+        self.assertEqual(out["totals"], {"sales": format(sum(Decimal(v) for v in sales.values() if v), "f")})
+
+    def test_time_series_and_date_range(self):
+        spec = {
+            **SALES_BY_CLIENT,
+            "columns": ["name"],
+            "date_field": "date",
+            "start_date": f"{year}-01-01",
+            "end_date": f"{year}-02-28",
+            "time_series_pattern": "monthly",
+            "time_series_columns": [{"method": "Sum", "field": "value", "name": "sales"}],
+            "filters": {"client_id__in": [self.client1.pk]},
+        }
+        out, err = self.call("run_dynamic_report", {"spec": spec})
+        self.assertFalse(err, out)
+        self.assertEqual(out["row_count"], 1)
+        self.assertEqual(out["rows"][0][1:], ["100", "100"])
+
+    def test_list_kind_with_max_rows(self):
+        spec = {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["date", "value"]}
+        out, err = self.call("run_dynamic_report", {"spec": spec, "max_rows": 2})
+        self.assertFalse(err, out)
+        self.assertEqual(len(out["rows"]), 2)
+        self.assertTrue(out["truncated"])
+
+    def test_bad_spec_is_invalid_params(self):
+        spec = {**SALES_BY_CLIENT, "columns": [{"method": "Sum", "field": "no_such_field"}]}
+        out, err = self.call("run_dynamic_report", {"spec": spec})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+        self.assertIn("columns", out["fields"])
+
+    def test_model_outside_the_mcp_site_is_rejected(self):
+        spec = {"report_model": "reporting_tests.JournalItem", "kind": "list", "columns": ["data"]}
+        out, err = self.call("run_dynamic_report", {"spec": spec})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+
+    def test_user_without_model_permissions_is_denied(self):
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, user=self.limited_user)
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "permission_denied")
+
+    def test_group_by_model_needs_view_permission(self):
+        self.grant("view_simplesales")
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, user=self.limited_user)
+        self.assertTrue(err)
+        self.assertEqual(out["fields"]["group_by"][0]["code"], "model_not_allowed")
+        self.grant("view_client")
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, user=self.limited_user)
+        self.assertFalse(err, out)
+
+    def test_list_dynamic_report_models_follows_permissions(self):
+        self.grant("view_simplesales")
+        out, err = self.call("list_dynamic_report_models", user=self.limited_user)
+        self.assertFalse(err, out)
+        models = {m["identifier"]: m for m in out["models"]}
+        self.assertEqual(set(models), {"reporting_tests.SimpleSales"})
+        relations = {f["name"] for f in models["reporting_tests.SimpleSales"]["fields"] if f["is_relation"]}
+        self.assertNotIn("client", relations)

@@ -2,6 +2,9 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+### Added
+- `erp_framework.reporting.mcp.ReportToolsMixin`: read-only MCP tools `list_reports`, `describe_report`, `run_report`, `list_dynamic_report_models` and `run_dynamic_report` for a django-admin-api-mcp `AdminMcpSite`, mixed into `ERPMcpSite`. Reports are gated by `report_access_function(request, "view", report)` and the token scopes on the base model; every registered report is exposed by default (`is_report_exposed` narrows it). `run_report` returns compact rows with totals over all rows (`max_rows` 200 by default, capped at 1000). `run_dynamic_report` runs django-slick-reporting's JSON report spec over the MCP-exposed models the user may view. `describe_report` includes a report's `extra_params` in its `params_schema`.
+- Test requirements pin django-slick-reporting to its `feature/slick-mcp-runner` branch and add `django-admin-api-mcp[mcp]==0.1.0a3`.
 
 ## [1.8.0] - 2026-11-19
 ### Security

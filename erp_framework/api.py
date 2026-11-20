@@ -26,12 +26,17 @@ transports::
     urlpatterns += [path("mcp/", erp_mcp_site.urls)]   # Streamable HTTP
     # stdio: ADMIN_API_TOKEN=aapi_... python manage.py mcp_serve
 
+The MCP site also publishes the registered reports and ad-hoc dynamic reports as read-only tools
+(``list_reports``, ``describe_report``, ``run_report``, ``run_dynamic_report``); see
+:mod:`erp_framework.reporting.mcp`.
+
 This module requires django-admin-api-mcp; erp_framework itself does not.
 """
 
 from admin_api import AdminApiSite
 from admin_api.mcp import AdminMcpSite
 
+from erp_framework.reporting.mcp import ReportToolsMixin
 from erp_framework.sites import erp_admin_site
 
 
@@ -42,8 +47,8 @@ class ERPApiSite(AdminApiSite):
 erp_api_site = ERPApiSite(admin_site=erp_admin_site, name="erp_api")
 
 
-class ERPMcpSite(AdminMcpSite):
-    """Subclass to change MCP behaviour (read_only, instructions, exposure)."""
+class ERPMcpSite(ReportToolsMixin, AdminMcpSite):
+    """Subclass to change MCP behaviour (read_only, instructions, exposure, report exposure)."""
 
 
 erp_mcp_site = ERPMcpSite(erp_api_site, name="erp_mcp", server_name="erp")

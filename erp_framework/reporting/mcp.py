@@ -1,0 +1,314 @@
+"""
+Registered reports and ad-hoc dynamic reports as read-only MCP tools.
+
+Mix :class:`ReportToolsMixin` into a django-admin-api-mcp ``AdminMcpSite`` (``ERPMcpSite`` already
+does)::
+
+    class MyMcpSite(ReportToolsMixin, AdminMcpSite):
+        report_max_rows = 100
+
+The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
+and ``run_dynamic_report``. Reports run through django-slick-reporting's headless runner and come back as compact rows plus
+server-side totals. This module requires django-admin-api-mcp; erp_framework itself does not.
+"""
+
+from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
+
+from admin_api import scopes
+from admin_api.errors import ApiError, NotFound, PermissionDeniedError
+from admin_api.jsonschema import form_object_schema
+from admin_api.mcp.sites import DEFAULT_INSTRUCTIONS
+from admin_api.mcp.tools import ToolSpec, obj
+from slick_reporting.dynamic_report import (
+    DYNAMIC_REPORT_SPEC_SCHEMA,
+    describe_dynamic_report_models,
+    run_dynamic_report,
+)
+from slick_reporting.helpers import compact_response
+from slick_reporting.views import SlickReportingListViewMixin
+
+from erp_framework.base import app_settings
+from erp_framework.reporting.registry import report_registry
+
+REPORT_TOOL_NAMES = frozenset(
+    {"list_reports", "describe_report", "run_report", "list_dynamic_report_models", "run_dynamic_report"}
+)
+
+REPORT_INSTRUCTIONS = """
+6. Reports: call list_reports to see the reports you may run, describe_report for a report's \
+parameters, then run_report. Results are compact: 'columns', positional 'rows', and 'totals' \
+computed over all rows even when 'truncated' is true. Foreign-key parameters take primary keys of \
+the model named in the parameter's 'x-related-model' (look them up with list_objects).
+7. When no registered report answers the question, call list_dynamic_report_models for the models \
+and fields you may use, then build a report with run_dynamic_report."""
+
+READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
+SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
+
+REPORT_ARG = {
+    "type": "string",
+    "description": "Report code exactly as returned by list_reports, '<base_model>.<report_slug>' "
+    "(e.g. 'client.balances').",
+}
+
+
+class InvalidParams(ApiError):
+    status = 400
+    code = "invalid_params"
+
+
+class ReportToolsMixin:
+    """Adds the report tools to an ``AdminMcpSite`` subclass.
+
+    A report is listed and runnable when ``is_report_exposed`` allows it (default: every report
+    registered on the API site's admin site), ``report_access_function(request, "view", report)``
+    passes, and the token scopes allow ``view`` on the report's base model.
+    """
+
+    report_max_rows = 200
+    report_max_rows_cap = 1000
+    instructions = DEFAULT_INSTRUCTIONS + REPORT_INSTRUCTIONS
+
+    # --- policy hooks (override in a subclass) -------------------------------------------------
+    def is_report_exposed(self, report_class) -> bool:
+        return True
+
+    def get_report_description(self, report_class, request) -> str:
+        description = getattr(report_class, "report_description", "") or (report_class.__doc__ or "").strip()
+        return str(description or report_class.get_report_title())
+
+    def has_report_permission(self, request, report_class) -> bool:
+        if not app_settings.report_access_function(request, "view", report_class):
+            return False
+        base_model = getattr(report_class, "base_model", None)
+        return base_model is None or scopes.request_allows(request, base_model._meta, "view")
+
+    def get_dynamic_report_models(self, request) -> list:
+        """Models a dynamic report may read: the MCP-exposed models the user may view."""
+        return [
+            model
+            for model, model_admin in self.api_site.exposed_admins()
+            if self.is_exposed(model_admin) and model_admin.has_view_or_change_permission(request)
+        ]
+
+    # --- registry ------------------------------------------------------------------------------
+    def get_reports(self, request) -> list:
+        reports = report_registry.get_all_reports(admin_site=self.api_site.admin_site.name)
+        return [r for r in reports if self.is_report_exposed(r) and self.has_report_permission(request, r)]
+
+    def get_report(self, request, code: str):
+        for report_class in self.get_reports(request):
+            if report_class.get_report_code() == code:
+                return report_class
+        raise NotFound(f"Unknown report {code!r}; call list_reports for the available codes.")
+
+    # --- tools ---------------------------------------------------------------------------------
+    def get_tools(self, request=None) -> list:
+        return super().get_tools(request) + self.get_report_tools()
+
+    def get_view_tools(self, request=None, *, reserved=()) -> list:
+        return super().get_view_tools(request, reserved={*reserved, *REPORT_TOOL_NAMES})
+
+    def get_report_tools(self) -> list:
+        max_rows = {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": self.report_max_rows_cap,
+            "default": self.report_max_rows,
+            "description": "Rows to return. 'totals' and 'row_count' always cover every row.",
+        }
+        return [
+            ToolSpec(
+                name="list_reports",
+                title="List reports",
+                description="The reports you may run: code, title, description, base model, kind "
+                "(group, series, crosstab or list) and whether it filters by date.",
+                input_schema=obj({}),
+                handler=list_reports,
+                annotations=READ_ONLY,
+            ),
+            ToolSpec(
+                name="describe_report",
+                title="Describe a report",
+                description="A report's parameters as JSON Schema ('params_schema'), its columns, "
+                "group by, time series pattern and crosstab field.",
+                input_schema=obj({"report": REPORT_ARG}, required=["report"]),
+                handler=describe_report,
+                annotations=READ_ONLY,
+            ),
+            ToolSpec(
+                name="run_report",
+                title="Run a report",
+                description="Run a registered report. 'params' follows describe_report's params_schema; "
+                "omitted dates use the report's default range. Returns columns, rows, totals, "
+                "row_count, truncated and date_window.",
+                input_schema=obj(
+                    {
+                        "report": REPORT_ARG,
+                        "params": {"type": "object", "description": "Report parameters (see describe_report)."},
+                        "max_rows": max_rows,
+                    },
+                    required=["report"],
+                ),
+                handler=run_report,
+                annotations=READ_ONLY,
+            ),
+            ToolSpec(
+                name="list_dynamic_report_models",
+                title="List models for dynamic reports",
+                description="The models a run_dynamic_report spec may read, with their fields: name, type, "
+                "whether it is numeric, a date or a relation, and the related model.",
+                input_schema=obj({}),
+                handler=list_dynamic_report_models,
+                annotations=READ_ONLY,
+            ),
+            ToolSpec(
+                name="run_dynamic_report",
+                title="Create and run a report",
+                description="Build an ad-hoc report from a JSON spec and run it, when no registered report "
+                "answers the question. The spec names a report_model (from list_dynamic_report_models), "
+                "kind 'aggregate' (columns computed per group_by value) or 'list' (matching rows), columns "
+                "as field paths or {method, field} aggregations, and optionally a date_field with "
+                "start_date/end_date, a time_series_pattern with time_series_columns, a crosstab_field "
+                "with crosstab_ids and crosstab_columns, and ORM-style filters. Example: {'report_model': "
+                "'store.SalesLine', 'group_by': 'client', 'columns': ['name', {'method': 'Sum', 'field': "
+                "'value', 'name': 'sales'}], 'date_field': 'date', 'start_date': '2026-03-01', "
+                "'end_date': '2026-03-31'}. Only models you may view are allowed. Returns the same shape "
+                "as run_report.",
+                input_schema=obj({"spec": SPEC_SCHEMA, "max_rows": max_rows}, required=["spec"]),
+                handler=dynamic_report,
+                annotations=READ_ONLY,
+            ),
+        ]
+
+
+def report_kind(report_class) -> str:
+    if issubclass(report_class, SlickReportingListViewMixin):
+        return "list"
+    if report_class.crosstab_field:
+        return "crosstab"
+    if report_class.time_series_pattern or report_class.time_series_selector:
+        return "series"
+    return "group"
+
+
+def model_label(model) -> str | None:
+    return f"{model._meta.app_label}.{model._meta.model_name}" if model is not None else None
+
+
+def column_name(column) -> str:
+    if isinstance(column, (list, tuple)):
+        column = column[0]
+    return column if isinstance(column, str) else getattr(column, "name", None) or column.__name__
+
+
+def params_schema(view) -> dict:
+    schema = form_object_schema(view.get_form_class(), required=True)
+    schema["properties"].update(view.extra_params or {})
+    return schema
+
+
+def _max_rows(site, args) -> int:
+    value = args.get("max_rows", site.report_max_rows)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise InvalidParams("'max_rows' must be a positive integer.")
+    return min(value, site.report_max_rows_cap)
+
+
+def _report_code(args) -> str:
+    code = args.get("report")
+    if not isinstance(code, str) or not code:
+        raise InvalidParams("'report' is required.")
+    return code
+
+
+def _validation_error(exc: ValidationError, detail: str) -> InvalidParams:
+    if not hasattr(exc, "error_dict"):
+        return InvalidParams(detail, non_field_errors=list(exc.messages))
+    fields = {
+        name: [{"message": message, "code": error.code} for error in errors for message in error.messages]
+        for name, errors in exc.error_dict.items()
+    }
+    non_field = [e["message"] for e in fields.pop(NON_FIELD_ERRORS, [])]
+    extra = {"fields": fields} if fields else {}
+    if non_field:
+        extra["non_field_errors"] = non_field
+    return InvalidParams(detail, **extra)
+
+
+# --- handlers: handler(mcp_site, request, arguments) -> dict --------------------------------------
+def list_reports(site, request, args) -> dict:
+    return {
+        "reports": [
+            {
+                "report": report_class.get_report_code(),
+                "title": str(report_class.get_report_title()),
+                "description": site.get_report_description(report_class, request),
+                "base_model": model_label(report_class.base_model),
+                "kind": report_kind(report_class),
+                "date_filter": bool(report_class.date_field),
+            }
+            for report_class in site.get_reports(request)
+        ]
+    }
+
+
+def describe_report(site, request, args) -> dict:
+    report_class = site.get_report(request, _report_code(args))
+    view = report_class()
+    view.setup(request)
+    return {
+        "report": report_class.get_report_code(),
+        "title": str(report_class.get_report_title()),
+        "description": site.get_report_description(report_class, request),
+        "base_model": model_label(report_class.base_model),
+        "report_model": model_label(report_class.get_report_model()),
+        "kind": report_kind(report_class),
+        "group_by": report_class.group_by or None,
+        "date_field": report_class.date_field or None,
+        "time_series_pattern": report_class.time_series_pattern or None,
+        "crosstab_field": report_class.crosstab_field or None,
+        "columns": [column_name(c) for c in report_class.columns or []],
+        "params_schema": params_schema(view),
+    }
+
+
+def run_report(site, request, args) -> dict:
+    report_class = site.get_report(request, _report_code(args))
+    params = args.get("params") or {}
+    if not isinstance(params, dict):
+        raise InvalidParams("'params' must be an object.")
+    max_rows = _max_rows(site, args)
+    try:
+        full_response = report_class.run(request, params)
+    except PermissionDenied as exc:
+        raise PermissionDeniedError() from exc
+    except ValidationError as exc:
+        raise _validation_error(exc, "Invalid report parameters.") from exc
+    return {
+        "report": report_class.get_report_code(),
+        "title": str(report_class.get_report_title()),
+        **compact_response(full_response, max_rows=max_rows),
+    }
+
+
+def list_dynamic_report_models(site, request, args) -> dict:
+    allowed_models = site.get_dynamic_report_models(request)
+    return {"models": describe_dynamic_report_models(request, allowed_models=allowed_models)}
+
+
+def dynamic_report(site, request, args) -> dict:
+    spec = args.get("spec")
+    if not isinstance(spec, dict):
+        raise InvalidParams("'spec' must be an object.")
+    max_rows = _max_rows(site, args)
+    allowed_models = site.get_dynamic_report_models(request)
+    if not allowed_models:
+        raise PermissionDeniedError("You may not view any model a dynamic report could read.")
+    try:
+        full_response = run_dynamic_report(spec, request, allowed_models=allowed_models)
+    except PermissionDenied as exc:
+        raise PermissionDeniedError(str(exc) or None) from exc
+    except ValidationError as exc:
+        raise _validation_error(exc, "Invalid report spec.") from exc
+    return compact_response(full_response, max_rows=max_rows)
