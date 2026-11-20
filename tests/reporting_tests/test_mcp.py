@@ -260,3 +260,12 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertEqual(set(models), {"reporting_tests.SimpleSales"})
         relations = {f["name"] for f in models["reporting_tests.SimpleSales"]["fields"] if f["is_relation"]}
         self.assertNotIn("client", relations)
+
+    def test_token_scope_narrows_dynamic_report_models(self):
+        token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
+        out, err = self.call("list_dynamic_report_models", token=token)
+        self.assertFalse(err, out)
+        self.assertEqual({m["identifier"] for m in out["models"]}, {"reporting_tests.Product"})
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, token=token)
+        self.assertTrue(err)
+        self.assertEqual(out["fields"]["report_model"][0]["code"], "model_not_allowed")

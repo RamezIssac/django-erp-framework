@@ -92,15 +92,17 @@ class ReportToolsMixin:
         ]
 
     # --- registry ------------------------------------------------------------------------------
-    def get_reports(self, request) -> list:
+    def get_reports(self, request, code=None) -> list:
         reports = report_registry.get_all_reports(admin_site=self.api_site.admin_site.name)
+        if code is not None:
+            reports = [r for r in reports if r.get_report_code() == code]
         return [r for r in reports if self.is_report_exposed(r) and self.has_report_permission(request, r)]
 
     def get_report(self, request, code: str):
-        for report_class in self.get_reports(request):
-            if report_class.get_report_code() == code:
-                return report_class
-        raise NotFound(f"Unknown report {code!r}; call list_reports for the available codes.")
+        reports = self.get_reports(request, code)
+        if not reports:
+            raise NotFound(f"Unknown report {code!r}; call list_reports for the available codes.")
+        return reports[0]
 
     # --- tools ---------------------------------------------------------------------------------
     def get_tools(self, request=None) -> list:
