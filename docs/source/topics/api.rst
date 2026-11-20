@@ -127,7 +127,8 @@ Reports over MCP
 - ``list_dynamic_report_models``: the models and fields a dynamic report spec may use.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
-  same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view.
+  same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
+  never the user model (``get_dynamic_report_models`` sets the list).
 
 A report is listed and runnable when ``report_access_function(request, "view", report)`` passes
 and the token scopes allow ``view`` on its base model. Every registered report is exposed by

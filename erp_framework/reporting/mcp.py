@@ -12,6 +12,7 @@ and ``run_dynamic_report``. Reports run through django-slick-reporting's headles
 server-side totals. This module requires django-admin-api-mcp; erp_framework itself does not.
 """
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 
 from admin_api import scopes
@@ -84,11 +85,15 @@ class ReportToolsMixin:
         return base_model is None or scopes.request_allows(request, base_model._meta, "view")
 
     def get_dynamic_report_models(self, request) -> list:
-        """Models a dynamic report may read: the MCP-exposed models the user may view."""
+        """Models a dynamic report may read: the MCP-exposed models the user may view, except the user
+        model (its rows hold password hashes)."""
+        user_model = get_user_model()
         return [
             model
             for model, model_admin in self.api_site.exposed_admins()
-            if self.is_exposed(model_admin) and model_admin.has_view_or_change_permission(request)
+            if model is not user_model
+            and self.is_exposed(model_admin)
+            and model_admin.has_view_or_change_permission(request)
         ]
 
     # --- registry ------------------------------------------------------------------------------

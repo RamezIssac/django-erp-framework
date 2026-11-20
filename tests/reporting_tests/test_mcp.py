@@ -269,3 +269,18 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, token=token)
         self.assertTrue(err)
         self.assertEqual(out["fields"]["report_model"][0]["code"], "model_not_allowed")
+
+    def test_user_model_is_not_readable(self):
+        for spec in (
+            {"report_model": "auth.User", "kind": "list", "columns": ["username", "password"]},
+            {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["lastmod_user__password"]},
+            {
+                "report_model": "reporting_tests.SimpleSales",
+                "kind": "list",
+                "columns": ["slug"],
+                "filters": {"lastmod_user__password__startswith": "md5"},
+            },
+        ):
+            out, err = self.call("run_dynamic_report", {"spec": spec})
+            self.assertTrue(err, out)
+            self.assertEqual(out["error"], "invalid_params")
