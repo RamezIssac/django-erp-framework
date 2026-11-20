@@ -113,7 +113,10 @@ Reports over MCP
 ~~~~~~~~~~~~~~~~
 
 ``erp_mcp_site`` also publishes the registered reports as read-only tools, through
-``erp_framework.reporting.mcp.ReportToolsMixin``:
+``erp_framework.reporting.mcp.ReportToolsMixin``. These tools need django-slick-reporting's headless
+runner (``ReportViewBase.run``), ``slick_reporting.helpers.compact_response`` and
+``slick_reporting.dynamic_report``. With a django-slick-reporting that lacks them, ``erp_mcp_site``
+publishes the admin tools only.
 
 - ``list_reports``: the reports the user may run, with code (``<base_model>.<report_slug>``),
   title, description, base model, kind (``group``, ``series``, ``crosstab`` or ``list``) and
@@ -128,7 +131,13 @@ Reports over MCP
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
-  never the user model (``get_dynamic_report_models`` sets the list).
+  never the user model (``get_dynamic_report_models`` sets the list). Each model admin's
+  ``get_queryset(request)`` limits the rows, and a field path may only use the fields the admin
+  shows (change form, readonly and ``list_display`` fields and the primary key, minus
+  ``get_exclude(request)``); ``list_dynamic_report_models`` lists only those fields. A narrowed
+  admin queryset becomes a primary key filter on the spec, it also drops rows whose nullable
+  foreign key to that model is empty. Rows read by a registered computation field with its own
+  ``report_model`` are not narrowed.
 
 A report is listed and runnable when ``report_access_function(request, "view", report)`` passes
 and the token scopes allow ``view`` on its base model. Every registered report is exposed by

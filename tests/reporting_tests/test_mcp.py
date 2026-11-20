@@ -1,14 +1,18 @@
 """MCP report tools (erp_framework.reporting.mcp) over the registered test reports."""
 
 import importlib.util
+import sys
 import unittest
 from decimal import Decimal
+from unittest import mock
 
 from django.contrib.auth.models import Permission
 from django.test import RequestFactory, TestCase, override_settings
 
 from erp_framework.reporting.models import UserReportPermission
 
+from .admin import ClientAdmin, SimpleSalesAdmin
+from .models import Client, SimpleSales
 from .reports import ClientTotalBalance
 from .tests import BaseTestData, year
 
@@ -125,8 +129,18 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertIn("client_id", out["fields"])
 
     def test_max_rows_above_cap_is_capped(self):
-        out = self.run_report("client.balances", max_rows=10_000)
-        self.assertFalse(out["truncated"])
+        from erp_framework.api import ERPMcpSite, erp_api_site
+
+        class OneRowSite(ERPMcpSite):
+            report_max_rows_cap = 1
+
+        site = OneRowSite(erp_api_site, name="one_row_mcp")
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        result = site.call_tool(request, "run_report", {"report": "client.balances", "max_rows": 10_000})
+        self.assertFalse(result.is_error, result.data)
+        self.assertEqual(len(result.data["rows"]), 1)
+        self.assertTrue(result.data["truncated"])
 
     def test_unknown_report_is_not_found(self):
         out, err = self.call("run_report", {"report": "client.nope"})
@@ -162,6 +176,13 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertFalse(err, out)
         self.assertTrue(out["reports"])
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]))
+
+    def test_token_scope_checks_report_model_without_base_model(self):
+        token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
+        with mock.patch.object(ClientTotalBalance, "base_model", None):
+            out, err = self.call("list_reports", token=token)
+        self.assertFalse(err, out)
+        self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]), out["reports"])
 
     def test_is_report_exposed_hides_reports(self):
         from erp_framework.api import ERPMcpSite, erp_api_site
@@ -284,3 +305,72 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             out, err = self.call("run_dynamic_report", {"spec": spec})
             self.assertTrue(err, out)
             self.assertEqual(out["error"], "invalid_params")
+
+    def test_rows_follow_the_admin_queryset(self):
+        two_clients = SimpleSales.objects.filter(client__in=[self.client1, self.client2])
+        with mock.patch.object(SimpleSalesAdmin, "get_queryset", lambda admin, request: two_clients):
+            out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
+        self.assertFalse(err, out)
+        self.assertEqual({row[0]: row[1] for row in out["rows"]}, {"Client 1": "300", "Client 2": "600"})
+        self.assertEqual(out["totals"], {"sales": "900"})
+
+        one_client = Client.objects.filter(pk=self.client1.pk)
+        two_ids = {"client_id__in": [self.client1.pk, self.client2.pk]}
+        with mock.patch.object(ClientAdmin, "get_queryset", lambda admin, request: one_client):
+            for spec in (SALES_BY_CLIENT, {**SALES_BY_CLIENT, "filters": two_ids}):
+                with self.subTest(spec=spec):
+                    out, err = self.call("run_dynamic_report", {"spec": spec})
+                    self.assertFalse(err, out)
+                    self.assertEqual(out["rows"], [["Client 1", "300"]])
+
+    def test_fields_hidden_by_the_admin_are_rejected(self):
+        hidden = ("type", "client", "value")
+        with mock.patch.object(SimpleSalesAdmin, "get_exclude", lambda admin, request, obj=None: hidden):
+            for key, spec in (
+                ("group_by", SALES_BY_CLIENT),
+                ("columns", {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["value"]}),
+                ("columns", {"report_model": "reporting_tests.SimpleSales", "columns": ["__total__"]}),
+                (
+                    "filters",
+                    {
+                        "report_model": "reporting_tests.SimpleSales",
+                        "kind": "list",
+                        "columns": ["date"],
+                        "filters": {"client_id__in": [self.client1.pk]},
+                    },
+                ),
+            ):
+                with self.subTest(key=key, spec=spec):
+                    out, err = self.call("run_dynamic_report", {"spec": spec})
+                    self.assertTrue(err, out)
+                    self.assertEqual(out["error"], "invalid_params")
+                    self.assertEqual(out["fields"][key][0]["code"], "hidden_field")
+            out, err = self.call("list_dynamic_report_models")
+        self.assertFalse(err, out)
+        models = {m["identifier"]: m for m in out["models"]}
+        names = {f["name"] for f in models["reporting_tests.SimpleSales"]["fields"]}
+        self.assertIn("date", names)
+        self.assertFalse(names & set(hidden), names)
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class WithoutSlickRunnerTests(BaseTestData, TestCase):
+    def test_api_imports_and_serves_admin_tools(self):
+        import erp_framework.api
+
+        spec = importlib.util.spec_from_file_location("erp_api_without_runner", erp_framework.api.__file__)
+        module = importlib.util.module_from_spec(spec)
+        with mock.patch.dict(sys.modules, {"slick_reporting.dynamic_report": None}):
+            spec.loader.exec_module(module)
+        self.assertFalse(module.HAS_REPORT_TOOLS)
+        tool_names = {tool.name for tool in module.erp_mcp_site.get_tools()}
+        self.assertIn("list_objects", tool_names)
+        self.assertNotIn("run_report", tool_names)
+
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        result = module.erp_mcp_site.call_tool(request, "list_objects", {"model": "reporting_tests.client"})
+        self.assertFalse(result.is_error, result.data)
+        self.assertEqual(result.data["count"], Client.objects.count())
+        self.assertTrue(module.erp_api_site.urls)
