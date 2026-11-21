@@ -324,6 +324,19 @@ class RowPolicyTests(BaseTestData, TestCase):
         expected = sum(Decimal(row[value]) for row in out["rows"])
         self.assertEqual(out["totals"], {"value": format(expected, "f")})
 
+    def test_row_limit_reaches_the_list_report_generator(self):
+        from slick_reporting.generator import ListViewReportGenerator
+
+        full = self.run_report("client.clientdetailedstatement")
+        database_totals = ListViewReportGenerator.get_database_totals
+        with mock.patch.object(
+            ListViewReportGenerator, "get_database_totals", autospec=True, side_effect=database_totals
+        ) as totals:
+            out = self.run_report("client.clientdetailedstatement", max_rows=2)
+        totals.assert_called_once()
+        self.assertEqual(len(out["rows"]), 2)
+        self.assertEqual((out["row_count"], out["totals"]), (full["row_count"], full["totals"]))
+
     def test_summary_first_for_a_list_report_over_the_default(self):
         call = self.small_site(report_max_rows=2, report_summary_rows=1)
         full = self.run_report("client.clientdetailedstatement")
@@ -812,6 +825,19 @@ class WithoutSlickRunnerTests(BaseTestData, TestCase):
         self.assertFalse(result.is_error, result.data)
         self.assertEqual(result.data["count"], Client.objects.count())
         self.assertTrue(module.erp_api_site.urls)
+
+    def test_runner_without_max_rows_serves_admin_tools(self):
+        import erp_framework.api
+        from slick_reporting.views import ReportViewBase
+
+        spec = importlib.util.spec_from_file_location("erp_api_without_max_rows", erp_framework.api.__file__)
+        module = importlib.util.module_from_spec(spec)
+        del ReportViewBase.run_max_rows
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            ReportViewBase.run_max_rows = None
+        self.assertFalse(module.HAS_REPORT_TOOLS)
 
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")

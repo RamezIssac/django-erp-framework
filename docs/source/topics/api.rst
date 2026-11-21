@@ -115,7 +115,7 @@ Reports over MCP
 
 ``erp_mcp_site`` also publishes the registered reports as read-only tools, through
 ``erp_framework.reporting.mcp.ReportToolsMixin``. These tools need django-slick-reporting's headless
-runner (``ReportViewBase.run``), ``slick_reporting.helpers.compact_response`` and
+runner (``ReportViewBase.run`` with ``max_rows``), ``slick_reporting.helpers.compact_response`` and
 ``slick_reporting.dynamic_report``. With a django-slick-reporting that lacks them, ``erp_mcp_site``
 publishes the admin tools only.
 
@@ -208,11 +208,13 @@ A report class may declare two attributes for ``run_report``:
         total_columns = ["value"]
         summary_report = "client.balances"  # or the report class
 
-- ``total_columns``: the columns ``totals`` covers, over every row. Without it, ``totals`` covers
-  slick's summable computed columns, and a list report returns ``totals: {}``.
+- ``total_columns`` (django-slick-reporting): the columns ``totals`` covers, over every row, on top of
+  slick's summable computed columns. Without it, a list report returns ``totals: {}``.
 - ``summary_report``: the code (or class) of the report that aggregates this report's rows. ``help``
   names it when the user may run it.
 
+``run_report`` passes ``max_rows`` to slick's ``run()``: a list report builds at most that many rows and
+counts and totals all rows in the database.
 A list report that declares ``total_columns`` and is run without ``max_rows`` over more than
 ``report_max_rows`` rows returns its ``totals`` and its first ``report_summary_rows`` (10) rows.
 An explicit ``max_rows`` returns that many rows, up to the cap.

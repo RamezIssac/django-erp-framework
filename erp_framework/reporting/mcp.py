@@ -13,9 +13,9 @@ run, sized to fit ``report_tool_description_max_chars``. Reports run through dja
 headless runner and come back as compact rows plus server-side totals, with ``help`` lines naming the
 next call when rows are cut or none match. A report class may declare:
 
-- ``total_columns``: the columns ``totals`` covers (default: slick's summable computed columns). A list
-  report that declares them answers a run without ``max_rows`` that exceeds ``report_max_rows`` with
-  its totals and first ``report_summary_rows`` rows.
+- ``total_columns`` (django-slick-reporting): the columns ``totals`` covers. A list report builds at most
+  ``max_rows`` rows and counts and totals in the database. Run without ``max_rows`` over more than
+  ``report_max_rows`` rows, it returns its totals and first ``report_summary_rows`` rows.
 - ``summary_report``: the code (or class) of the report that aggregates its rows, named in ``help``.
 
 This module requires django-admin-api-mcp and django-slick-reporting's headless runner, compact output
@@ -576,15 +576,6 @@ def params_help(view, code, params, error: InvalidParams) -> list:
     return lines
 
 
-def total_columns_response(report_class, full_response) -> dict:
-    """``full_response`` with ``totals`` over the report's ``total_columns`` alone, when it declares them."""
-    total_columns = getattr(report_class, "total_columns", None)
-    if not total_columns:
-        return full_response
-    columns = [{**column, "is_summable": column["name"] in total_columns} for column in full_response["columns"]]
-    return {**full_response, "columns": columns}
-
-
 def run_report_help(site, request, report_class, result, params, order_by) -> list:
     """The next calls when none match or the default ``max_rows`` cut the rows, from the report's order_by
     keys, params and ``summary_report``."""
@@ -664,14 +655,16 @@ def run_report(site, request, args) -> dict:
             retry = [fixed_call(code, order_by=f"-{closest[0]}")] if closest else [fixed_call(code)]
             raise InvalidParams("Invalid report parameters.", fields={"order_by": [error]}, help=retry)
     try:
-        full_response = report_class.run(request, params, **({"default_order_by": order_by} if order_by else {}))
+        full_response = report_class.run(
+            request, params, max_rows=max_rows, **({"default_order_by": order_by} if order_by else {})
+        )
     except PermissionDenied as exc:
         raise PermissionDeniedError(gettext("You may not view this report.")) from exc
     except ValidationError as exc:
         error = _validation_error(exc, "Invalid report parameters.")
         error.extra["help"] = params_help(view, code, params, error)
         raise error from exc
-    result = compact_response(total_columns_response(report_class, full_response), max_rows=max_rows)
+    result = compact_response(full_response, max_rows=max_rows)
     cut_by_default = result["truncated"] and "max_rows" not in args
     if cut_by_default and report_kind(report_class) == "list" and getattr(report_class, "total_columns", None):
         result["rows"] = result["rows"][: site.report_summary_rows]
