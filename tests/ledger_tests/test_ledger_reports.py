@@ -16,6 +16,7 @@ from .models import (
     CashOut,
     Customer,
     CustomerLedger,
+    Movement,
     CustomerPayment,
     Sale,
     SaleReturn,
@@ -126,6 +127,10 @@ class LedgerReportTests(TestCase):
             {name: d - c for name, (d, c) in totals.items()},
             {"Acme": 50, "Northwind": 130},
         )
+
+    def test_single_table_report_misses_the_payments(self):
+        totals = self.debit_credit(Movement, Customer)
+        self.assertEqual(totals, {"Acme": (300, 0), "Northwind": (400, 20)})
 
     def test_treasury_balance_includes_customer_payments(self):
         self.assertEqual(
