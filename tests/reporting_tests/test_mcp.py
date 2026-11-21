@@ -142,6 +142,16 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(len(result.data["rows"]), 1)
         self.assertTrue(result.data["truncated"])
 
+    def test_foreign_key_param_hidden_by_the_admin_is_refused(self):
+        one_client = Client.objects.filter(pk=self.client1.pk)
+        with mock.patch.object(ClientAdmin, "get_queryset", lambda admin, request: one_client):
+            out, err = self.call("run_report", {"report": "client.balances", "params": {"client_id": [self.client2.pk]}})
+            self.assertTrue(err, out)
+            self.assertEqual(out["error"], "invalid_params")
+            self.assertIn("client_id", out["fields"])
+            out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
+        self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
+
     def test_unknown_report_is_not_found(self):
         out, err = self.call("run_report", {"report": "client.nope"})
         self.assertTrue(err)

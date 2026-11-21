@@ -13,6 +13,9 @@ server-side totals. This module requires django-admin-api-mcp and django-slick-r
 compact output and dynamic report; erp_framework itself does not.
 """
 
+import copy
+
+from django import forms
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import NON_FIELD_ERRORS, FieldDoesNotExist, PermissionDenied, ValidationError
@@ -286,12 +289,35 @@ def describe_report(site, request, args) -> dict:
     }
 
 
+def check_related_params(site, request, report_class, params) -> None:
+    """Raise ``InvalidParams`` when a foreign-key param names a row its model admin hides from the user."""
+    view = report_class()
+    view.setup(request)
+    errors = {}
+    for name, field in view.get_form_class().base_fields.items():
+        if name not in params or not isinstance(field, forms.ModelChoiceField):
+            continue
+        opts = field.queryset.model._meta
+        model_admin = site.api_site.get_model_admin(opts.app_label, opts.model_name)
+        if model_admin is None:
+            continue
+        visible_field = copy.deepcopy(field)
+        visible_field.queryset = model_admin.get_queryset(request)
+        try:
+            visible_field.clean(params[name])
+        except ValidationError as exc:
+            errors[name] = exc.error_list
+    if errors:
+        raise _validation_error(ValidationError(errors), "Invalid report parameters.")
+
+
 def run_report(site, request, args) -> dict:
     report_class = site.get_report(request, _report_code(args))
     params = args.get("params") or {}
     if not isinstance(params, dict):
         raise InvalidParams("'params' must be an object.")
     max_rows = _max_rows(site, args)
+    check_related_params(site, request, report_class, params)
     try:
         full_response = report_class.run(request, params)
     except PermissionDenied as exc:
@@ -306,13 +332,16 @@ def run_report(site, request, args) -> dict:
 
 
 class AdminScope:
-    """What each model admin shows ``request``'s user: visible field names and the rows of
-    ``get_queryset(request)``. A dynamic report spec is checked and narrowed against it."""
+    """The field names each model admin shows ``request``'s user. A dynamic report spec may only use
+    those fields; its rows come from each admin's ``get_queryset(request)``."""
 
     def __init__(self, request, admins):
         self.request = request
         self.admins = admins
         self._visible = {}
+
+    def base_querysets(self) -> dict:
+        return {model: model_admin.get_queryset(self.request) for model, model_admin in self.admins.items()}
 
     def visible_fields(self, model) -> set:
         if model not in self._visible:
@@ -327,11 +356,10 @@ class AdminScope:
             self._visible[model] = shown - set(model_admin.get_exclude(request) or ())
         return self._visible[model]
 
-    def check_path(self, model, path, key, errors, relations) -> None:
-        """Record a hidden field of ``path`` in ``errors`` and each relation it crosses in ``relations``."""
+    def check_path(self, model, path, key, errors) -> None:
+        """Record in ``errors`` the first field of ``path`` that its model's admin hides."""
         if not isinstance(path, str) or not path:
             return
-        prefix = ""
         for part in path.split("__"):
             if model not in self.admins:
                 return
@@ -346,72 +374,50 @@ class AdminScope:
                 return
             if field.related_model is None:
                 return
-            model, prefix = field.related_model, f"{prefix}{field.name}__"
-            relations.append((prefix, model))
+            model = field.related_model
 
-    def check_computation(self, report_model, column, key, errors, relations) -> None:
+    def check_computation(self, report_model, column, key, errors) -> None:
         if isinstance(column, dict):
-            self.check_path(report_model, column.get("field"), key, errors, relations)
+            self.check_path(report_model, column.get("field"), key, errors)
         elif isinstance(column, str) and column in field_registry.get_all_report_fields_names():
             pending, seen = [field_registry.get_field_by_name(column)], set()
             while pending:
                 klass = pending.pop()
                 seen.add(klass)
-                field_model = klass.report_model or report_model
-                own_relations = relations if field_model is report_model else []
-                self.check_path(field_model, klass.calculation_field, key, errors, own_relations)
+                own_queryset = getattr(klass, "queryset", None)
+                field_model = klass.report_model or (own_queryset.model if own_queryset is not None else report_model)
+                self.check_path(field_model, klass.calculation_field, key, errors)
                 pending.extend(required for required in klass._get_required_classes() if required not in seen)
 
-    def row_filters(self, prefix, model) -> dict:
-        """``{"<prefix><pk>__in": [...]}`` when the admin queryset holds fewer rows than the default manager."""
-        model_admin = self.admins.get(model)
-        if model_admin is None:
-            return {}
-        queryset = model_admin.get_queryset(self.request)
-        if queryset.query.where == model._default_manager.all().query.where:
-            return {}
-        return {f"{prefix}{model._meta.pk.name}__in": list(queryset.values_list("pk", flat=True))}
-
-    def scoped_spec(self, spec) -> dict:
-        """Reject spec fields the admins hide and return the spec with their row filters added."""
+    def check_spec(self, spec) -> None:
+        """Raise ``InvalidParams`` naming each spec key whose field path uses a field an admin hides."""
         label = str(spec.get("report_model") or "").lower()
         report_model = next((model for model in self.admins if model._meta.label_lower == label), None)
         if report_model is None:
-            return spec
-        errors, relations = {}, []
+            return
+        errors = {}
         for key in ("date_field", "group_by", "crosstab_field"):
-            self.check_path(report_model, spec.get(key), key, errors, relations)
+            self.check_path(report_model, spec.get(key), key, errors)
         group_by_field = _field_or_none(report_model, spec.get("group_by"))
         column_prefix = ""
         if spec.get("kind") != "list" and getattr(group_by_field, "related_model", None) is not None:
             column_prefix = f"{spec['group_by']}__"
         for column in _as_list(spec.get("columns")):
             if isinstance(column, str) and column not in field_registry.get_all_report_fields_names():
-                self.check_path(report_model, f"{column_prefix}{column}", "columns", errors, relations)
+                self.check_path(report_model, f"{column_prefix}{column}", "columns", errors)
             else:
-                self.check_computation(report_model, column, "columns", errors, relations)
+                self.check_computation(report_model, column, "columns", errors)
         for key in ("time_series_columns", "crosstab_columns"):
             for column in _as_list(spec.get(key)):
-                self.check_computation(report_model, column, key, errors, relations)
+                self.check_computation(report_model, column, key, errors)
         filters = spec.get("filters")
         for name in filters if isinstance(filters, dict) else ():
             path, _, lookup = name.rpartition("__")
             if lookup not in FILTER_LOOKUPS or not path:
                 path = name
-            self.check_path(report_model, path, "filters", errors, relations)
+            self.check_path(report_model, path, "filters", errors)
         if errors:
             raise _validation_error(ValidationError(errors), "Invalid report spec.")
-        if filters is not None and not isinstance(filters, dict):
-            return spec
-        scoped = dict(filters or {})
-        for prefix, model in dict.fromkeys([("", report_model), *relations]):
-            for name, pks in self.row_filters(prefix, model).items():
-                if name in scoped:
-                    values = scoped[name] if isinstance(scoped[name], list) else [scoped[name]]
-                    wanted = {str(value) for value in values}
-                    pks = [pk for pk in pks if str(pk) in wanted]
-                scoped[name] = pks
-        return {**spec, "filters": scoped}
 
 
 def _as_list(value) -> list:
@@ -450,9 +456,12 @@ def dynamic_report(site, request, args) -> dict:
     admins = site.get_dynamic_report_models(request)
     if not admins:
         raise PermissionDeniedError("You may not view any model a dynamic report could read.")
+    scope = AdminScope(request, admins)
+    scope.check_spec(spec)
     try:
-        spec = AdminScope(request, admins).scoped_spec(spec)
-        full_response = run_dynamic_report(spec, request, allowed_models=list(admins))
+        full_response = run_dynamic_report(
+            spec, request, allowed_models=list(admins), base_querysets=scope.base_querysets()
+        )
     except PermissionDenied as exc:
         raise PermissionDeniedError(str(exc) or None) from exc
     except ValidationError as exc:

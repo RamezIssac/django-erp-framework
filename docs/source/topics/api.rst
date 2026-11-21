@@ -126,18 +126,18 @@ publishes the admin tools only.
   primary keys of the model named in ``x-related-model``.
 - ``run_report``: runs the report through django-slick-reporting's headless runner and returns
   ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
-  ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000.
+  ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A foreign-key parameter
+  naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
 - ``list_dynamic_report_models``: the models and fields a dynamic report spec may use.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
-  never the user model (``get_dynamic_report_models`` sets the list). Each model admin's
-  ``get_queryset(request)`` limits the rows, and a field path may only use the fields the admin
-  shows (change form, readonly and ``list_display`` fields and the primary key, minus
-  ``get_exclude(request)``); ``list_dynamic_report_models`` lists only those fields. A narrowed
-  admin queryset becomes a primary key filter on the spec, it also drops rows whose nullable
-  foreign key to that model is empty. Rows read by a registered computation field with its own
-  ``report_model`` are not narrowed.
+  never the user model. ``get_dynamic_report_models(request)`` returns the readable models as a
+  ``{model: model_admin}`` dict. Each model admin's ``get_queryset(request)`` goes to slick as
+  ``base_querysets``: it limits the report model's rows and the rows reached through each relation
+  the spec traverses (rows with an empty relation are kept). A field path may only use the fields
+  the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
+  ``get_exclude(request)``); ``list_dynamic_report_models`` lists only those fields.
 
 A report is listed and runnable when ``report_access_function(request, "view", report)`` passes
 and the token scopes allow ``view`` on its base model. Every registered report is exposed by
