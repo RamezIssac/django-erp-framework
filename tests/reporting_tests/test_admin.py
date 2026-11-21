@@ -11,7 +11,7 @@ from erp_framework.admin.admin import (
     TransactionAdmin,
 )
 from erp_framework.sites import erp_admin_site
-from .models import Client, Product, Invoice, InvoiceLine, SaleDocType, SimpleSales
+from .models import Client, Product, Invoice, InvoiceLine, SimpleSales
 
 User = get_user_model()
 
