@@ -8,9 +8,9 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. Reports run through django-slick-reporting's headless runner and come back as compact rows plus
-server-side totals. This module requires django-admin-api-mcp and django-slick-reporting's headless runner,
-compact output and dynamic report; erp_framework itself does not.
+and ``run_dynamic_report``. Reports run through django-slick-reporting's headless runner and come back
+as compact rows plus server-side totals. This module requires django-admin-api-mcp and
+django-slick-reporting's headless runner, compact output and dynamic report; erp_framework itself does not.
 """
 
 import copy
