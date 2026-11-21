@@ -19,6 +19,7 @@ from django import forms
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import NON_FIELD_ERRORS, FieldDoesNotExist, PermissionDenied, ValidationError
+from django.utils.translation import gettext
 
 from admin_api import scopes
 from admin_api.changelist import get_columns
@@ -48,19 +49,22 @@ REPORT_TOOL_NAMES = frozenset(
 REPORT_INSTRUCTIONS = """
 7. Reports: call list_reports to see the reports you may run, describe_report for a report's \
 parameters, then run_report. Results are compact: 'columns', positional 'rows', and 'totals' \
-computed over all rows even when 'truncated' is true. A parameter that picks records, such as a \
-client or a product, takes their IDs: get them from resolve_entities with 'models' set to the \
-parameter's 'x-related-model'.
-8. When no registered report answers the question, call list_dynamic_report_models for the models \
-and fields you may use, then build a report with run_dynamic_report."""
+computed over all rows even when 'truncated' is true. Name a report by its 'title', a column by its \
+label and a kind of record by its name ('base_model_name', 'report_model_name'), not by their codes \
+or model paths. A parameter that picks records, such as a client or a product, takes their IDs: get \
+them from resolve_entities with 'models' set to the parameter's 'x-related-model', and name each \
+record by its label.
+8. When no registered report answers the question, call list_dynamic_report_models for the kinds of \
+record and fields you may use (name each by its 'verbose_name'), then build a report with \
+run_dynamic_report."""
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
 
 REPORT_ARG = {
     "type": "string",
-    "description": "Report code exactly as returned by list_reports, '<base_model>.<report_slug>' "
-    "(e.g. 'client.balances').",
+    "description": "Report code exactly as returned by list_reports (e.g. 'client.balances'). "
+    "Tell the user the report's title, not its code.",
 }
 
 
@@ -140,8 +144,9 @@ class ReportToolsMixin:
             ToolSpec(
                 name="list_reports",
                 title="List reports",
-                description="The reports you may run: code, title, description, base model, kind "
-                "(group, series, crosstab or list) and whether it filters by date.",
+                description="The reports you may run: code, title, description, the kind of record it covers "
+                "(base_model with its name in base_model_name), kind (group, series, crosstab or list) "
+                "and whether it filters by date.",
                 input_schema=obj({}),
                 handler=list_reports,
                 annotations=READ_ONLY,
@@ -175,8 +180,8 @@ class ReportToolsMixin:
             ToolSpec(
                 name="list_dynamic_report_models",
                 title="List models for dynamic reports",
-                description="The models a run_dynamic_report spec may read, with their fields: name, type, "
-                "whether it is numeric, a date or a relation, and the related model.",
+                description="The kinds of record a run_dynamic_report spec may read, with their fields: name, "
+                "verbose_name, type, whether it is numeric, a date or a relation, and the related kind of record.",
                 input_schema=obj({}),
                 handler=list_dynamic_report_models,
                 annotations=READ_ONLY,
@@ -213,6 +218,10 @@ def report_kind(report_class) -> str:
 
 def model_label(model) -> str | None:
     return f"{model._meta.app_label}.{model._meta.model_name}" if model is not None else None
+
+
+def model_name(model) -> str | None:
+    return str(model._meta.verbose_name) if model is not None else None
 
 
 def column_name(column) -> str:
@@ -264,6 +273,7 @@ def list_reports(site, request, args) -> dict:
                 "title": str(report_class.get_report_title()),
                 "description": site.get_report_description(report_class, request),
                 "base_model": model_label(report_class.base_model),
+                "base_model_name": model_name(report_class.base_model),
                 "kind": report_kind(report_class),
                 "date_filter": bool(report_class.date_field),
             }
@@ -281,7 +291,9 @@ def describe_report(site, request, args) -> dict:
         "title": str(report_class.get_report_title()),
         "description": site.get_report_description(report_class, request),
         "base_model": model_label(report_class.base_model),
+        "base_model_name": model_name(report_class.base_model),
         "report_model": model_label(report_class.get_report_model()),
+        "report_model_name": model_name(report_class.get_report_model()),
         "kind": report_kind(report_class),
         "group_by": report_class.group_by or None,
         "date_field": report_class.date_field or None,
@@ -324,7 +336,7 @@ def run_report(site, request, args) -> dict:
     try:
         full_response = report_class.run(request, params)
     except PermissionDenied as exc:
-        raise PermissionDeniedError() from exc
+        raise PermissionDeniedError(gettext("You may not view this report.")) from exc
     except ValidationError as exc:
         raise _validation_error(exc, "Invalid report parameters.") from exc
     return {
@@ -371,9 +383,11 @@ class AdminScope:
             except FieldDoesNotExist:
                 return
             if field.name not in self.visible_fields(model):
-                errors.setdefault(key, []).append(
-                    ValidationError(f"Field '{part}' of {model._meta.label} is not available.", code="hidden_field")
-                )
+                message = gettext("Field '%(field)s' of %(model)s is not available.") % {
+                    "field": getattr(field, "verbose_name", field.name),
+                    "model": model._meta.verbose_name_plural,
+                }
+                errors.setdefault(key, []).append(ValidationError(message, code="hidden_field"))
                 return
             if field.related_model is None:
                 return
@@ -460,7 +474,7 @@ def dynamic_report(site, request, args) -> dict:
     max_rows = _max_rows(site, args)
     admins = site.get_dynamic_report_models(request)
     if not admins:
-        raise PermissionDeniedError("You may not view any model a dynamic report could read.")
+        raise PermissionDeniedError(gettext("You may not view any kind of record a dynamic report could read."))
     scope = AdminScope(request, admins)
     scope.check_spec(spec)
     try:
@@ -472,7 +486,7 @@ def dynamic_report(site, request, args) -> dict:
             base_querysets=scope.base_querysets(),
         )
     except PermissionDenied as exc:
-        raise PermissionDeniedError(str(exc) or None) from exc
+        raise PermissionDeniedError(gettext("You may not view one of the kinds of record in this report.")) from exc
     except ValidationError as exc:
         raise _validation_error(exc, "Invalid report spec.") from exc
     return compact_response(full_response, max_rows=max_rows)

@@ -7,7 +7,14 @@ All notable changes to this project are/will be documented in this file.
 - The report tools' server instructions (items 7 and 8, after django-admin-api-mcp's item 6) send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's `x-related-model`.
 - `run_dynamic_report` and `list_dynamic_report_models` honour the MCP site's `excluded_models` (also passed to slick as `excluded_models`).
 - `list_objects` rows of entity admins carry `name`: `EntityAdmin.get_list_display` swaps `get_enhanced_obj_title` for `name` on API and MCP requests.
-- Test requirements pin django-slick-reporting to commit `56527cc` of its `feature/dynamic_dashboard` branch and django-admin-api-mcp to commit `4de7f23` (`resolve_entities`, `AdminMcpSite.excluded_models`).
+- `list_reports` and `describe_report` return `base_model_name` (and `report_model_name`), the verbose names next to the model paths; `list_dynamic_report_models` entries already carry `verbose_name`.
+- The report tools' instructions ask the agent to name reports by title, columns by label, kinds of record by name and records by label.
+
+### Changed
+- Report tool messages use verbose names and no model paths: a hidden field reads "Field 'Value' of Sales is not available.", and permission refusals carry a plain `detail` ("You may not view this report.") instead of an empty or slick-worded one.
+- The report instruction item about foreign-key parameters says "IDs" in place of primary keys.
+- Test requirements pin django-slick-reporting to commit `56527cc` of its `feature/dynamic_dashboard` branch and django-admin-api-mcp to commit `59c738f` (`resolve_entities`, `AdminMcpSite.excluded_models`, `id`/`label` keys, `get_instructions`, `get_language`).
+- `tests/runtests.py` detects django-admin-api-mcp with `importlib.util.find_spec`; importing `admin_api` before Django settings exist raises `ImproperlyConfigured`.
 
 ## [1.8.0] - 2026-11-19
 ### Security
