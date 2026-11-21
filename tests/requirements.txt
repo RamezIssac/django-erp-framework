@@ -19,4 +19,5 @@ pyquery
 # The MCP report tools need the headless runner, compact output and dynamic report,
 # merged into feature/dynamic_dashboard; pinned to that commit.
 django-slick-reporting @ git+https://github.com/RamezIssac/django-slick-reporting.git@56527ccd37efc46a8d12df6eae687d20decf1cd5
-django-admin-api-mcp[mcp] == 0.1.0a3
+# resolve_entities and AdminMcpSite.excluded_models are unreleased; pinned to that commit.
+django-admin-api-mcp @ git+https://github.com/RamezIssac/django-admin-api.git@4de7f23b5cf7d47d6167fefc3fb036065d8ef7f2

@@ -106,8 +106,9 @@ django-admin-api-mcp, with the same permissions, ``whole_changeform_validation``
 
 Tools: ``list_models``, ``describe_model``, ``list_objects``, ``get_object``,
 ``create_object``/``update_object`` (with ``dry_run``), ``delete_object`` (preview unless
-``confirm``), ``run_action``. Give the agent context with ``mcp_description = "..."`` on an
-admin; hide an admin from MCP only with ``mcp_enabled = False``.
+``confirm``), ``run_action``, ``resolve_entities``. ``EntityAdmin`` list rows carry the plain
+``name`` column in place of the HTML title column. Give the agent context with
+``mcp_description = "..."`` on an admin; hide an admin from MCP only with ``mcp_enabled = False``.
 
 Reports over MCP
 ~~~~~~~~~~~~~~~~
@@ -123,7 +124,8 @@ publishes the admin tools only.
   whether it filters by date.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
   group by, date field, time series pattern and crosstab field. Foreign-key parameters take
-  primary keys of the model named in ``x-related-model``.
+  IDs of the model named in ``x-related-model``; the server instructions point the agent to
+  ``resolve_entities`` with ``models`` set to that value to turn a typed name into IDs.
 - ``run_report``: runs the report through django-slick-reporting's headless runner and returns
   ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
   ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A foreign-key parameter
@@ -132,8 +134,9 @@ publishes the admin tools only.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
-  never the user model. ``get_dynamic_report_models(request)`` returns the readable models as a
-  ``{model: model_admin}`` dict. Each model admin's ``get_queryset(request)`` goes to slick as
+  never the user model nor the site's ``excluded_models`` (the same list ``resolve_entities``
+  honours, passed to slick as ``excluded_models``). ``get_dynamic_report_models(request)``
+  returns the readable models as a ``{model: model_admin}`` dict. Each model admin's ``get_queryset(request)`` goes to slick as
   ``base_querysets``: it limits the report model's rows and the rows reached through each relation
   the spec traverses (rows with an empty relation are kept). A field path may only use the fields
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus

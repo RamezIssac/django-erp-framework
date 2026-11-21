@@ -4,7 +4,10 @@ All notable changes to this project are/will be documented in this file.
 ## [Unreleased]
 ### Added
 - `erp_framework.reporting.mcp.ReportToolsMixin`: read-only MCP tools `list_reports`, `describe_report`, `run_report`, `list_dynamic_report_models` and `run_dynamic_report` for a django-admin-api-mcp `AdminMcpSite`, mixed into `ERPMcpSite`. Reports are gated by `report_access_function(request, "view", report)` and the token scopes on the base model; every registered report is exposed by default (`is_report_exposed` narrows it). `run_report` returns compact rows with totals over all rows (`max_rows` 200 by default, capped at 1000). `run_dynamic_report` runs django-slick-reporting's JSON report spec over the MCP-exposed models the user may view, excluding the user model; rows come from each model admin's `get_queryset(request)` (slick's `base_querysets`) and field paths may only use the fields the admin shows. `run_report` rejects a foreign-key param naming a row the related model admin's `get_queryset(request)` hides. A report without `base_model` is scope-checked on its `report_model`. `describe_report` includes a report's `extra_params` in its `params_schema`. The report tools need django-slick-reporting's headless runner, `compact_response` and `dynamic_report`; without them `ERPMcpSite` publishes the admin tools only.
-- Test requirements pin django-slick-reporting to commit `56527cc` of its `feature/dynamic_dashboard` branch and add `django-admin-api-mcp[mcp]==0.1.0a3`.
+- The report tools' server instructions (items 7 and 8, after django-admin-api-mcp's item 6) send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's `x-related-model`.
+- `run_dynamic_report` and `list_dynamic_report_models` honour the MCP site's `excluded_models` (also passed to slick as `excluded_models`).
+- `list_objects` rows of entity admins carry `name`: `EntityAdmin.get_list_display` swaps `get_enhanced_obj_title` for `name` on API and MCP requests.
+- Test requirements pin django-slick-reporting to commit `56527cc` of its `feature/dynamic_dashboard` branch and django-admin-api-mcp to commit `4de7f23` (`resolve_entities`, `AdminMcpSite.excluded_models`).
 
 ## [1.8.0] - 2026-11-19
 ### Security
