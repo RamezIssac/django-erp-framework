@@ -170,7 +170,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         from erp_framework.api import erp_mcp_site
 
         instructions = erp_mcp_site.instructions
-        self.assertIn("7. Reports: run_report on a catalog report (else list_reports)", instructions)
+        self.assertIn("7. Reports: run_report's description lists the reports you may run", instructions)
         self.assertIn("passing resolve_entities IDs as lists", instructions)
         self.assertIn("when none fits, run_dynamic_report", instructions)
         self.assertIn("Note: run the report for a kind of record ('sales by client')", instructions)
@@ -286,22 +286,29 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertTrue(err)
         self.assertEqual(out["error"], "not_found")
 
-    def catalog(self, instructions):
-        """The catalog lines at the top of ``instructions``, or None without a catalog."""
-        if not instructions.startswith("Report catalog"):
-            return None
-        return instructions.split("\n\n", 1)[0].splitlines()[1:]
-
-    def test_instructions_start_with_the_users_report_catalog(self):
+    def run_report_description(self, site=None, user=None):
         from erp_framework.api import erp_mcp_site
 
-        instructions = erp_mcp_site.get_instructions(self.request())
-        self.assertTrue(instructions.startswith("Report catalog (code: question; params; balance"))
-        self.assertTrue(instructions.endswith("\n\n" + erp_mcp_site.instructions))
-        self.assertLessEqual(len(instructions), 4096)
-        lines = self.catalog(instructions)
+        site = site or erp_mcp_site
+        return next(t for t in site.get_tools(self.request(user)) if t.name == "run_report").description
+
+    def catalog(self, description):
+        """The catalog lines in a run_report description, or None without a catalog."""
+        _, _, catalog = description.partition("\n\nReports you may run")
+        return catalog.splitlines()[1:] if catalog else None
+
+    def test_run_report_description_lists_the_users_reports(self):
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
+
+        description = self.run_report_description()
+        self.assertTrue(description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run (code: question;"))
+        self.assertLessEqual(len(description), 4096)
+        lines = self.catalog(description)
         self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
         self.assertIn("client.balances: Clients Balances; client_id, product_id; balance", lines)
+        self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
+        self.assertNotIn("Reports you may run", erp_mcp_site.instructions)
 
     def test_short_question_is_report_question_else_title(self):
         with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
@@ -312,35 +319,26 @@ class ReportRoutingTests(BaseTestData, TestCase):
     def test_catalog_drops_detail_to_fit(self):
         from erp_framework.api import erp_mcp_site
 
-        budget = len(erp_mcp_site.get_instructions(self.request())) - 1
+        budget = len(self.run_report_description()) - 1
         with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
             for header, line in (
                 (
-                    "Report catalog (code: question; params):",
+                    "Reports you may run (code: question; params):",
                     "client.balances: Who owes us money?; client_id, product_id",
                 ),
-                ("Report catalog (code; params;", "client.balances; client_id, product_id"),
-                ("Report catalog (codes;", "client.balances"),
+                ("Reports you may run (code; params;", "client.balances; client_id, product_id"),
+                ("Reports you may run (codes;", "client.balances"),
             ):
-                with mock.patch.object(type(erp_mcp_site), "instructions_max_chars", budget):
-                    instructions = erp_mcp_site.get_instructions(self.request())
-                self.assertTrue(instructions.startswith(header), instructions[:100])
-                self.assertLessEqual(len(instructions), budget)
-                self.assertIn(line, self.catalog(instructions))
-                budget = len(instructions) - 1
+                with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", budget):
+                    description = self.run_report_description()
+                self.assertIn("\n\n" + header, description)
+                self.assertLessEqual(len(description), budget)
+                self.assertIn(line, self.catalog(description))
+                budget = len(description) - 1
 
-    def test_pilot_sized_catalog_fits_in_4096_characters(self):
-        from erp_framework.api import ERPMcpSite, erp_api_site
+    def test_pilot_sized_catalog_fits_a_tool_description(self):
+        from erp_framework.api import erp_mcp_site
 
-        language_line = "\n" + "L" * 196
-
-        class PilotSite(ERPMcpSite):
-            instructions_max_chars = 4096 - len(language_line)
-
-            def get_instructions(self, request):
-                return super().get_instructions(request) + language_line
-
-        site = PilotSite(erp_api_site, name="pilot_sized_mcp")
         # 24 reports shaped like a downstream services ERP's: 32-char codes, one or two params
         entries = [
             {
@@ -353,33 +351,35 @@ class ReportRoutingTests(BaseTestData, TestCase):
             for n in range(24)
         ]
         reports = [ClientTotalBalance] * 24
-        with mock.patch.object(PilotSite, "get_reports", lambda site, request, code=None: reports), \
+        with mock.patch.object(type(erp_mcp_site), "get_reports", lambda site, request, code=None: reports), \
                 mock.patch("erp_framework.reporting.mcp.report_entry", side_effect=entries):
-            instructions = site.get_instructions(self.request())
-        self.assertLessEqual(len(instructions), 4096)
-        self.assertEqual(len(self.catalog(instructions)), 24)
-        self.assertTrue(instructions.endswith(site.instructions + language_line))
+            description = self.run_report_description()
+        self.assertLessEqual(len(description), 4096)
+        self.assertIn("\n\nReports you may run (code: question; params; balance", description)
+        self.assertEqual(len(self.catalog(description)), 24)
 
     def test_catalog_lists_only_reports_the_user_may_run(self):
-        from erp_framework.api import erp_mcp_site
-
         UserReportPermission.objects.create(
             user=self.limited_user, report_code=ClientTotalBalance.get_report_code(), view=True
         )
-        lines = self.catalog(erp_mcp_site.get_instructions(self.request(self.limited_user)))
+        lines = self.catalog(self.run_report_description(user=self.limited_user))
         self.assertEqual(lines, ["client.balances: Clients Balances; client_id, product_id; balance"])
 
     def test_catalog_is_left_out_when_it_does_not_fit_or_without_a_user(self):
         from django.contrib.auth.models import AnonymousUser
 
         from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
 
         reports = self.call("list_reports")[0]["reports"]
         with mock.patch.object(type(erp_mcp_site), "report_catalog_max", len(reports) - 1):
-            self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
-        with mock.patch.object(type(erp_mcp_site), "instructions_max_chars", len(erp_mcp_site.instructions) + 50):
-            self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
-        self.assertEqual(erp_mcp_site.get_instructions(self.request(AnonymousUser())), erp_mcp_site.instructions)
+            self.assertEqual(self.run_report_description(), RUN_REPORT_DESCRIPTION)
+        budget = len(RUN_REPORT_DESCRIPTION) + 50
+        with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", budget):
+            self.assertEqual(self.run_report_description(), RUN_REPORT_DESCRIPTION)
+        self.assertEqual(self.run_report_description(user=AnonymousUser()), RUN_REPORT_DESCRIPTION)
+        tools = {tool.name: tool for tool in erp_mcp_site.get_tools()}
+        self.assertEqual(tools["run_report"].description, RUN_REPORT_DESCRIPTION)
 
 
 SALES_BY_CLIENT = {

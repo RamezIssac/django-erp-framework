@@ -157,15 +157,18 @@ base model. By default ``is_report_exposed`` keeps a report whose base model's a
 MCP (``is_exposed``), and a report without a base model.
 
 The server instructions route questions to reports: answer totals and balances with a report, resolve
-typed names with ``resolve_entities``, then call ``run_report``. ``get_instructions(request)`` puts a
-report catalog before the instructions, one line per report the user may run, when there are at most
-``report_catalog_max`` (40) of them. Claude Code reads only the first 4,096 characters of the
-instructions; the whole stays within ``instructions_max_chars`` (4096). Each line is
-``code: description; params; balance`` when that fits, else ``code: question; params`` with the short
-question, else ``code; params``, else the code alone, else
-the catalog is left out and the agent calls ``list_reports``. A subclass that appends lines after the
-mixin lowers ``instructions_max_chars`` by their length. A question such as "how much does this client
-owe" then takes two calls: ``resolve_entities`` and ``run_report``.
+typed names with ``resolve_entities``, then call ``run_report``. ``run_report``'s description, built per
+request by ``get_report_catalog(request, room)``, ends with a catalog: one line per report the user may
+run, when there are at most ``report_catalog_max`` (40) of them. The whole description stays within
+``report_tool_description_max_chars`` (4096). Each line is ``code: description; params; balance`` when
+that fits, else ``code: question; params`` with the short question, else ``code; params``, else the code
+alone, else the catalog is left out and the agent calls ``list_reports``.
+
+Claude Code 2.1.330 cuts server instructions at 4,096 characters and keeps a tool description up to
+4,096 characters, or 16,384 once the tool is loaded through tool search
+(``CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`` overrides both). Each tool description has its own budget,
+and the instructions keep only the routing rules. A question such as "how much does this client owe"
+then takes two calls: ``resolve_entities`` and ``run_report``.
 
 Narrow the reports, or change the row limits, in a subclass:
 

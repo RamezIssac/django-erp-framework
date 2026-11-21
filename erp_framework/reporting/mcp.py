@@ -8,8 +8,8 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. The server instructions start with a catalog of the reports the user may
-run, sized to fit ``instructions_max_chars``. Reports run through django-slick-reporting's
+and ``run_dynamic_report``. ``run_report``'s description carries a catalog of the reports the user may
+run, sized to fit ``report_tool_description_max_chars``. Reports run through django-slick-reporting's
 headless runner and come back as compact rows plus server-side totals. This module requires django-admin-api-mcp and
 django-slick-reporting's headless runner, compact output and dynamic report; erp_framework itself does not.
 """
@@ -56,27 +56,35 @@ REPORT_TOOL_NAMES = frozenset(
 )
 
 REPORT_INSTRUCTIONS = """
-7. Reports: run_report on a catalog report (else list_reports), passing resolve_entities IDs as lists: \
-{'client_id': [5]}; when none fits, run_dynamic_report. Name reports by title, columns by label.
+7. Reports: run_report's description lists the reports you may run (else call list_reports). Run one \
+with run_report, passing resolve_entities IDs as lists: {'client_id': [5]}; when none fits, \
+run_dynamic_report. Name reports by title, columns by label.
 Note: run the report for a kind of record ('sales by client'), not resolve_entities or describe_model, \
 because it groups by it.
 Note: answer totals and balances with a report, not summed list_objects rows, because hand sums hide \
 what the report leaves out."""
 
-# Catalog detail levels, richest first: get_instructions uses the first that fits instructions_max_chars.
+# Catalog detail levels, richest first: run_report's description uses the first that fits.
 CATALOG_HEADERS = {
-    "questions": "Report catalog (code: question; params; balance = includes all before start_date):",
-    "short": "Report catalog (code: question; params):",
-    "params": "Report catalog (code; params; list_reports has questions and columns):",
-    "codes": "Report catalog (codes; list_reports has questions, params and columns):",
+    "questions": "Reports you may run (code: question; params; balance = includes all before start_date):",
+    "short": "Reports you may run (code: question; params):",
+    "params": "Reports you may run (code; params; list_reports has questions and columns):",
+    "codes": "Reports you may run (codes; list_reports has questions, params and columns):",
 }
+
+RUN_REPORT_DESCRIPTION = (
+    "Run a registered report. 'params' takes the report's listed params as lists of IDs, plus start_date "
+    "and end_date; describe_report has the full params_schema. Omitted dates use the report's default "
+    "range. Returns 'columns', positional 'rows', 'totals' computed over all rows even when 'truncated' "
+    "is true, row_count and date_window."
+)
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
 
 REPORT_ARG = {
     "type": "string",
-    "description": "Report code exactly as listed in the report catalog or by list_reports "
+    "description": "Report code exactly as listed in run_report's description or by list_reports "
     "(e.g. 'client.balances'). "
     "Tell the user the report's title, not its code.",
 }
@@ -98,8 +106,8 @@ class ReportToolsMixin:
     report_max_rows = 200
     report_max_rows_cap = 1000
     report_catalog_max = 40
-    # Claude Code reads the first 4,096 characters; lower it by what a subclass appends after the mixin.
-    instructions_max_chars = 4096
+    # Claude Code keeps 4,096 characters of a tool description (16,384 once loaded through tool search).
+    report_tool_description_max_chars = 4096
     instructions = DEFAULT_INSTRUCTIONS + REPORT_INSTRUCTIONS
 
     # --- policy hooks (override in a subclass) -------------------------------------------------
@@ -139,23 +147,21 @@ class ReportToolsMixin:
             and model_admin.has_view_or_change_permission(request)
         }
 
-    def get_instructions(self, request) -> str:
-        """A catalog of the reports ``request``'s user may run, then the instructions. The catalog drops
-        detail (``CATALOG_HEADERS``), then itself, to keep the whole within ``instructions_max_chars``."""
-        instructions = super().get_instructions(request)
+    def get_report_catalog(self, request, room: int) -> str:
+        """The reports ``request``'s user may run, at the richest ``CATALOG_HEADERS`` level that fits in
+        ``room`` characters; empty without a user, above ``report_catalog_max`` or when none fits."""
         if not getattr(getattr(request, "user", None), "is_authenticated", False):
-            return instructions
+            return ""
         with self.translation_override(request):
             reports = self.get_reports(request)
             if not reports or len(reports) > self.report_catalog_max:
-                return instructions
+                return ""
             entries = [report_entry(self, request, report_class) for report_class in reports]
         for detail, header in CATALOG_HEADERS.items():
             catalog = "\n".join([header, *(catalog_line(entry, detail) for entry in entries)])
-            text = f"{catalog}\n\n{instructions}"
-            if len(text) <= self.instructions_max_chars:
-                return text
-        return instructions
+            if len(catalog) <= room:
+                return catalog
+        return ""
 
     # --- registry ------------------------------------------------------------------------------
     def get_reports(self, request, code=None) -> list:
@@ -172,12 +178,14 @@ class ReportToolsMixin:
 
     # --- tools ---------------------------------------------------------------------------------
     def get_tools(self, request=None) -> list:
-        return super().get_tools(request) + self.get_report_tools()
+        return super().get_tools(request) + self.get_report_tools(request)
 
     def get_view_tools(self, request=None, *, reserved=()) -> list:
         return super().get_view_tools(request, reserved={*reserved, *REPORT_TOOL_NAMES})
 
-    def get_report_tools(self) -> list:
+    def get_report_tools(self, request=None) -> list:
+        room = self.report_tool_description_max_chars - len(RUN_REPORT_DESCRIPTION) - 2
+        catalog = self.get_report_catalog(request, room) if request is not None else ""
         max_rows = {
             "type": "integer",
             "minimum": 1,
@@ -189,7 +197,7 @@ class ReportToolsMixin:
             ToolSpec(
                 name="list_reports",
                 title="List reports",
-                description="The reports you may run, when the instructions carry no report catalog or to "
+                description="The reports you may run, when run_report's description lists none or to "
                 "compare reports: code, title, description, 'question' (short), the kind of record it covers "
                 "(base_model with its name in base_model_name; say the name), kind (group, series, crosstab "
                 "or list), whether it filters by date, 'params' (each parameter that picks records, with the "
@@ -211,10 +219,7 @@ class ReportToolsMixin:
             ToolSpec(
                 name="run_report",
                 title="Run a report",
-                description="Run a registered report. 'params' takes the report's listed params as lists of "
-                "IDs, plus start_date and end_date; describe_report has the full params_schema. Omitted dates "
-                "use the report's default range. Returns 'columns', positional 'rows', 'totals' computed over "
-                "all rows even when 'truncated' is true, row_count and date_window.",
+                description=f"{RUN_REPORT_DESCRIPTION}\n\n{catalog}" if catalog else RUN_REPORT_DESCRIPTION,
                 input_schema=obj(
                     {
                         "report": REPORT_ARG,
