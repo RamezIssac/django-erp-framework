@@ -67,19 +67,21 @@ what the report leaves out."""
 
 # Catalog detail levels, richest first: run_report's description uses the first that fits.
 CATALOG_HEADERS = {
-    "questions": "Reports you may run (code: question; params; order_by key=label; balance = includes all "
+    "questions": "Reports you may run (code: question | params | order_by key=label | balance = includes all "
     "before start_date):",
-    "short": "Reports you may run (code: question; params; order_by keys):",
-    "params": "Reports you may run (code; params; list_reports has questions and columns):",
-    "codes": "Reports you may run (codes; list_reports has questions, params and columns):",
+    "short": "Reports you may run (code: question | params | order_by keys):",
+    "params": "Reports you may run (code | params | order_by keys; list_reports has the questions):",
+    "codes": "Reports you may run (codes; list_reports has questions, params and order_by keys):",
 }
 
 RUN_REPORT_DESCRIPTION = (
-    "Run a registered report. 'params' takes the report's listed params as lists of IDs, plus start_date "
-    "and end_date; describe_report has the full params_schema. Omitted dates use the report's default "
-    "range. 'order_by' sorts rows by one of the report's order_by keys, '-key' for highest first; with "
-    "max_rows it gives a top N. Returns 'columns', positional 'rows', 'totals' computed over all rows even "
-    "when 'truncated' is true, row_count and date_window."
+    "Run a registered report. The reports below (or list_reports) show each report's params and order_by "
+    "keys in full: run one directly, and call describe_report only for a parameter it does not list. "
+    "Everything but 'report' is optional: 'params' takes the listed params as lists of IDs (omitted: every "
+    "record) plus start_date and end_date (omitted: the report's default range); 'order_by' takes one "
+    "listed key, '-key' for highest first (omitted: the report's own order); with max_rows it gives a top "
+    "N. Returns 'columns', positional 'rows', 'totals' computed over all rows even when 'truncated' is "
+    "true, row_count and date_window."
 )
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
@@ -411,21 +413,21 @@ def order_columns(report_class) -> dict:
 
 
 def catalog_line(entry, detail="questions") -> str:
-    """The report's catalog line at ``detail``, one of ``CATALOG_HEADERS``."""
-    line = entry["report"]
-    if detail == "questions":
-        line += ": " + " ".join(entry["description"].split())
-    elif detail == "short":
-        line += ": " + " ".join(entry["question"].split())
-    if detail != "codes" and entry["params"]:
-        line += "; " + ", ".join(entry["params"])
-    if detail == "questions" and entry["order_by"]:
-        line += "; order_by " + ", ".join(f"{key}={label}" for key, label in entry["order_by"].items())
-    elif detail == "short" and entry["order_by"]:
-        line += "; order_by " + ", ".join(entry["order_by"])
+    """The report's catalog line at ``detail``, one of ``CATALOG_HEADERS``: enough for a plain run."""
+    if detail == "codes":
+        return entry["report"]
+    parts = [entry["report"]]
+    if detail in ("questions", "short"):
+        text = entry["description"] if detail == "questions" else entry["question"]
+        parts = [f"{entry['report']}: {' '.join(text.split())}"]
+    if entry["params"]:
+        parts.append("params " + ", ".join(entry["params"]))
+    if entry["order_by"]:
+        keys = entry["order_by"].items() if detail == "questions" else ((key, None) for key in entry["order_by"])
+        parts.append("order_by " + ", ".join(key if label is None else f"{key}={label}" for key, label in keys))
     if detail == "questions" and entry["balance"]:
-        line += "; balance"
-    return line
+        parts.append("balance")
+    return " | ".join(parts)
 
 
 def _max_rows(site, args) -> int:

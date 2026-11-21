@@ -327,13 +327,16 @@ class ReportRoutingTests(BaseTestData, TestCase):
         from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
 
         description = self.run_report_description()
-        self.assertTrue(description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run (code: question;"))
+        self.assertTrue(description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run (code: question |"))
         self.assertLessEqual(len(description), 4096)
+        self.assertIn("call describe_report only for a parameter it does not list", description)
+        self.assertIn("Everything but 'report' is optional", description)
+        self.assertIn("(omitted: the report's own order)", description)
         lines = self.catalog(description)
         self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
         self.assertIn(
-            "client.balances: Clients Balances; client_id, product_id; "
-            "order_by __balance__=Closing Total, __total__=Sum of value; balance",
+            "client.balances: Clients Balances | params client_id, product_id | "
+            "order_by __balance__=Closing Total, __total__=Sum of value | balance",
             lines,
         )
         self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
@@ -352,10 +355,14 @@ class ReportRoutingTests(BaseTestData, TestCase):
         with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
             for header, line in (
                 (
-                    "Reports you may run (code: question; params; order_by keys):",
-                    "client.balances: Who owes us money?; client_id, product_id; order_by __balance__, __total__",
+                    "Reports you may run (code: question | params | order_by keys):",
+                    "client.balances: Who owes us money? | params client_id, product_id "
+                    "| order_by __balance__, __total__",
                 ),
-                ("Reports you may run (code; params;", "client.balances; client_id, product_id"),
+                (
+                    "Reports you may run (code | params | order_by keys;",
+                    "client.balances | params client_id, product_id | order_by __balance__, __total__",
+                ),
                 ("Reports you may run (codes;", "client.balances"),
             ):
                 with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", budget):
@@ -385,10 +392,10 @@ class ReportRoutingTests(BaseTestData, TestCase):
                 mock.patch("erp_framework.reporting.mcp.report_entry", side_effect=entries):
             description = self.run_report_description()
         self.assertLessEqual(len(description), 4096)
-        self.assertIn("\n\nReports you may run (code: question; params; order_by keys):", description)
+        self.assertIn("\n\nReports you may run (code: question | params | order_by keys):", description)
         lines = self.catalog(description)
         self.assertEqual(len(lines), 24)
-        expected_end = ": Top clients by sales this year?; client_id; order_by value__sum"
+        expected_end = ": Top clients by sales this year? | params client_id | order_by value__sum"
         self.assertTrue(lines[0].endswith(expected_end), lines[0])
 
     def test_catalog_lists_only_reports_the_user_may_run(self):
@@ -399,8 +406,8 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(
             lines,
             [
-                "client.balances: Clients Balances; client_id, product_id; "
-                "order_by __balance__=Closing Total, __total__=Sum of value; balance"
+                "client.balances: Clients Balances | params client_id, product_id | "
+                "order_by __balance__=Closing Total, __total__=Sum of value | balance"
             ],
         )
 

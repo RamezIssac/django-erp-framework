@@ -165,9 +165,12 @@ The server instructions route questions to reports: answer totals and balances w
 typed names with ``resolve_entities``, then call ``run_report``. ``run_report``'s description, built per
 request by ``get_report_catalog(request, room)``, ends with a catalog: one line per report the user may
 run, when there are at most ``report_catalog_max`` (40) of them. The whole description stays within
-``report_tool_description_max_chars`` (4096). Each line is ``code: description; params; balance`` when
-that fits, else ``code: question; params`` with the short question, else ``code; params``, else the code
-alone, else the catalog is left out and the agent calls ``list_reports``.
+``report_tool_description_max_chars`` (4096). Each line is enough for a plain run:
+``code: description | params ... | order_by key=label | balance`` when that fits, else
+``code: question | params ... | order_by keys`` with the short question, else
+``code | params ... | order_by keys``, else the code alone, else the catalog is left out and the agent
+calls ``list_reports``. The description says the listed params and ``order_by`` keys are complete and
+optional, with their defaults, and to call ``describe_report`` only for a parameter a line does not list.
 
 Claude Code 2.1.330 cuts server instructions at 4,096 characters and keeps a tool description up to
 4,096 characters, or 16,384 once the tool is loaded through tool search
