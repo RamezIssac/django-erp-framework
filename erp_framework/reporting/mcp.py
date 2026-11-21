@@ -56,20 +56,19 @@ REPORT_TOOL_NAMES = frozenset(
 )
 
 REPORT_INSTRUCTIONS = """
-7. Reports: run one from the report catalog above with run_report (call list_reports when there is \
-none, or to compare columns). Pass the IDs resolve_entities returns as a list, e.g. {'client_id': [5]}. \
-Name a report by its 'title', a column and a record by its label.
-Note: run a catalog report directly for a kind of record ('sales by client'), not resolve_entities or \
-describe_model first, because the report already groups by it.
-Note: answer totals and balances with a report, not list_objects rows you add up, because a hand sum \
-hides what the report leaves out.
-8. When no report answers, use list_dynamic_report_models and run_dynamic_report."""
+7. Reports: run_report on a catalog report (else list_reports), passing resolve_entities IDs as lists: \
+{'client_id': [5]}; when none fits, run_dynamic_report. Name reports by title, columns by label.
+Note: run the report for a kind of record ('sales by client'), not resolve_entities or describe_model, \
+because it groups by it.
+Note: answer totals and balances with a report, not summed list_objects rows, because hand sums hide \
+what the report leaves out."""
 
 # Catalog detail levels, richest first: get_instructions uses the first that fits instructions_max_chars.
 CATALOG_HEADERS = {
     "questions": "Report catalog (code: question; params; balance = includes all before start_date):",
-    "params": "Report catalog (code; params; list_reports has each question and its columns):",
-    "codes": "Report catalog (codes; list_reports has each question, params and columns):",
+    "short": "Report catalog (code: question; params):",
+    "params": "Report catalog (code; params; list_reports has questions and columns):",
+    "codes": "Report catalog (codes; list_reports has questions, params and columns):",
 }
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
@@ -116,6 +115,10 @@ class ReportToolsMixin:
     def get_report_description(self, report_class, request) -> str:
         description = getattr(report_class, "report_description", "") or (report_class.__doc__ or "").strip()
         return str(description or report_class.get_report_title())
+
+    def get_report_question(self, report_class, request) -> str:
+        """The short catalog question (5 to 8 words): ``report_question``, else the title."""
+        return str(getattr(report_class, "report_question", "") or report_class.get_report_title())
 
     def has_report_permission(self, request, report_class) -> bool:
         if not app_settings.report_access_function(request, "view", report_class):
@@ -186,7 +189,8 @@ class ReportToolsMixin:
             ToolSpec(
                 name="list_reports",
                 title="List reports",
-                description="The reports you may run: code, title, description, the kind of record it covers "
+                description="The reports you may run, when the instructions carry no report catalog or to "
+                "compare reports: code, title, description, 'question' (short), the kind of record it covers "
                 "(base_model with its name in base_model_name; say the name), kind (group, series, crosstab "
                 "or list), whether it filters by date, 'params' (each parameter that picks records, with the "
                 "kind of record its IDs come from), 'balance' (its balance columns include everything before "
@@ -344,6 +348,7 @@ def report_entry(site, request, report_class) -> dict:
         "report": report_class.get_report_code(),
         "title": str(report_class.get_report_title()),
         "description": site.get_report_description(report_class, request),
+        "question": site.get_report_question(report_class, request),
         "base_model": model_label(report_class.base_model),
         "base_model_name": model_name(report_class.base_model),
         "kind": report_kind(report_class),
@@ -376,10 +381,12 @@ def column_labels(report_class) -> list:
 
 
 def catalog_line(entry, detail="questions") -> str:
-    """``code: question; params; balance``, ``code; params`` or ``code``, by ``detail``."""
+    """The report's catalog line at ``detail``, one of ``CATALOG_HEADERS``."""
     line = entry["report"]
     if detail == "questions":
         line += ": " + " ".join(entry["description"].split())
+    elif detail == "short":
+        line += ": " + " ".join(entry["question"].split())
     if detail != "codes" and entry["params"]:
         line += "; " + ", ".join(entry["params"])
     if detail == "questions" and entry["balance"]:
