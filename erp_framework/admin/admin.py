@@ -18,7 +18,7 @@ from django.contrib.admin.utils import quote, unquote, flatten_fieldsets
 from django.contrib.admin.widgets import AdminTextareaWidget, RelatedFieldWidgetWrapper
 from django.contrib.auth import get_permission_codename
 from django.contrib.contenttypes.admin import GenericTabularInline
-from django.core.exceptions import PermissionDenied, ImproperlyConfigured
+from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ImproperlyConfigured
 from django.db import models
 from django.db.models import DecimalField, ForeignKey, TextField
 from django.db.models.base import ModelBase
@@ -348,6 +348,12 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     def reversion_register(self, model, **kwargs):
         kwargs["for_concrete_model"] = False
         super(EntityAdmin, self).reversion_register(model, **kwargs)
+
+    def _has_name_field(self):
+        try:
+            return self.model._meta.get_field("name").concrete
+        except FieldDoesNotExist:
+            return False
 
     def get_enhanced_obj_title(self, obj):
         request = CrequestMiddleware.get_request()
@@ -712,6 +718,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     def get_list_display(self, request):
         list_display = super(EntityAdmin, self).get_list_display(request)
+        if getattr(request, "is_api", False) and self._has_name_field():
+            # JSON/MCP list rows carry the plain name; the HTML title column is not exposed there.
+            list_display = tuple("name" if c == "get_enhanced_obj_title" else c for c in list_display)
 
         if self.enable_view_view and self.has_view_permission(request):
             list_display = ("get_stats_icon",) + list_display
