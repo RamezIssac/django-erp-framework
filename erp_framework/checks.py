@@ -24,3 +24,14 @@ def check_crequest(app_configs=None, **kwargs):
             )
         )
     return errors
+
+
+@register()
+def doc_type_effects_check(app_configs=None, **kwargs):
+    from .doc_types import check_doc_type_effects, transaction_models
+
+    models = transaction_models()
+    if app_configs is not None:
+        labels = {config.label for config in app_configs}
+        models = [model for model in models if model._meta.app_label in labels]
+    return check_doc_type_effects(models)
