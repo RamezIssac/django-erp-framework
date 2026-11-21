@@ -202,6 +202,17 @@ class ClientDetailedStatement2(ListReportView):
 
 
 @register_report_view
+class ClientDatedStatement(ListReportView):
+    report_title = _("client dated statement")
+    base_model = Client
+    report_model = SimpleSales
+    date_field = "date"
+
+    group_by = None
+    columns = ["slug", "date", "client__name", "quantity", "price", "value"]
+
+
+@register_report_view
 class ProductClientSalesMatrix(ReportView):
     base_model = Product
     report_model = SimpleSales
