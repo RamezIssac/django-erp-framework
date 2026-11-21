@@ -222,7 +222,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         )
         out, err = self.call("run_report", {"report": "client.clientdetailedstatement", "order_by": "value"})
         self.assertTrue(err)
-        self.assertIn("this report cannot be sorted", out["fields"]["order_by"][0]["message"])
+        self.assertEqual(out["fields"]["order_by"][0]["message"], "This report cannot be sorted.")
 
     def test_single_id_runs_like_a_list(self):
         out = self.run_report("client.balances", {"client_id": self.client1.pk})

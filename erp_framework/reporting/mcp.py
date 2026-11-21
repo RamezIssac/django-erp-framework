@@ -518,9 +518,11 @@ def run_report(site, request, args) -> dict:
     if order_by:
         keys = order_columns(report_class)
         if not isinstance(order_by, str) or order_by.removeprefix("-") not in keys:
-            message = gettext("Sort by one of: %(keys)s; prefix '-' for highest first.") % {
-                "keys": ", ".join(keys) or gettext("none, this report cannot be sorted")
-            }
+            message = (
+                gettext("Sort by one of: %(keys)s; prefix '-' for highest first.") % {"keys": ", ".join(keys)}
+                if keys
+                else gettext("This report cannot be sorted.")
+            )
             error = {"message": message, "code": "invalid"}
             raise InvalidParams("Invalid report parameters.", fields={"order_by": [error]})
     try:
