@@ -8,8 +8,8 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. The server instructions end with a catalog of the reports the user may
-run when there are at most ``report_catalog_max`` of them. Reports run through django-slick-reporting's
+and ``run_dynamic_report``. The server instructions start with a catalog of the reports the user may
+run, sized to fit ``instructions_max_chars``. Reports run through django-slick-reporting's
 headless runner and come back as compact rows plus server-side totals. This module requires django-admin-api-mcp and
 django-slick-reporting's headless runner, compact output and dynamic report; erp_framework itself does not.
 """
@@ -19,7 +19,13 @@ import copy
 from django import forms
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from django.core.exceptions import NON_FIELD_ERRORS, FieldDoesNotExist, PermissionDenied, ValidationError
+from django.core.exceptions import (
+    NON_FIELD_ERRORS,
+    FieldDoesNotExist,
+    ImproperlyConfigured,
+    PermissionDenied,
+    ValidationError,
+)
 from django.utils.translation import gettext
 
 from admin_api import scopes
@@ -37,6 +43,7 @@ from slick_reporting.dynamic_report import (
     run_dynamic_report,
 )
 from slick_reporting.fields import ComputationField, FirstBalanceField
+from slick_reporting.generator import ReportGenerator
 from slick_reporting.helpers import compact_response
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
@@ -49,22 +56,21 @@ REPORT_TOOL_NAMES = frozenset(
 )
 
 REPORT_INSTRUCTIONS = """
-7. Reports: the report catalog at the end of these instructions lists the reports you may run; when \
-it is missing, call list_reports. Each report's 'params' maps a parameter that picks records, such as \
-a client or a product, to the kind of record its IDs come from. For a question about a record the user \
-named, call resolve_entities with 'models' set to that kind of record, then run_report with the IDs as \
-a list (for example {'client_id': [5]}), and name each record by its label. Call describe_report only \
-for a parameter the report does not list. Results are compact: 'columns', positional 'rows', and \
-'totals' computed over all rows even when 'truncated' is true. Name a report by its 'title', a column \
-by its label and a kind of record by its name ('base_model_name', 'report_model_name'), not by their \
-codes or model paths. A report marked 'balance' adds everything before start_date to its balance \
-columns: leave start_date at its default for what is owed now.
-Note: answer a question about totals, balances, sales or expenses with the report that answers it, not \
-with list_objects rows you add up yourself, because a hand sum hides what the report leaves out. When \
-a report looks incomplete, say so and show its detailed statement.
-8. When no registered report answers the question, call list_dynamic_report_models for the kinds of \
-record and fields you may use (name each by its 'verbose_name'), then build a report with \
-run_dynamic_report."""
+7. Reports: run one from the report catalog above with run_report (call list_reports when there is \
+none, or to compare columns). Pass the IDs resolve_entities returns as a list, e.g. {'client_id': [5]}. \
+Name a report by its 'title', a column and a record by its label.
+Note: run a catalog report directly for a kind of record ('sales by client'), not resolve_entities or \
+describe_model first, because the report already groups by it.
+Note: answer totals and balances with a report, not list_objects rows you add up, because a hand sum \
+hides what the report leaves out.
+8. When no report answers, use list_dynamic_report_models and run_dynamic_report."""
+
+# Catalog detail levels, richest first: get_instructions uses the first that fits instructions_max_chars.
+CATALOG_HEADERS = {
+    "questions": "Report catalog (code: question; params; balance = includes all before start_date):",
+    "params": "Report catalog (code; params; list_reports has each question and its columns):",
+    "codes": "Report catalog (codes; list_reports has each question, params and columns):",
+}
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
@@ -93,6 +99,8 @@ class ReportToolsMixin:
     report_max_rows = 200
     report_max_rows_cap = 1000
     report_catalog_max = 40
+    # Claude Code reads the first 4,096 characters; lower it by what a subclass appends after the mixin.
+    instructions_max_chars = 4096
     instructions = DEFAULT_INSTRUCTIONS + REPORT_INSTRUCTIONS
 
     # --- policy hooks (override in a subclass) -------------------------------------------------
@@ -129,8 +137,8 @@ class ReportToolsMixin:
         }
 
     def get_instructions(self, request) -> str:
-        """The instructions plus a catalog of the reports ``request``'s user may run, when there are at
-        most ``report_catalog_max``."""
+        """A catalog of the reports ``request``'s user may run, then the instructions. The catalog drops
+        detail (``CATALOG_HEADERS``), then itself, to keep the whole within ``instructions_max_chars``."""
         instructions = super().get_instructions(request)
         if not getattr(getattr(request, "user", None), "is_authenticated", False):
             return instructions
@@ -138,8 +146,13 @@ class ReportToolsMixin:
             reports = self.get_reports(request)
             if not reports or len(reports) > self.report_catalog_max:
                 return instructions
-            lines = [catalog_line(report_entry(self, request, report_class)) for report_class in reports]
-        return "\n".join([instructions, "Report catalog (code: title; description; params; balance):", *lines])
+            entries = [report_entry(self, request, report_class) for report_class in reports]
+        for detail, header in CATALOG_HEADERS.items():
+            catalog = "\n".join([header, *(catalog_line(entry, detail) for entry in entries)])
+            text = f"{catalog}\n\n{instructions}"
+            if len(text) <= self.instructions_max_chars:
+                return text
+        return instructions
 
     # --- registry ------------------------------------------------------------------------------
     def get_reports(self, request, code=None) -> list:
@@ -174,10 +187,10 @@ class ReportToolsMixin:
                 name="list_reports",
                 title="List reports",
                 description="The reports you may run: code, title, description, the kind of record it covers "
-                "(base_model with its name in base_model_name), kind (group, series, crosstab or list), "
-                "whether it filters by date, 'params' (each parameter that picks records, with the kind of "
-                "record its IDs come from) and 'balance' (its balance columns include everything before "
-                "start_date).",
+                "(base_model with its name in base_model_name; say the name), kind (group, series, crosstab "
+                "or list), whether it filters by date, 'params' (each parameter that picks records, with the "
+                "kind of record its IDs come from), 'balance' (its balance columns include everything before "
+                "start_date) and 'columns' (column labels).",
                 input_schema=obj({}),
                 handler=list_reports,
                 annotations=READ_ONLY,
@@ -196,8 +209,8 @@ class ReportToolsMixin:
                 title="Run a report",
                 description="Run a registered report. 'params' takes the report's listed params as lists of "
                 "IDs, plus start_date and end_date; describe_report has the full params_schema. Omitted dates "
-                "use the report's default range. Returns columns, rows, totals, row_count, truncated and "
-                "date_window.",
+                "use the report's default range. Returns 'columns', positional 'rows', 'totals' computed over "
+                "all rows even when 'truncated' is true, row_count and date_window.",
                 input_schema=obj(
                     {
                         "report": REPORT_ARG,
@@ -216,7 +229,8 @@ class ReportToolsMixin:
                 name="list_dynamic_report_models",
                 title="List models for dynamic reports",
                 description="The kinds of record a run_dynamic_report spec may read, with their fields: name, "
-                "verbose_name, type, whether it is numeric, a date or a relation, and the related kind of record.",
+                "verbose_name, type, whether it is numeric, a date or a relation, and the related kind of record. "
+                "Name each kind of record and field by its verbose_name.",
                 input_schema=obj({}),
                 handler=list_dynamic_report_models,
                 annotations=READ_ONLY,
@@ -336,19 +350,41 @@ def report_entry(site, request, report_class) -> dict:
         "date_filter": bool(report_class.date_field),
         "params": record_params(site, report_view(request, report_class)),
         "balance": is_balance_report(report_class),
+        "columns": column_labels(report_class),
     }
 
 
-def catalog_line(entry) -> str:
-    description = " ".join(entry["description"].split())
-    parts = [entry["title"]]
-    if description != entry["title"]:
-        parts.append(description)
-    if entry["params"]:
-        parts.append("params " + ", ".join(f"{name}={label}" for name, label in entry["params"].items()))
-    if entry["balance"]:
-        parts.append("balance")
-    return f"- {entry['report']}: " + "; ".join(parts)
+def column_labels(report_class) -> list:
+    """The labels of the report's columns, time series columns and crosstab columns."""
+    columns = [
+        *(report_class.columns or []),
+        *(report_class.time_series_columns or []),
+        *(report_class.crosstab_columns or []),
+    ]
+    try:
+        parsed = ReportGenerator.check_columns(
+            report_class,
+            list(columns),
+            report_class.group_by,
+            report_class.get_report_model(),
+            container_class=report_class,
+            group_by_custom_querysets=report_class.group_by_custom_querysets,
+        )
+    except (FieldDoesNotExist, ImproperlyConfigured):
+        return [column_name(column) for column in columns]
+    return [str(column["verbose_name"]) for column in parsed if column["name"] != "__index__"]
+
+
+def catalog_line(entry, detail="questions") -> str:
+    """``code: question; params; balance``, ``code; params`` or ``code``, by ``detail``."""
+    line = entry["report"]
+    if detail == "questions":
+        line += ": " + " ".join(entry["description"].split())
+    if detail != "codes" and entry["params"]:
+        line += "; " + ", ".join(entry["params"])
+    if detail == "questions" and entry["balance"]:
+        line += "; balance"
+    return line
 
 
 def _max_rows(site, args) -> int:

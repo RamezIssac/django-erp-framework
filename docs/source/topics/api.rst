@@ -123,7 +123,8 @@ publishes the admin tools only.
   title, description, base model (``base_model`` path and ``base_model_name``, the verbose name),
   kind (``group``, ``series``, ``crosstab`` or ``list``), whether it filters by date, ``params``
   (each parameter that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``) and
-  ``balance`` (true when a column adds everything before ``start_date``, such as ``__balance__``).
+  ``balance`` (true when a column adds everything before ``start_date``, such as ``__balance__``) and
+  ``columns`` (the column labels).
   A parameter whose model is not exposed through MCP, or is in ``excluded_models``, is left out of ``params`` and ``params_schema``.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
   group by, date field, time series pattern and crosstab field, with ``base_model_name`` and
@@ -156,11 +157,14 @@ base model. By default ``is_report_exposed`` keeps a report whose base model's a
 MCP (``is_exposed``), and a report without a base model.
 
 The server instructions route questions to reports: answer totals and balances with a report, resolve
-typed names with ``resolve_entities``, then call ``run_report``. ``get_instructions(request)`` appends a
-report catalog, one line per report the user may run (code, title, description, ``params``,
-``balance``), when there are at most ``report_catalog_max`` (40) of them; above that the agent calls
-``list_reports``. A question such as "how much does this client owe" then takes two calls:
-``resolve_entities`` and ``run_report``.
+typed names with ``resolve_entities``, then call ``run_report``. ``get_instructions(request)`` puts a
+report catalog before the instructions, one line per report the user may run, when there are at most
+``report_catalog_max`` (40) of them. Claude Code reads only the first 4,096 characters of the
+instructions; the whole stays within ``instructions_max_chars`` (4096). Each line is
+``code: question; params; balance`` when that fits, else ``code; params``, else the code alone, else
+the catalog is left out and the agent calls ``list_reports``. A subclass that appends lines after the
+mixin lowers ``instructions_max_chars`` by their length. A question such as "how much does this client
+owe" then takes two calls: ``resolve_entities`` and ``run_report``.
 
 Narrow the reports, or change the row limits, in a subclass:
 
