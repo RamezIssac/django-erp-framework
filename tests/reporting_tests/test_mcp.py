@@ -12,7 +12,7 @@ from django.test import RequestFactory, TestCase, override_settings
 
 from erp_framework.reporting.models import UserReportPermission
 
-from .admin import ClientAdmin, SimpleSalesAdmin
+from .admin import ClientAdmin, ProductAdmin, SimpleSalesAdmin
 from .models import Client, SimpleSales
 from .reports import ClientTotalBalance
 from .tests import BaseTestData, year
@@ -49,7 +49,7 @@ class ReportToolsTests(BaseTestData, TestCase):
             self.assertTrue(tools[name].annotations["readOnlyHint"], name)
             self.assertFalse(tools[name].writes, name)
 
-    def test_list_reports_exposes_every_registered_report(self):
+    def test_list_reports_entry_carries_params_and_balance(self):
         out, err = self.call("list_reports")
         self.assertFalse(err, out)
         reports = {r["report"]: r for r in out["reports"]}
@@ -63,7 +63,16 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "base_model_name": "Client",
                 "kind": "group",
                 "date_filter": False,
+                "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
+                "balance": True,
             },
+        )
+        self.assertFalse(reports["client.clientdetailedstatement"]["balance"])
+        self.assertTrue(reports["product.productsalesmonthlyseries"]["balance"])
+        # owner_id and lastmod_user_id pick users, a model resolve_entities skips (excluded_models)
+        self.assertEqual(
+            reports["client.client_sales_of_products"]["params"],
+            {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
         )
         self.assertEqual(reports["product.productclientsalesmatrix"]["kind"], "crosstab")
         self.assertEqual(reports["client.clientsalesmonthlyseries"]["kind"], "series")
@@ -155,11 +164,13 @@ class ReportToolsTests(BaseTestData, TestCase):
             out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
         self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
 
-    def test_instructions_send_report_params_to_resolve_entities(self):
+    def test_instructions_route_questions_to_reports(self):
         from erp_framework.api import erp_mcp_site
 
         instructions = erp_mcp_site.instructions
-        self.assertIn("get them from resolve_entities with 'models' set to the parameter's", instructions)
+        self.assertIn("call resolve_entities with 'models' set to that kind of record, then run_report", instructions)
+        self.assertIn("Note: answer a question about totals, balances, sales or expenses with the report", instructions)
+        self.assertIn("when it is missing, call list_reports", instructions)
         self.assertNotIn("look them up with list_objects", instructions)
         for item in ("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8."):
             self.assertEqual(instructions.count(f"\n{item} "), 1, item)
@@ -182,6 +193,10 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertTrue(err, out)
         self.assertEqual(out["error"], "invalid_params")
         self.assertIn("client_id", out["fields"])
+
+    def test_single_id_runs_like_a_list(self):
+        out = self.run_report("client.balances", {"client_id": self.client1.pk})
+        self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
 
     def test_unknown_report_is_not_found(self):
         out, err = self.call("run_report", {"report": "client.nope"})
@@ -238,6 +253,69 @@ class ReportToolsTests(BaseTestData, TestCase):
         result = site.call_tool(request, "list_reports", {})
         self.assertFalse(result.is_error, result.data)
         self.assertTrue(all(r["report"].startswith("product.") for r in result.data["reports"]))
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class ReportRoutingTests(BaseTestData, TestCase):
+    call = ReportToolsTests.call
+
+    def request(self, user=None):
+        request = RequestFactory().post("/mcp/")
+        request.user = user or self.user
+        return request
+
+    def test_hidden_base_model_hides_its_reports_and_params(self):
+        with mock.patch.object(ProductAdmin, "mcp_enabled", False, create=True):
+            out, err = self.call("list_reports")
+            self.assertFalse(err, out)
+            reports = {r["report"]: r for r in out["reports"]}
+            self.assertTrue(reports)
+            self.assertFalse([code for code in reports if code.startswith("product.")])
+            self.assertEqual(reports["client.balances"]["params"], {"client_id": "reporting_tests.client"})
+            out, err = self.call("describe_report", {"report": "client.balances"})
+            self.assertFalse(err, out)
+            self.assertNotIn("product_id", out["params_schema"]["properties"])
+            self.assertIn("client_id", out["params_schema"]["properties"])
+            out, err = self.call("run_report", {"report": "product.productsalesmonthlyseries"})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "not_found")
+
+    def test_instructions_end_with_the_users_report_catalog(self):
+        from erp_framework.api import erp_mcp_site
+
+        instructions = erp_mcp_site.get_instructions(self.request())
+        self.assertTrue(instructions.startswith(erp_mcp_site.instructions))
+        self.assertIn("\nReport catalog (code: title; description; params; balance):\n", instructions)
+        self.assertIn(
+            "\n- client.balances: Clients Balances; params client_id=reporting_tests.client, "
+            "product_id=reporting_tests.product; balance\n",
+            instructions,
+        )
+        reports = self.call("list_reports")[0]["reports"]
+        self.assertEqual(instructions.count("\n- "), len(reports))
+
+    def test_catalog_lists_only_reports_the_user_may_run(self):
+        from erp_framework.api import erp_mcp_site
+
+        UserReportPermission.objects.create(
+            user=self.limited_user, report_code=ClientTotalBalance.get_report_code(), view=True
+        )
+        instructions = erp_mcp_site.get_instructions(self.request(self.limited_user))
+        self.assertEqual(instructions.count("\n- "), 1)
+        self.assertIn("\n- client.balances: ", instructions)
+
+    def test_catalog_is_left_out_above_the_cap_or_without_a_user(self):
+        from django.contrib.auth.models import AnonymousUser
+
+        from erp_framework.api import erp_mcp_site
+
+        reports = self.call("list_reports")[0]["reports"]
+        with mock.patch.object(type(erp_mcp_site), "report_catalog_max", len(reports)):
+            self.assertIn("Report catalog", erp_mcp_site.get_instructions(self.request()))
+        with mock.patch.object(type(erp_mcp_site), "report_catalog_max", len(reports) - 1):
+            self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
+        self.assertEqual(erp_mcp_site.get_instructions(self.request(AnonymousUser())), erp_mcp_site.instructions)
 
 
 SALES_BY_CLIENT = {

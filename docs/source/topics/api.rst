@@ -121,7 +121,10 @@ publishes the admin tools only.
 
 - ``list_reports``: the reports the user may run, with code (``<base_model>.<report_slug>``),
   title, description, base model (``base_model`` path and ``base_model_name``, the verbose name),
-  kind (``group``, ``series``, ``crosstab`` or ``list``) and whether it filters by date.
+  kind (``group``, ``series``, ``crosstab`` or ``list``), whether it filters by date, ``params``
+  (each parameter that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``) and
+  ``balance`` (true when a column adds everything before ``start_date``, such as ``__balance__``).
+  A parameter whose model is not exposed through MCP, or is in ``excluded_models``, is left out of ``params`` and ``params_schema``.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
   group by, date field, time series pattern and crosstab field, with ``base_model_name`` and
   ``report_model_name`` next to the model paths. Foreign-key parameters take
@@ -131,7 +134,8 @@ publishes the admin tools only.
   errors are worded with verbose names and carry a plain ``detail``, without model paths.
 - ``run_report``: runs the report through django-slick-reporting's headless runner and returns
   ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
-  ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A foreign-key parameter
+  ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A single ID for a parameter that
+  takes a list of IDs is read as a one-item list. A foreign-key parameter
   naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
 - ``list_dynamic_report_models``: the models and fields a dynamic report spec may use, each with its
   ``verbose_name``.
@@ -146,9 +150,19 @@ publishes the admin tools only.
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
   ``get_exclude(request)``); ``list_dynamic_report_models`` lists only those fields.
 
-A report is listed and runnable when ``report_access_function(request, "view", report)`` passes
-and the token scopes allow ``view`` on its base model. Every registered report is exposed by
-default. Narrow it, or change the row limits, in a subclass:
+A report is listed and runnable when ``is_report_exposed(report)`` allows it,
+``report_access_function(request, "view", report)`` passes and the token scopes allow ``view`` on its
+base model. By default ``is_report_exposed`` keeps a report whose base model's admin is exposed through
+MCP (``is_exposed``), and a report without a base model.
+
+The server instructions route questions to reports: answer totals and balances with a report, resolve
+typed names with ``resolve_entities``, then call ``run_report``. ``get_instructions(request)`` appends a
+report catalog, one line per report the user may run (code, title, description, ``params``,
+``balance``), when there are at most ``report_catalog_max`` (40) of them; above that the agent calls
+``list_reports``. A question such as "how much does this client owe" then takes two calls:
+``resolve_entities`` and ``run_report``.
+
+Narrow the reports, or change the row limits, in a subclass:
 
 .. code-block:: python
 
@@ -160,7 +174,7 @@ default. Narrow it, or change the row limits, in a subclass:
         report_max_rows_cap = 500
 
         def is_report_exposed(self, report_class):
-            return report_class.get_base_model_name() != "payroll"
+            return super().is_report_exposed(report_class) and report_class.get_base_model_name() != "payroll"
 
 ``get_report_description(report_class, request)`` returns ``report_description``, else the class
 docstring, else the title. Override it to give the agent more context.

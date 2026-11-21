@@ -8,8 +8,9 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. Reports run through django-slick-reporting's headless runner and come back
-as compact rows plus server-side totals. This module requires django-admin-api-mcp and
+and ``run_dynamic_report``. The server instructions end with a catalog of the reports the user may
+run when there are at most ``report_catalog_max`` of them. Reports run through django-slick-reporting's
+headless runner and come back as compact rows plus server-side totals. This module requires django-admin-api-mcp and
 django-slick-reporting's headless runner, compact output and dynamic report; erp_framework itself does not.
 """
 
@@ -35,6 +36,7 @@ from slick_reporting.dynamic_report import (
     describe_dynamic_report_models,
     run_dynamic_report,
 )
+from slick_reporting.fields import ComputationField, FirstBalanceField
 from slick_reporting.helpers import compact_response
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
@@ -47,13 +49,19 @@ REPORT_TOOL_NAMES = frozenset(
 )
 
 REPORT_INSTRUCTIONS = """
-7. Reports: call list_reports to see the reports you may run, describe_report for a report's \
-parameters, then run_report. Results are compact: 'columns', positional 'rows', and 'totals' \
-computed over all rows even when 'truncated' is true. Name a report by its 'title', a column by its \
-label and a kind of record by its name ('base_model_name', 'report_model_name'), not by their codes \
-or model paths. A parameter that picks records, such as a client or a product, takes their IDs: get \
-them from resolve_entities with 'models' set to the parameter's 'x-related-model', and name each \
-record by its label.
+7. Reports: the report catalog at the end of these instructions lists the reports you may run; when \
+it is missing, call list_reports. Each report's 'params' maps a parameter that picks records, such as \
+a client or a product, to the kind of record its IDs come from. For a question about a record the user \
+named, call resolve_entities with 'models' set to that kind of record, then run_report with the IDs as \
+a list (for example {'client_id': [5]}), and name each record by its label. Call describe_report only \
+for a parameter the report does not list. Results are compact: 'columns', positional 'rows', and \
+'totals' computed over all rows even when 'truncated' is true. Name a report by its 'title', a column \
+by its label and a kind of record by its name ('base_model_name', 'report_model_name'), not by their \
+codes or model paths. A report marked 'balance' adds everything before start_date to its balance \
+columns: leave start_date at its default for what is owed now.
+Note: answer a question about totals, balances, sales or expenses with the report that answers it, not \
+with list_objects rows you add up yourself, because a hand sum hides what the report leaves out. When \
+a report looks incomplete, say so and show its detailed statement.
 8. When no registered report answers the question, call list_dynamic_report_models for the kinds of \
 record and fields you may use (name each by its 'verbose_name'), then build a report with \
 run_dynamic_report."""
@@ -63,7 +71,8 @@ SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$sch
 
 REPORT_ARG = {
     "type": "string",
-    "description": "Report code exactly as returned by list_reports (e.g. 'client.balances'). "
+    "description": "Report code exactly as listed in the report catalog or by list_reports "
+    "(e.g. 'client.balances'). "
     "Tell the user the report's title, not its code.",
 }
 
@@ -76,18 +85,25 @@ class InvalidParams(ApiError):
 class ReportToolsMixin:
     """Adds the report tools to an ``AdminMcpSite`` subclass.
 
-    A report is listed and runnable when ``is_report_exposed`` allows it (default: every report
-    registered on the API site's admin site), ``report_access_function(request, "view", report)``
-    passes, and the token scopes allow ``view`` on the report's base model.
+    A report is listed and runnable when ``is_report_exposed`` allows it (default: its base model's
+    admin is exposed through MCP), ``report_access_function(request, "view", report)`` passes, and the
+    token scopes allow ``view`` on the report's base model.
     """
 
     report_max_rows = 200
     report_max_rows_cap = 1000
+    report_catalog_max = 40
     instructions = DEFAULT_INSTRUCTIONS + REPORT_INSTRUCTIONS
 
     # --- policy hooks (override in a subclass) -------------------------------------------------
     def is_report_exposed(self, report_class) -> bool:
-        return True
+        """Default: the report's base model is exposed (a report without a base model is kept)."""
+        base_model = getattr(report_class, "base_model", None)
+        return base_model is None or self.is_model_exposed(base_model)
+
+    def is_model_exposed(self, model) -> bool:
+        model_admin = self.api_site.admin_site._registry.get(model)
+        return model_admin is not None and self.is_exposed(model_admin)
 
     def get_report_description(self, report_class, request) -> str:
         description = getattr(report_class, "report_description", "") or (report_class.__doc__ or "").strip()
@@ -111,6 +127,19 @@ class ReportToolsMixin:
             and self.is_exposed(model_admin)
             and model_admin.has_view_or_change_permission(request)
         }
+
+    def get_instructions(self, request) -> str:
+        """The instructions plus a catalog of the reports ``request``'s user may run, when there are at
+        most ``report_catalog_max``."""
+        instructions = super().get_instructions(request)
+        if not getattr(getattr(request, "user", None), "is_authenticated", False):
+            return instructions
+        with self.translation_override(request):
+            reports = self.get_reports(request)
+            if not reports or len(reports) > self.report_catalog_max:
+                return instructions
+            lines = [catalog_line(report_entry(self, request, report_class)) for report_class in reports]
+        return "\n".join([instructions, "Report catalog (code: title; description; params; balance):", *lines])
 
     # --- registry ------------------------------------------------------------------------------
     def get_reports(self, request, code=None) -> list:
@@ -145,8 +174,10 @@ class ReportToolsMixin:
                 name="list_reports",
                 title="List reports",
                 description="The reports you may run: code, title, description, the kind of record it covers "
-                "(base_model with its name in base_model_name), kind (group, series, crosstab or list) "
-                "and whether it filters by date.",
+                "(base_model with its name in base_model_name), kind (group, series, crosstab or list), "
+                "whether it filters by date, 'params' (each parameter that picks records, with the kind of "
+                "record its IDs come from) and 'balance' (its balance columns include everything before "
+                "start_date).",
                 input_schema=obj({}),
                 handler=list_reports,
                 annotations=READ_ONLY,
@@ -163,13 +194,17 @@ class ReportToolsMixin:
             ToolSpec(
                 name="run_report",
                 title="Run a report",
-                description="Run a registered report. 'params' follows describe_report's params_schema; "
-                "omitted dates use the report's default range. Returns columns, rows, totals, "
-                "row_count, truncated and date_window.",
+                description="Run a registered report. 'params' takes the report's listed params as lists of "
+                "IDs, plus start_date and end_date; describe_report has the full params_schema. Omitted dates "
+                "use the report's default range. Returns columns, rows, totals, row_count, truncated and "
+                "date_window.",
                 input_schema=obj(
                     {
                         "report": REPORT_ARG,
-                        "params": {"type": "object", "description": "Report parameters (see describe_report)."},
+                        "params": {
+                            "type": "object",
+                            "description": "Report parameters, e.g. {'client_id': [5], 'start_date': '2026-01-01'}.",
+                        },
                         "max_rows": max_rows,
                     },
                     required=["report"],
@@ -230,10 +265,90 @@ def column_name(column) -> str:
     return column if isinstance(column, str) else getattr(column, "name", None) or column.__name__
 
 
-def params_schema(view) -> dict:
+def computation_classes(column):
+    """The computation field classes ``column`` names, with every class they require."""
+    if isinstance(column, (list, tuple)):
+        column = column[0]
+    if isinstance(column, str):
+        if column not in field_registry.get_all_report_fields_names():
+            return
+        column = field_registry.get_field_by_name(column)
+    if not (isinstance(column, type) and issubclass(column, ComputationField)):
+        return
+    pending, seen = [column], set()
+    while pending:
+        klass = pending.pop()
+        if klass not in seen:
+            seen.add(klass)
+            yield klass
+            pending.extend(klass._get_required_classes())
+
+
+def is_balance_report(report_class) -> bool:
+    columns = [
+        *(report_class.columns or []),
+        *(report_class.time_series_columns or []),
+        *(report_class.crosstab_columns or []),
+    ]
+    return any(issubclass(klass, FirstBalanceField) for column in columns for klass in computation_classes(column))
+
+
+def record_params(site, view) -> dict:
+    """``{param: related model label}`` of the form fields that pick records resolve_entities can find:
+    an MCP-exposed model outside ``excluded_models``."""
+    return {
+        name: model_label(field.queryset.model)
+        for name, field in view.get_form_class().base_fields.items()
+        if isinstance(field, forms.ModelChoiceField)
+        and site.is_model_exposed(field.queryset.model)
+        and not is_excluded(site, field.queryset.model)
+    }
+
+
+def params_schema(site, view) -> dict:
     schema = form_object_schema(view.get_form_class(), required=True)
+    shown = record_params(site, view)
+    schema["properties"] = {
+        name: prop
+        for name, prop in schema["properties"].items()
+        if "x-related-model" not in prop or name in shown
+    }
+    schema["required"] = [name for name in schema.get("required", []) if name in schema["properties"]]
     schema["properties"].update(view.extra_params or {})
     return schema
+
+
+def report_view(request, report_class):
+    view = report_class()
+    view.setup(request)
+    return view
+
+
+def report_entry(site, request, report_class) -> dict:
+    """What ``list_reports`` and the instructions catalog say about a report."""
+    return {
+        "report": report_class.get_report_code(),
+        "title": str(report_class.get_report_title()),
+        "description": site.get_report_description(report_class, request),
+        "base_model": model_label(report_class.base_model),
+        "base_model_name": model_name(report_class.base_model),
+        "kind": report_kind(report_class),
+        "date_filter": bool(report_class.date_field),
+        "params": record_params(site, report_view(request, report_class)),
+        "balance": is_balance_report(report_class),
+    }
+
+
+def catalog_line(entry) -> str:
+    description = " ".join(entry["description"].split())
+    parts = [entry["title"]]
+    if description != entry["title"]:
+        parts.append(description)
+    if entry["params"]:
+        parts.append("params " + ", ".join(f"{name}={label}" for name, label in entry["params"].items()))
+    if entry["balance"]:
+        parts.append("balance")
+    return f"- {entry['report']}: " + "; ".join(parts)
 
 
 def _max_rows(site, args) -> int:
@@ -266,26 +381,12 @@ def _validation_error(exc: ValidationError, detail: str) -> InvalidParams:
 
 # --- handlers: handler(mcp_site, request, arguments) -> dict --------------------------------------
 def list_reports(site, request, args) -> dict:
-    return {
-        "reports": [
-            {
-                "report": report_class.get_report_code(),
-                "title": str(report_class.get_report_title()),
-                "description": site.get_report_description(report_class, request),
-                "base_model": model_label(report_class.base_model),
-                "base_model_name": model_name(report_class.base_model),
-                "kind": report_kind(report_class),
-                "date_filter": bool(report_class.date_field),
-            }
-            for report_class in site.get_reports(request)
-        ]
-    }
+    return {"reports": [report_entry(site, request, report_class) for report_class in site.get_reports(request)]}
 
 
 def describe_report(site, request, args) -> dict:
     report_class = site.get_report(request, _report_code(args))
-    view = report_class()
-    view.setup(request)
+    view = report_view(request, report_class)
     return {
         "report": report_class.get_report_code(),
         "title": str(report_class.get_report_title()),
@@ -300,16 +401,14 @@ def describe_report(site, request, args) -> dict:
         "time_series_pattern": report_class.time_series_pattern or None,
         "crosstab_field": report_class.crosstab_field or None,
         "columns": [column_name(c) for c in report_class.columns or []],
-        "params_schema": params_schema(view),
+        "params_schema": params_schema(site, view),
     }
 
 
 def check_related_params(site, request, report_class, params) -> None:
     """Raise ``InvalidParams`` when a foreign-key param names a row its model admin hides from the user."""
-    view = report_class()
-    view.setup(request)
     errors = {}
-    for name, field in view.get_form_class().base_fields.items():
+    for name, field in report_view(request, report_class).get_form_class().base_fields.items():
         if name not in params or not isinstance(field, forms.ModelChoiceField):
             continue
         opts = field.queryset.model._meta
@@ -332,6 +431,11 @@ def run_report(site, request, args) -> dict:
     if not isinstance(params, dict):
         raise InvalidParams("'params' must be an object.")
     max_rows = _max_rows(site, args)
+    form_fields = report_view(request, report_class).get_form_class().base_fields
+    many = {name for name, field in form_fields.items() if isinstance(field, forms.ModelMultipleChoiceField)}
+    params = {
+        name: [value] if name in many and not isinstance(value, list) else value for name, value in params.items()
+    }
     check_related_params(site, request, report_class, params)
     try:
         full_response = report_class.run(request, params)
@@ -396,15 +500,11 @@ class AdminScope:
     def check_computation(self, report_model, column, key, errors) -> None:
         if isinstance(column, dict):
             self.check_path(report_model, column.get("field"), key, errors)
-        elif isinstance(column, str) and column in field_registry.get_all_report_fields_names():
-            pending, seen = [field_registry.get_field_by_name(column)], set()
-            while pending:
-                klass = pending.pop()
-                seen.add(klass)
+        elif isinstance(column, str):
+            for klass in computation_classes(column):
                 own_queryset = getattr(klass, "queryset", None)
                 field_model = klass.report_model or (own_queryset.model if own_queryset is not None else report_model)
                 self.check_path(field_model, klass.calculation_field, key, errors)
-                pending.extend(required for required in klass._get_required_classes() if required not in seen)
 
     def check_spec(self, spec) -> None:
         """Raise ``InvalidParams`` naming each spec key whose field path uses a field an admin hides."""
