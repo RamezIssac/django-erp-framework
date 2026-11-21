@@ -2,9 +2,18 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+### Added
+- `TransactionModel.doc_type_effects = {"<fk field>": PLUS | MINUS | None}`: how a transaction class moves each entity it points to, inherited and merged along the MRO. `erp_framework.doc_types.for_entity(entity, field_name=None)` returns the `DocTypes(plus, minus)` lists for reports; `get_effects(model)` returns one class's merged declaration.
+- System checks: `erp_framework.W001` (transaction FK to an entity with no declared effect), `E004` (declaration is not a dict or names a non-FK), `E005` (effect is not `PLUS`, `MINUS` or `None`), `E006` (one document type with opposite signs for the same entity).
+- Ledger views: `erp_framework.ledgers.ledger_model(entity, field_name=None)` returns an unmanaged model over the view `erp_ledger_<app>_<entity>`, a UNION ALL of every transaction table with a foreign key to the entity (MTI parents joined), with the entity FK for `group_by`. The SQL is generated from model metadata for PostgreSQL and SQLite.
+- `pre_migrate` drops every `erp_ledger_*` view and `post_migrate` recreates them; migrations alter source tables with ledgers present on both vendors. Sources not migrated yet are left out and reported. `manage.py rebuild_ledger_views [--database] [--sql]` rebuilds or prints them.
+
 ### Changed
 - `EntityAdmin` no longer sets `list_select_related = True` (deprecated in Django 6.1). The changelist joins the foreign keys named in `list_display`; set `list_select_related` on a subclass whose callables read `owner` or `lastmod_user`.
 - `EntityAdmin.get_actions()` accepts Django 6.1's `action_location` argument.
+
+### Removed
+- `erp_framework.doc_types.DocType`, `DocTypeRegistry` and `doc_type_registry`. Nothing read the registry, and registering a `DocType` raised. Effects are declared with `doc_type_effects` on the transaction class.
 
 ### Fixed
 - `erp_framework.reporting` sets `default_auto_field = BigAutoField` to match its migrations: projects on `DEFAULT_AUTO_FIELD = AutoField` no longer get a pending migration for `GroupReportPermission.id` and `UserReportPermission.id`.
