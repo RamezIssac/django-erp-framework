@@ -67,9 +67,11 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
                 "balance": True,
                 "columns": ["Identifier slug", "Name", "Closing Total", "Sum of value"],
+                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
             },
         )
         self.assertFalse(reports["client.clientdetailedstatement"]["balance"])
+        self.assertEqual(reports["client.clientdetailedstatement"]["order_by"], {})
         self.assertTrue(reports["product.productsalesmonthlyseries"]["balance"])
         # owner_id and lastmod_user_id pick users, a model resolve_entities skips (excluded_models)
         self.assertEqual(
@@ -199,6 +201,29 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(out["error"], "invalid_params")
         self.assertIn("client_id", out["fields"])
 
+    def test_order_by_and_max_rows_give_a_top_n(self):
+        balance = self.column_names(self.run_report("client.balances")).index("__balance__")
+        full = self.run_report("client.balances")["rows"]
+        by_balance = sorted(full, key=lambda row: Decimal(row[balance]), reverse=True)
+        top = self.run_report("client.balances", order_by="-__balance__", max_rows=2)
+        self.assertEqual(top["rows"], by_balance[:2])
+        self.assertTrue(top["truncated"])
+        self.assertEqual(top["row_count"], len(full))
+        lowest = self.run_report("client.balances", order_by="__balance__", max_rows=1)
+        self.assertEqual(lowest["rows"], by_balance[-1:])
+
+    def test_order_by_is_checked_against_the_report_keys(self):
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-name"})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+        self.assertEqual(
+            out["fields"]["order_by"][0]["message"],
+            "Sort by one of: __balance__, __total__; prefix '-' for highest first.",
+        )
+        out, err = self.call("run_report", {"report": "client.clientdetailedstatement", "order_by": "value"})
+        self.assertTrue(err)
+        self.assertIn("this report cannot be sorted", out["fields"]["order_by"][0]["message"])
+
     def test_single_id_runs_like_a_list(self):
         out = self.run_report("client.balances", {"client_id": self.client1.pk})
         self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
@@ -306,7 +331,11 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertLessEqual(len(description), 4096)
         lines = self.catalog(description)
         self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
-        self.assertIn("client.balances: Clients Balances; client_id, product_id; balance", lines)
+        self.assertIn(
+            "client.balances: Clients Balances; client_id, product_id; "
+            "order_by __balance__=Closing Total, __total__=Sum of value; balance",
+            lines,
+        )
         self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
         self.assertNotIn("Reports you may run", erp_mcp_site.instructions)
 
@@ -323,8 +352,8 @@ class ReportRoutingTests(BaseTestData, TestCase):
         with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
             for header, line in (
                 (
-                    "Reports you may run (code: question; params):",
-                    "client.balances: Who owes us money?; client_id, product_id",
+                    "Reports you may run (code: question; params; order_by keys):",
+                    "client.balances: Who owes us money?; client_id, product_id; order_by __balance__, __total__",
                 ),
                 ("Reports you may run (code; params;", "client.balances; client_id, product_id"),
                 ("Reports you may run (codes;", "client.balances"),
@@ -346,6 +375,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
                 "description": "Who are our top clients for services, by net sales in the period?",
                 "question": "Top clients by sales this year?",
                 "params": {"client_id": "x", "service_id": "x"} if n % 2 else {"client_id": "x"},
+                "order_by": {"value__sum": "Net sales"},
                 "balance": True,
             }
             for n in range(24)
@@ -355,15 +385,24 @@ class ReportRoutingTests(BaseTestData, TestCase):
                 mock.patch("erp_framework.reporting.mcp.report_entry", side_effect=entries):
             description = self.run_report_description()
         self.assertLessEqual(len(description), 4096)
-        self.assertIn("\n\nReports you may run (code: question; params; balance", description)
-        self.assertEqual(len(self.catalog(description)), 24)
+        self.assertIn("\n\nReports you may run (code: question; params; order_by keys):", description)
+        lines = self.catalog(description)
+        self.assertEqual(len(lines), 24)
+        expected_end = ": Top clients by sales this year?; client_id; order_by value__sum"
+        self.assertTrue(lines[0].endswith(expected_end), lines[0])
 
     def test_catalog_lists_only_reports_the_user_may_run(self):
         UserReportPermission.objects.create(
             user=self.limited_user, report_code=ClientTotalBalance.get_report_code(), view=True
         )
         lines = self.catalog(self.run_report_description(user=self.limited_user))
-        self.assertEqual(lines, ["client.balances: Clients Balances; client_id, product_id; balance"])
+        self.assertEqual(
+            lines,
+            [
+                "client.balances: Clients Balances; client_id, product_id; "
+                "order_by __balance__=Closing Total, __total__=Sum of value; balance"
+            ],
+        )
 
     def test_catalog_is_left_out_when_it_does_not_fit_or_without_a_user(self):
         from django.contrib.auth.models import AnonymousUser

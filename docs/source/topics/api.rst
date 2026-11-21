@@ -122,9 +122,11 @@ publishes the admin tools only.
 - ``list_reports``: the reports the user may run, with code (``<base_model>.<report_slug>``),
   title, description, base model (``base_model`` path and ``base_model_name``, the verbose name),
   kind (``group``, ``series``, ``crosstab`` or ``list``), whether it filters by date, ``params``
-  (each parameter that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``) and
-  ``balance`` (true when a column adds everything before ``start_date``, such as ``__balance__``) and
-  ``columns`` (the column labels), plus ``question``, the short catalog question.
+  (each parameter that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``),
+  ``balance`` (true when a column adds everything before ``start_date``, such as ``__balance__``),
+  ``columns`` (the column labels), ``order_by`` (``{key: label}`` of the computed columns
+  ``run_report`` can sort by, e.g. ``{"__balance__": "Closing Total"}``; empty for list reports) and
+  ``question``, the short catalog question.
   A parameter whose model is not exposed through MCP, or is in ``excluded_models``, is left out of ``params`` and ``params_schema``.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
   group by, date field, time series pattern and crosstab field, with ``base_model_name`` and
@@ -136,7 +138,10 @@ publishes the admin tools only.
 - ``run_report``: runs the report through django-slick-reporting's headless runner and returns
   ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
   ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A single ID for a parameter that
-  takes a list of IDs is read as a one-item list. A foreign-key parameter
+  takes a list of IDs is read as a one-item list. ``order_by`` takes one of the report's ``order_by``
+  keys, ``-key`` for highest first, and goes to slick as ``default_order_by``; with ``max_rows`` it
+  gives a top N, and ``totals`` still cover every row. Another key, or any key on a list report, is
+  refused with the keys it accepts. A foreign-key parameter
   naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
 - ``list_dynamic_report_models``: the models and fields a dynamic report spec may use, each with its
   ``verbose_name``.

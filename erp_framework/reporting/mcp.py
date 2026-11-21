@@ -58,7 +58,8 @@ REPORT_TOOL_NAMES = frozenset(
 REPORT_INSTRUCTIONS = """
 7. Reports: run_report's description lists the reports you may run (else call list_reports). Run one \
 with run_report, passing resolve_entities IDs as lists: {'client_id': [5]}; when none fits, \
-run_dynamic_report. Name reports by title, columns by label.
+run_dynamic_report. For a top N, pass order_by ('-key' for highest first) and max_rows. Name reports by \
+title, columns by label.
 Note: run the report for a kind of record ('sales by client'), not resolve_entities or describe_model, \
 because it groups by it.
 Note: answer totals and balances with a report, not summed list_objects rows, because hand sums hide \
@@ -66,8 +67,9 @@ what the report leaves out."""
 
 # Catalog detail levels, richest first: run_report's description uses the first that fits.
 CATALOG_HEADERS = {
-    "questions": "Reports you may run (code: question; params; balance = includes all before start_date):",
-    "short": "Reports you may run (code: question; params):",
+    "questions": "Reports you may run (code: question; params; order_by key=label; balance = includes all "
+    "before start_date):",
+    "short": "Reports you may run (code: question; params; order_by keys):",
     "params": "Reports you may run (code; params; list_reports has questions and columns):",
     "codes": "Reports you may run (codes; list_reports has questions, params and columns):",
 }
@@ -75,8 +77,9 @@ CATALOG_HEADERS = {
 RUN_REPORT_DESCRIPTION = (
     "Run a registered report. 'params' takes the report's listed params as lists of IDs, plus start_date "
     "and end_date; describe_report has the full params_schema. Omitted dates use the report's default "
-    "range. Returns 'columns', positional 'rows', 'totals' computed over all rows even when 'truncated' "
-    "is true, row_count and date_window."
+    "range. 'order_by' sorts rows by one of the report's order_by keys, '-key' for highest first; with "
+    "max_rows it gives a top N. Returns 'columns', positional 'rows', 'totals' computed over all rows even "
+    "when 'truncated' is true, row_count and date_window."
 )
 
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
@@ -202,7 +205,8 @@ class ReportToolsMixin:
                 "(base_model with its name in base_model_name; say the name), kind (group, series, crosstab "
                 "or list), whether it filters by date, 'params' (each parameter that picks records, with the "
                 "kind of record its IDs come from), 'balance' (its balance columns include everything before "
-                "start_date) and 'columns' (column labels).",
+                "start_date), 'columns' (column labels) and 'order_by' (the keys run_report can sort by, "
+                "with their labels).",
                 input_schema=obj({}),
                 handler=list_reports,
                 annotations=READ_ONLY,
@@ -226,6 +230,10 @@ class ReportToolsMixin:
                         "params": {
                             "type": "object",
                             "description": "Report parameters, e.g. {'client_id': [5], 'start_date': '2026-01-01'}.",
+                        },
+                        "order_by": {
+                            "type": "string",
+                            "description": "An order_by key of the report, e.g. '-__balance__' for highest first.",
                         },
                         "max_rows": max_rows,
                     },
@@ -361,16 +369,12 @@ def report_entry(site, request, report_class) -> dict:
         "params": record_params(site, report_view(request, report_class)),
         "balance": is_balance_report(report_class),
         "columns": column_labels(report_class),
+        "order_by": order_columns(report_class),
     }
 
 
-def column_labels(report_class) -> list:
-    """The labels of the report's columns, time series columns and crosstab columns."""
-    columns = [
-        *(report_class.columns or []),
-        *(report_class.time_series_columns or []),
-        *(report_class.crosstab_columns or []),
-    ]
+def parse_columns(report_class, columns) -> list | None:
+    """slick's parsed ``columns`` of the report (name, verbose_name, source), or None when they do not parse."""
     try:
         parsed = ReportGenerator.check_columns(
             report_class,
@@ -381,8 +385,29 @@ def column_labels(report_class) -> list:
             group_by_custom_querysets=report_class.group_by_custom_querysets,
         )
     except (FieldDoesNotExist, ImproperlyConfigured):
+        return None
+    return [column for column in parsed if column["name"] != "__index__"]
+
+
+def column_labels(report_class) -> list:
+    """The labels of the report's columns, time series columns and crosstab columns."""
+    columns = [
+        *(report_class.columns or []),
+        *(report_class.time_series_columns or []),
+        *(report_class.crosstab_columns or []),
+    ]
+    parsed = parse_columns(report_class, columns)
+    if parsed is None:
         return [column_name(column) for column in columns]
-    return [str(column["verbose_name"]) for column in parsed if column["name"] != "__index__"]
+    return [str(column["verbose_name"]) for column in parsed]
+
+
+def order_columns(report_class) -> dict:
+    """``{key: label}`` of the computed columns slick can sort a grouped report's rows by (not list reports)."""
+    if report_kind(report_class) == "list":
+        return {}
+    parsed = parse_columns(report_class, report_class.columns or []) or []
+    return {column["name"]: str(column["verbose_name"]) for column in parsed if column["source"] == "magic_field"}
 
 
 def catalog_line(entry, detail="questions") -> str:
@@ -394,6 +419,10 @@ def catalog_line(entry, detail="questions") -> str:
         line += ": " + " ".join(entry["question"].split())
     if detail != "codes" and entry["params"]:
         line += "; " + ", ".join(entry["params"])
+    if detail == "questions" and entry["order_by"]:
+        line += "; order_by " + ", ".join(f"{key}={label}" for key, label in entry["order_by"].items())
+    elif detail == "short" and entry["order_by"]:
+        line += "; order_by " + ", ".join(entry["order_by"])
     if detail == "questions" and entry["balance"]:
         line += "; balance"
     return line
@@ -485,8 +514,17 @@ def run_report(site, request, args) -> dict:
         name: [value] if name in many and not isinstance(value, list) else value for name, value in params.items()
     }
     check_related_params(site, request, report_class, params)
+    order_by = args.get("order_by") or ""
+    if order_by:
+        keys = order_columns(report_class)
+        if not isinstance(order_by, str) or order_by.removeprefix("-") not in keys:
+            message = gettext("Sort by one of: %(keys)s; prefix '-' for highest first.") % {
+                "keys": ", ".join(keys) or gettext("none, this report cannot be sorted")
+            }
+            error = {"message": message, "code": "invalid"}
+            raise InvalidParams("Invalid report parameters.", fields={"order_by": [error]})
     try:
-        full_response = report_class.run(request, params)
+        full_response = report_class.run(request, params, **({"default_order_by": order_by} if order_by else {}))
     except PermissionDenied as exc:
         raise PermissionDeniedError(gettext("You may not view this report.")) from exc
     except ValidationError as exc:
