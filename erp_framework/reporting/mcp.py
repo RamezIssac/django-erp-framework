@@ -8,18 +8,17 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. ``run_report``'s description carries a catalog of the reports the user may
-run, sized to fit ``report_tool_description_max_chars``. Reports run through django-slick-reporting's
-headless runner and come back as compact rows plus server-side totals, with ``help`` lines naming the
-next call when rows are cut or none match. A report class may declare:
+and ``run_dynamic_report``; docs/source/topics/api.rst ("Reports over MCP") describes them. ``run_report``'s
+description carries a catalog of the reports the user may run, and results carry ``help`` lines naming
+the next call when rows are cut or none match. This module requires django-admin-api-mcp
+and django-slick-reporting; erp_framework itself does not.
+
+A report class may declare:
 
 - ``total_columns`` (django-slick-reporting): the columns ``totals`` covers. A list report builds at most
   ``max_rows`` rows and counts and totals in the database. Run without ``max_rows`` over more than
   ``report_max_rows`` rows, it returns its totals and first ``report_summary_rows`` rows.
 - ``summary_report``: the code (or class) of the report that aggregates its rows, named in ``help``.
-
-This module requires django-admin-api-mcp and django-slick-reporting's headless runner, compact output
-and dynamic report; erp_framework itself does not.
 """
 
 import copy
@@ -40,10 +39,12 @@ from django.utils.translation import gettext
 from admin_api import scopes
 from admin_api.changelist import get_columns
 from admin_api.detail import detail_fields
-from admin_api.errors import ApiError, NotFound, PermissionDeniedError
+from admin_api.custom_views import InvalidParams
+from admin_api.errors import NotFound, PermissionDeniedError
 from admin_api.jsonschema import form_object_schema
 from admin_api.mcp.resolve import is_excluded
 from admin_api.mcp.sites import DEFAULT_INSTRUCTIONS
+from admin_api.mcp.handlers import READ as READ_ONLY
 from admin_api.mcp.tools import ToolSpec, obj
 from slick_reporting.dynamic_report import (
     DYNAMIC_REPORT_SPEC_SCHEMA,
@@ -53,7 +54,7 @@ from slick_reporting.dynamic_report import (
 )
 from slick_reporting.fields import ComputationField, FirstBalanceField
 from slick_reporting.generator import ReportGenerator
-from slick_reporting.helpers import compact_response
+from slick_reporting.helpers import compact_response, get_field_from_query_text
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
 
@@ -93,7 +94,6 @@ RUN_REPORT_DESCRIPTION = (
     "true, row_count, date_window and, when rows are cut or none match, 'help' with the next call."
 )
 
-READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
 SPEC_GUIDE = (
     "kind 'aggregate' computes columns per group_by value, 'list' returns matching rows. columns are field "
@@ -120,11 +120,6 @@ REPORT_ARG = {
     "(e.g. 'client.balances'). "
     "Tell the user the report's title, not its code.",
 }
-
-
-class InvalidParams(ApiError):
-    status = 400
-    code = "invalid_params"
 
 
 class ReportToolsMixin:
@@ -324,7 +319,7 @@ def report_kind(report_class) -> str:
 
 
 def model_label(model) -> str | None:
-    return f"{model._meta.app_label}.{model._meta.model_name}" if model is not None else None
+    return model._meta.label_lower if model is not None else None
 
 
 def model_name(model) -> str | None:
@@ -356,13 +351,21 @@ def computation_classes(column):
             pending.extend(klass._get_required_classes())
 
 
-def is_balance_report(report_class) -> bool:
-    columns = [
+def all_columns(report_class) -> list:
+    """The report's columns, time series columns and crosstab columns."""
+    return [
         *(report_class.columns or []),
         *(report_class.time_series_columns or []),
         *(report_class.crosstab_columns or []),
     ]
-    return any(issubclass(klass, FirstBalanceField) for column in columns for klass in computation_classes(column))
+
+
+def is_balance_report(report_class) -> bool:
+    return any(
+        issubclass(klass, FirstBalanceField)
+        for column in all_columns(report_class)
+        for klass in computation_classes(column)
+    )
 
 
 def record_params(site, view) -> dict:
@@ -419,11 +422,7 @@ def parse_columns(report_class, columns) -> list | None:
 
 def column_labels(report_class) -> list:
     """The labels of the report's columns, time series columns and crosstab columns."""
-    columns = [
-        *(report_class.columns or []),
-        *(report_class.time_series_columns or []),
-        *(report_class.crosstab_columns or []),
-    ]
+    columns = all_columns(report_class)
     parsed = parse_columns(report_class, columns)
     if parsed is None:
         return [column_name(column) for column in columns]
@@ -742,10 +741,11 @@ class AdminScope:
         errors = {}
         for key in ("date_field", "group_by", "crosstab_field"):
             self.check_path(report_model, spec.get(key), key, errors)
-        group_by_field = _field_or_none(report_model, spec.get("group_by"))
-        column_prefix = ""
-        if spec.get("kind") != "list" and getattr(group_by_field, "related_model", None) is not None:
-            column_prefix = f"{spec['group_by']}__"
+        try:
+            group_by_model = get_field_from_query_text(spec.get("group_by"), report_model).related_model
+        except (AttributeError, FieldDoesNotExist):
+            group_by_model = None
+        column_prefix = f"{spec['group_by']}__" if spec.get("kind") != "list" and group_by_model else ""
         for column in _as_list(spec.get("columns")):
             if isinstance(column, str) and column not in field_registry.get_all_report_fields_names():
                 self.check_path(report_model, f"{column_prefix}{column}", "columns", errors)
@@ -766,20 +766,6 @@ class AdminScope:
 
 def _as_list(value) -> list:
     return value if isinstance(value, list) else []
-
-
-def _field_or_none(model, path):
-    if not isinstance(path, str) or not path:
-        return None
-    for part in path.split("__"):
-        try:
-            field = model._meta.get_field(part)
-        except FieldDoesNotExist:
-            return None
-        model = field.related_model
-        if model is None:
-            break
-    return field
 
 
 def list_dynamic_report_models(site, request, args) -> dict:

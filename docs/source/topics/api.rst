@@ -152,13 +152,10 @@ publishes the admin tools only.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
-  never the user model nor the site's ``excluded_models`` (the same list ``resolve_entities``
-  honours, passed to slick as ``excluded_models``). ``get_dynamic_report_models(request)``
-  returns the readable models as a ``{model: model_admin}`` dict. Each model admin's ``get_queryset(request)`` goes to slick as
-  ``base_querysets``: it limits the report model's rows and the rows reached through each relation
-  the spec traverses (rows with an empty relation are kept). A field path may only use the fields
+  never the user model nor the site's ``excluded_models`` (``get_dynamic_report_models(request)``).
+  Rows follow each model admin's ``get_queryset(request)``, and field paths may only use the fields
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
-  ``get_exclude(request)``); ``list_dynamic_report_models`` lists only those fields.
+  ``get_exclude(request)``).
 
 A report is listed and runnable when ``is_report_exposed(report)`` allows it,
 ``report_access_function(request, "view", report)`` passes and the token scopes allow ``view`` on its
@@ -176,11 +173,8 @@ run, when there are at most ``report_catalog_max`` (40) of them. The whole descr
 calls ``list_reports``. The description says the listed params and ``order_by`` keys are complete and
 optional, with their defaults, and to call ``describe_report`` only for a parameter a line does not list.
 
-Claude Code 2.1.330 cuts server instructions at 4,096 characters and keeps a tool description up to
-4,096 characters, or 16,384 once the tool is loaded through tool search
-(``CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`` overrides both). Each tool description has its own budget,
-and the instructions keep only the routing rules. A question such as "how much does this client owe"
-then takes two calls: ``resolve_entities`` and ``run_report``.
+Claude Code keeps 4,096 characters of server instructions and of each tool description (16,384 once
+the tool is loaded through tool search). The instructions keep only the routing rules.
 
 Narrow the reports, or change the row limits, in a subclass:
 
