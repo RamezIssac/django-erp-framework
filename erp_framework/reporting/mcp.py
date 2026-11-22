@@ -8,9 +8,8 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. Reports run through django-slick-reporting's headless runner and come back
-as compact rows plus server-side totals. This module requires django-admin-api-mcp and
-django-slick-reporting's headless runner, compact output and dynamic report; erp_framework itself does not.
+and ``run_dynamic_report``; docs/source/topics/api.rst ("Reports over MCP") describes them. This module
+requires django-admin-api-mcp and django-slick-reporting; erp_framework itself does not.
 """
 
 import copy
@@ -24,10 +23,12 @@ from django.utils.translation import gettext
 from admin_api import scopes
 from admin_api.changelist import get_columns
 from admin_api.detail import detail_fields
-from admin_api.errors import ApiError, NotFound, PermissionDeniedError
+from admin_api.custom_views import InvalidParams
+from admin_api.errors import NotFound, PermissionDeniedError
 from admin_api.jsonschema import form_object_schema
 from admin_api.mcp.resolve import is_excluded
 from admin_api.mcp.sites import DEFAULT_INSTRUCTIONS
+from admin_api.mcp.handlers import READ as READ_ONLY
 from admin_api.mcp.tools import ToolSpec, obj
 from slick_reporting.dynamic_report import (
     DYNAMIC_REPORT_SPEC_SCHEMA,
@@ -35,7 +36,7 @@ from slick_reporting.dynamic_report import (
     describe_dynamic_report_models,
     run_dynamic_report,
 )
-from slick_reporting.helpers import compact_response
+from slick_reporting.helpers import compact_response, get_field_from_query_text
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
 
@@ -58,7 +59,6 @@ record by its label.
 record and fields you may use (name each by its 'verbose_name'), then build a report with \
 run_dynamic_report."""
 
-READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
 
 REPORT_ARG = {
@@ -66,11 +66,6 @@ REPORT_ARG = {
     "description": "Report code exactly as returned by list_reports (e.g. 'client.balances'). "
     "Tell the user the report's title, not its code.",
 }
-
-
-class InvalidParams(ApiError):
-    status = 400
-    code = "invalid_params"
 
 
 class ReportToolsMixin:
@@ -217,7 +212,7 @@ def report_kind(report_class) -> str:
 
 
 def model_label(model) -> str | None:
-    return f"{model._meta.app_label}.{model._meta.model_name}" if model is not None else None
+    return model._meta.label_lower if model is not None else None
 
 
 def model_name(model) -> str | None:
@@ -234,6 +229,12 @@ def params_schema(view) -> dict:
     schema = form_object_schema(view.get_form_class(), required=True)
     schema["properties"].update(view.extra_params or {})
     return schema
+
+
+def report_view(request, report_class):
+    view = report_class()
+    view.setup(request)
+    return view
 
 
 def _max_rows(site, args) -> int:
@@ -284,8 +285,7 @@ def list_reports(site, request, args) -> dict:
 
 def describe_report(site, request, args) -> dict:
     report_class = site.get_report(request, _report_code(args))
-    view = report_class()
-    view.setup(request)
+    view = report_view(request, report_class)
     return {
         "report": report_class.get_report_code(),
         "title": str(report_class.get_report_title()),
@@ -306,10 +306,8 @@ def describe_report(site, request, args) -> dict:
 
 def check_related_params(site, request, report_class, params) -> None:
     """Raise ``InvalidParams`` when a foreign-key param names a row its model admin hides from the user."""
-    view = report_class()
-    view.setup(request)
     errors = {}
-    for name, field in view.get_form_class().base_fields.items():
+    for name, field in report_view(request, report_class).get_form_class().base_fields.items():
         if name not in params or not isinstance(field, forms.ModelChoiceField):
             continue
         opts = field.queryset.model._meta
@@ -415,10 +413,11 @@ class AdminScope:
         errors = {}
         for key in ("date_field", "group_by", "crosstab_field"):
             self.check_path(report_model, spec.get(key), key, errors)
-        group_by_field = _field_or_none(report_model, spec.get("group_by"))
-        column_prefix = ""
-        if spec.get("kind") != "list" and getattr(group_by_field, "related_model", None) is not None:
-            column_prefix = f"{spec['group_by']}__"
+        try:
+            group_by_model = get_field_from_query_text(spec.get("group_by"), report_model).related_model
+        except (AttributeError, FieldDoesNotExist):
+            group_by_model = None
+        column_prefix = f"{spec['group_by']}__" if spec.get("kind") != "list" and group_by_model else ""
         for column in _as_list(spec.get("columns")):
             if isinstance(column, str) and column not in field_registry.get_all_report_fields_names():
                 self.check_path(report_model, f"{column_prefix}{column}", "columns", errors)
@@ -439,20 +438,6 @@ class AdminScope:
 
 def _as_list(value) -> list:
     return value if isinstance(value, list) else []
-
-
-def _field_or_none(model, path):
-    if not isinstance(path, str) or not path:
-        return None
-    for part in path.split("__"):
-        try:
-            field = model._meta.get_field(part)
-        except FieldDoesNotExist:
-            return None
-        model = field.related_model
-        if model is None:
-            break
-    return field
 
 
 def list_dynamic_report_models(site, request, args) -> dict:
