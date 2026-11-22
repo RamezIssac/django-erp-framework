@@ -75,7 +75,7 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
                 "balance": True,
                 "columns": ["Identifier slug", "Name", "Closing Total", "Sum of value"],
-                "order_by": {"balance": "Closing Total", "__total__": "Sum of value"},
+                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
                 "dates": "all",
             },
         )
@@ -109,7 +109,7 @@ class ReportToolsTests(BaseTestData, TestCase):
 
     def test_run_group_report_with_filter(self):
         out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
-        self.assertEqual(self.column_names(out), ["slug", "name", "balance", "__total__"])
+        self.assertEqual(self.column_names(out), ["slug", "name", "__balance__", "__total__"])
         self.assertEqual(out["row_count"], 1)
         self.assertEqual(out["rows"][0][1], "Client 1")
         self.assertFalse(out["truncated"])
@@ -207,14 +207,14 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual([row[1] for row in report["rows"]], ["Client 1"])
 
     def test_order_by_and_max_rows_give_a_top_n(self):
-        balance = self.column_names(self.run_report("client.balances")).index("balance")
+        balance = self.column_names(self.run_report("client.balances")).index("__balance__")
         full = self.run_report("client.balances")["rows"]
         by_balance = sorted(full, key=lambda row: Decimal(row[balance]), reverse=True)
-        top = self.run_report("client.balances", order_by="-balance", max_rows=2)
+        top = self.run_report("client.balances", order_by="-__balance__", max_rows=2)
         self.assertEqual(top["rows"], by_balance[:2])
         self.assertTrue(top["truncated"])
         self.assertEqual(top["row_count"], len(full))
-        lowest = self.run_report("client.balances", order_by="balance", max_rows=1)
+        lowest = self.run_report("client.balances", order_by="__balance__", max_rows=1)
         self.assertEqual(lowest["rows"], by_balance[-1:])
 
     def test_order_by_is_checked_against_the_report_keys(self):
@@ -223,7 +223,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(out["error"], "invalid_params")
         self.assertEqual(
             out["fields"]["order_by"][0]["message"],
-            "Sort by one of: balance, __total__; prefix '-' for highest first.",
+            "Sort by one of: __balance__, __total__; prefix '-' for highest first.",
         )
         out, err = self.call("run_report", {"report": "client.clientdetailedstatement", "order_by": "value"})
         self.assertTrue(err)
@@ -300,7 +300,8 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(set(run["properties"]), {"report", "params", "order_by", "max_rows"})
         self.assertEqual(run["properties"]["params"]["type"], "object")
         self.assertEqual(run["properties"]["order_by"]["type"], "string")
-        self.assertIn("e.g. '-balance' for highest first", run["properties"]["order_by"]["description"])
+        self.assertIn("'-key' for highest first", run["properties"]["order_by"]["description"])
+        self.assertNotIn("__", run["properties"]["order_by"]["description"])
         self.assertIn("description", run["properties"]["params"])
         self.assertEqual({k: run["properties"]["max_rows"][k] for k in max_rows}, max_rows)
         self.assertIn("description", run["properties"]["max_rows"])
@@ -514,12 +515,12 @@ class RowPolicyTests(BaseTestData, TestCase):
             out["help"],
             [
                 "1 of 3 rows shown; totals cover all 3.",
-                "For a top N pass order_by='-balance' and max_rows=<n> (order_by keys: balance, __total__).",
+                "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
                 "For more rows pass max_rows (up to 1000).",
             ],
         )
-        top = self.run_report("client.balances", order_by="-balance", max_rows=1)
+        top = self.run_report("client.balances", order_by="-__balance__", max_rows=1)
         self.assertTrue(top["truncated"])
         self.assertNotIn("help", top)
         self.assertNotIn("help", self.run_report("client.balances"))
@@ -578,8 +579,8 @@ class RowPolicyTests(BaseTestData, TestCase):
         self.assertEqual(
             out["help"], ["run_report(report='client.balances', params={'client_id': ['<id from resolve_entities>']})"]
         )
-        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-balanc"})
-        self.assertEqual(out["help"], ["run_report(report='client.balances', order_by='-balance')"])
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-balance"})
+        self.assertEqual(out["help"], ["run_report(report='client.balances', order_by='-__balance__')"])
 
     def test_period_order_on_a_time_series_keeps_the_rows(self):
         report = {"report": "client.clientsalesmonthlyseries", "params": {"start_date": f"{year}-01-01"}}
@@ -601,7 +602,7 @@ class RowPolicyTests(BaseTestData, TestCase):
                 "report": "client.balances",
                 "question": "Clients Balances",
                 "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
-                "order_by": {"balance": "Closing Total", "__total__": "Sum of value"},
+                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
             },
         )
         out, err = self.call("list_reports", {"fields": ["kind"]})
@@ -662,12 +663,12 @@ class RowPolicyTests(BaseTestData, TestCase):
             out["help"],
             [
                 "2 of 3 rows shown; totals cover all 3.",
-                "For a top N pass order_by='-balance' and max_rows=<n> (order_by keys: balance, __total__).",
+                "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
             ],
         )
         call = self.small_site(report_max_rows=1)
-        out = call("run_report", {"report": "client.balances", "order_by": "-balance"})
+        out = call("run_report", {"report": "client.balances", "order_by": "-__balance__"})
         self.assertEqual(out["help"][0], "1 of 3 rows shown; totals cover all 3.")
         self.assertFalse([line for line in out["help"] if line.startswith("For a top N")])
 
@@ -773,7 +774,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
         self.assertIn(
             "client.balances: Clients Balances|by client|client_id, product_id|"
-            "order_by balance=Closing Total, __total__=Sum of value|balance",
+            "order_by __balance__=Closing Total, __total__=Sum of value|balance",
             lines,
         )
         self.assertIn(
@@ -828,11 +829,11 @@ class ReportRoutingTests(BaseTestData, TestCase):
             for header, line in (
                 (
                     "Reports you may run (code: question|shape|params|order_by keys)." + dates,
-                    "client.balances: Who owes us money?|by client|client_id, product_id|order_by balance, __total__",
+                    "client.balances: Who owes us money?|by client|client_id, product_id|order_by __balance__, __total__",
                 ),
                 (
                     "Reports you may run (code|shape|params|order_by keys; list_reports has the questions)." + dates,
-                    "client.balances|by client|client_id, product_id|order_by balance, __total__",
+                    "client.balances|by client|client_id, product_id|order_by __balance__, __total__",
                 ),
                 ("Reports you may run (codes;", "client.balances"),
             ):
@@ -893,7 +894,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
             lines,
             [
                 "client.balances: Clients Balances|by client|client_id, product_id|"
-                "order_by balance=Closing Total, __total__=Sum of value|balance"
+                "order_by __balance__=Closing Total, __total__=Sum of value|balance"
             ],
         )
 
@@ -935,7 +936,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(out["detail"], "Invalid report parameters.")
         self.assertEqual(
             out["fields"],
-            {"order_by": [{"message": "Sort by one of: balance, __total__; prefix '-' for highest first.", "code": "invalid"}]},
+            {"order_by": [{"message": "Sort by one of: __balance__, __total__; prefix '-' for highest first.", "code": "invalid"}]},
         )
 
     def test_required_params_follow_the_shown_params(self):
@@ -1079,7 +1080,7 @@ class DynamicReportToolTests(BaseTestData, TestCase):
                 out, err = self.call("run_dynamic_report", {"spec": spec, "order_by": order_by})
                 self.assertEqual(out["fields"]["order_by"][0]["message"], "Sort by one of: slug, value; prefix '-' for highest first.")
         tools = {t.name: t for t in erp_mcp_site.get_tools()}
-        order_by = {"type": "string", "description": "A column name of the result, e.g. '-sales' for highest first."}
+        order_by = {"type": "string", "description": "A column name of the result, '-name' for highest first."}
         self.assertEqual(tools["run_dynamic_report"].input_schema["properties"]["order_by"], order_by)
 
     def test_unknown_field_error_carries_the_corrected_spec(self):

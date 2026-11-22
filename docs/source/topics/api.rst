@@ -122,8 +122,8 @@ publishes the admin tools only.
 - ``list_reports``: the reports the user may run. Each entry carries ``report`` (the code,
   ``<base_model>.<report_slug>``), ``question`` (the short catalog question), ``params`` (each parameter
   that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``) and ``order_by``
-  (``{key: label}`` of the computed columns ``run_report`` can sort by, keyed by their names in results
-  (slick's ``public_column_name``), e.g. ``{"balance": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
+  (``{key: label}`` of the computed columns ``run_report`` can sort by, e.g.
+  ``{"__balance__": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
   ``title``, ``description``, ``base_model`` and ``base_model_name`` (the verbose name), ``kind``
   (``group``, ``series``, ``crosstab`` or ``list``), ``shape`` (``list``, else ``by <group_by>`` with ``__`` as a
   space, ``x <crosstab_field>`` and the time series pattern, e.g. ``by client monthly``), ``date_filter``,

@@ -53,7 +53,7 @@ from slick_reporting.dynamic_report import (
 )
 from slick_reporting.fields import ComputationField, FirstBalanceField
 from slick_reporting.generator import ReportGenerator
-from slick_reporting.helpers import compact_response, get_field_from_query_text, public_column_name
+from slick_reporting.helpers import compact_response, get_field_from_query_text
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
 
@@ -307,7 +307,7 @@ class ReportToolsMixin:
                         },
                         "order_by": {
                             "type": "string",
-                            "description": "An order_by key of the report, e.g. '-balance' for highest first.",
+                            "description": "One of the report's listed order_by keys, '-key' for highest first.",
                         },
                         "max_rows": max_rows,
                     },
@@ -338,7 +338,7 @@ class ReportToolsMixin:
                         "spec": {"type": "object", "description": "The report spec ('spec_schema')."},
                         "order_by": {
                             "type": "string",
-                            "description": "A column name of the result, e.g. '-sales' for highest first.",
+                            "description": "A column name of the result, '-name' for highest first.",
                         },
                         "max_rows": max_rows,
                     },
@@ -499,16 +499,11 @@ def column_labels(report_class) -> list:
 
 
 def order_columns(report_class) -> dict:
-    """``{key: label}`` of the computed columns slick can sort a grouped report's rows by (not list reports), keyed
-    by their names in results ('balance')."""
+    """``{key: label}`` of the computed columns slick can sort a grouped report's rows by (not list reports)."""
     if report_kind(report_class) == "list":
         return {}
     parsed = parse_columns(report_class, report_class.columns or []) or []
-    return {
-        public_column_name(column["name"]): str(column["verbose_name"])
-        for column in parsed
-        if column["source"] == "magic_field"
-    }
+    return {column["name"]: str(column["verbose_name"]) for column in parsed if column["source"] == "magic_field"}
 
 
 ENTRY_FIELDS = {
@@ -962,8 +957,8 @@ def dynamic_report(site, request, args) -> dict:
         raise error from exc
     order_by = args.get("order_by")
     if order_by:
-        shown = [c for c in full_response["columns"] if c.get("visible", True) is not False]
-        names = {public_column_name(c["name"], c.get("period")): c["name"] for c in shown}
+        shown = [c["name"] for c in full_response["columns"] if c.get("visible", True) is not False]
+        names = dict(zip((c["name"] for c in compact_response({**full_response, "data": {}})["columns"]), shown))
         check_order_by(order_by, list(names))
         data, descending = full_response["data"], order_by.startswith("-")
         values = data[names[order_by.removeprefix("-")]]
