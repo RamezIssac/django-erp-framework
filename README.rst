@@ -94,7 +94,26 @@ clone the repo, install the test requirements and run the tests::
     # And for Coverage report
     $ coverage run --include=../* runtests.py [-k]
     $ coverage html
-    
+
+
+Mutation testing
+~~~~~~~~~~~~~~~~
+
+Each pull request runs mutation testing on the Python lines it changes and lists the surviving
+mutants in the job summary of the ``Mutation`` workflow (report only). To run the same check
+locally from the repo root::
+
+    $ pip install "mutmut[patch]==2.5.1"
+    $ git diff -U0 origin/develop...HEAD -- 'erp_framework/*.py' ':!erp_framework/**/migrations/*' > pr.patch
+    $ mutmut run --paths-to-mutate erp_framework --use-patch-file pr.patch \
+        --runner "python tests/runtests.py --noinput --failfast"
+    $ mutmut results      # ids of the surviving mutants
+    $ mutmut show <id>    # the diff of one mutant
+
+Kill a survivor with a test that asserts the mutated value. When the mutant cannot change behaviour
+(an equivalent mutant), mark the line with ``# pragma: no mutate`` and a short reason::
+
+    closest = get_close_matches(word, choices, n=1)  # pragma: no mutate: only closest[0] is read
 
 For more information on contributing, we honor `Django's guidelines <https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/>`_.
 

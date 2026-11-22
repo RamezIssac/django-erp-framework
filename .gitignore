@@ -345,3 +345,5 @@ pip-selfcheck.json
 .ipython/
 
 project_files/*
+# mutmut
+.mutmut-cache
