@@ -112,6 +112,19 @@ class LedgerMigrateTests(TransactionTestCase):
             [("customerpayment", 250)],
         )
 
+    def test_partial_migrate_names_skipped_sources_on_one_line(self):
+        migrate("zero")
+        output = migrate("0001")
+        line = (
+            f"  Ledger view {CUSTOMER_VIEW} skips ledger_tests.CustomerPayment, ledger_tests.Movement: "
+            "table or column not migrated yet"
+        )
+        self.assertIn(line, output.splitlines())
+        sql = StringIO()
+        call_command("rebuild_ledger_views", "--sql", stdout=sql)
+        self.assertNotIn("ledger_tests_movement", sql.getvalue())
+        self.assertIn('FROM "ledger_tests_treasurymovement"', sql.getvalue())
+
     def test_alter_of_a_source_table_with_ledgers_present(self):
         customer = Customer.objects.create(name="Acme", **self.stamp())
         Sale.objects.create(customer=customer, value=300, date=WHEN, **self.stamp())

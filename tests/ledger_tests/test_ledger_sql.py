@@ -1,9 +1,10 @@
 from importlib import import_module
 from types import SimpleNamespace
+from unittest import mock
 
 from django.test import SimpleTestCase
 
-from erp_framework.ledgers import LedgerModel, build_ledger_sql, ledger_sources
+from erp_framework.ledgers import LedgerModel, _quote, _source_select, _sql_str, build_ledger_sql, ledger_sources
 
 from .models import (
     Customer,
@@ -95,8 +96,24 @@ class LedgerSqlGoldenTests(SimpleTestCase):
         )
 
     def test_unsupported_vendor(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(NotImplementedError) as raised:
             build_ledger_sql(CustomerLedger, SimpleNamespace(vendor="mysql"))
+        self.assertEqual(str(raised.exception), "Ledger views support postgresql, sqlite, not mysql.")
+
+    def test_names_and_strings_are_escaped(self):
+        self.assertEqual(_quote('odd"name'), '"odd""name"')
+        self.assertEqual(_sql_str("o'clock"), "'o''clock'")
+
+    def test_polymorphic_ctype_column_replaces_the_content_type_lookup(self):
+        get_field = Movement._meta.get_field
+
+        def with_ctype(name):
+            return get_field("customer" if name == "polymorphic_ctype" else name)
+
+        with mock.patch.object(Movement._meta, "get_field", with_ctype):
+            sql = _source_select(CustomerLedger, Movement, 0)[0]
+        self.assertIn('s0."customer_id" AS "content_type_id"', sql)
+        self.assertNotIn("django_content_type", sql)
 
 
 class LedgerModelTests(SimpleTestCase):
@@ -112,3 +129,5 @@ class LedgerModelTests(SimpleTestCase):
         self.assertEqual(meta.db_table, "erp_ledger_ledger_tests_customer")
         self.assertIs(meta.get_field("customer").related_model, Customer)
         self.assertEqual(CustomerLedger.ledger_field, "customer")
+        labels = {name: str(meta.get_field(name).verbose_name) for name in ("date", "slug", "type", "value")}
+        self.assertEqual(labels, {"date": "Date", "slug": "Slug", "type": "Type", "value": "Value"})
