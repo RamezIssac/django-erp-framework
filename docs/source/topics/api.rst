@@ -155,7 +155,13 @@ publishes the admin tools only.
   never the user model nor the site's ``excluded_models`` (``get_dynamic_report_models(request)``).
   Rows follow each model admin's ``get_queryset(request)``, and field paths may only use the fields
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
-  ``get_exclude(request)``).
+  ``get_exclude(request)``). On a multi-table inheritance child the parent's primary key (``id``)
+  counts as the primary key, so ``{"method": "Count", "field": "id"}`` counts its rows.
+  Its description, built per request by ``get_dynamic_report_catalog(request, room)``, carries the spec
+  grammar (``spec_guide``: kinds, aggregation methods, time series patterns), ``spec_example`` and one
+  line per model the user may read: ``label (name): field, number#, date@, relation>label`` when that
+  fits in ``report_tool_description_max_chars``, else only the number, date and relation fields, else
+  the labels alone, else the agent calls ``list_dynamic_report_models``.
 
 A report is listed and runnable when ``is_report_exposed(report)`` allows it,
 ``report_access_function(request, "view", report)`` passes and the token scopes allow ``view`` on its

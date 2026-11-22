@@ -17,6 +17,7 @@ and django-slick-reporting; erp_framework itself does not.
 
 import copy
 import difflib
+import json
 
 from django import forms
 from django.apps import apps
@@ -89,11 +90,13 @@ RUN_REPORT_DESCRIPTION = (
 )
 
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
+SPEC_METHODS = SPEC_SCHEMA["properties"]["columns"]["items"]["oneOf"][1]["properties"]["method"]["enum"]
 SPEC_GUIDE = (
-    "kind 'aggregate' computes columns per group_by value, 'list' returns matching rows. columns are field "
-    "paths or {method, field} aggregations; optional: date_field with start_date/end_date, "
-    "time_series_pattern with time_series_columns, crosstab_field with crosstab_ids and crosstab_columns, "
-    "ORM-style filters."
+    "kind 'aggregate' (default) computes columns per group_by value, 'list' returns matching rows. columns are "
+    f"field paths or {{method, field, name}} aggregations, method one of {', '.join(SPEC_METHODS)} (Count on 'id' "
+    "counts rows); optional: date_field with start_date/end_date, time_series_pattern "
+    f"({', '.join(SPEC_SCHEMA['properties']['time_series_pattern']['enum'])}) with time_series_columns, "
+    "crosstab_field with crosstab_ids and crosstab_columns, filters {'<field path>__<lookup>': value}."
 )
 SPEC_EXAMPLE = {
     "report_model": "store.SalesLine",
@@ -102,6 +105,17 @@ SPEC_EXAMPLE = {
     "date_field": "date",
     "start_date": "2026-03-01",
     "end_date": "2026-03-31",
+}
+RUN_DYNAMIC_REPORT_DESCRIPTION = (
+    "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
+    f"the same shape as run_report. Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
+)
+# Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
+DYNAMIC_CATALOG_HEADERS = {
+    "fields": "Kinds of record you may report on (report_model (name): fields; # number, @ date, > relation to):",
+    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields; "
+    "list_dynamic_report_models has the rest):",
+    "models": "Kinds of record you may report on (list_dynamic_report_models has their fields):",
 }
 
 # list_reports fields: the defaults route a question to a run, the others come with 'fields'.
@@ -185,6 +199,21 @@ class ReportToolsMixin:
                 return catalog
         return ""
 
+    def get_dynamic_report_catalog(self, request, room: int) -> str:
+        """The kinds of record and fields ``request``'s user may put in a dynamic report spec, at the richest
+        ``DYNAMIC_CATALOG_HEADERS`` level that fits in ``room`` characters; empty without a user, models or fit."""
+        if not getattr(getattr(request, "user", None), "is_authenticated", False):
+            return ""
+        with self.translation_override(request):
+            models = list_dynamic_report_models(self, request, {})["models"]
+        if not models:
+            return ""
+        for detail, header in DYNAMIC_CATALOG_HEADERS.items():
+            catalog = "\n".join([header, *(dynamic_catalog_line(entry, detail) for entry in models)])
+            if len(catalog) <= room:
+                return catalog
+        return ""
+
     # --- registry ------------------------------------------------------------------------------
     def get_reports(self, request, code=None) -> list:
         reports = report_registry.get_all_reports(admin_site=self.api_site.admin_site.name)
@@ -215,6 +244,8 @@ class ReportToolsMixin:
     def get_report_tools(self, request=None) -> list:
         room = self.report_tool_description_max_chars - len(RUN_REPORT_DESCRIPTION) - 2
         catalog = self.get_report_catalog(request, room) if request is not None else ""
+        dynamic_room = self.report_tool_description_max_chars - len(RUN_DYNAMIC_REPORT_DESCRIPTION) - 2
+        dynamic_catalog = self.get_dynamic_report_catalog(request, dynamic_room) if request is not None else ""
         max_rows = {
             "type": "integer",
             "minimum": 1,
@@ -286,9 +317,9 @@ class ReportToolsMixin:
             ToolSpec(
                 name="run_dynamic_report",
                 title="Create and run a report",
-                description="Build an ad-hoc report from a spec and run it, when no registered report answers "
-                "the question. list_dynamic_report_models gives the kinds of record, their fields and the spec "
-                "grammar. Returns the same shape as run_report.",
+                description=f"{RUN_DYNAMIC_REPORT_DESCRIPTION}\n\n{dynamic_catalog}"
+                if dynamic_catalog
+                else f"{RUN_DYNAMIC_REPORT_DESCRIPTION} list_dynamic_report_models gives the kinds of record.",
                 input_schema=obj(
                     {
                         "spec": {"type": "object", "description": "The report spec ('spec_schema')."},
@@ -463,6 +494,18 @@ def catalog_line(entry, detail="questions") -> str:
     if detail == "questions" and entry["balance"]:
         parts.append("balance")
     return " | ".join(parts)
+
+
+def dynamic_catalog_line(entry, detail) -> str:
+    """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``."""
+    names = []
+    for field in entry["fields"]:
+        relation = f">{field['related_model']}" if field["is_relation"] else ""
+        mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
+        if detail == "fields" or (detail == "reportable" and mark):
+            names.append(field["name"] + mark)
+    line = f"{entry['identifier']} ({entry['verbose_name']})"
+    return f"{line}: {', '.join(names)}" if names else line
 
 
 def _max_rows(site, args) -> int:

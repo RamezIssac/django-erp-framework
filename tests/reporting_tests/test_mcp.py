@@ -894,6 +894,53 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertEqual(out["spec_schema"]["required"], ["report_model"])
         self.assertIn("group_by", out["spec_example"])
 
+    def dynamic_description(self, user=None, **site_attrs):
+        from erp_framework.api import ERPMcpSite, erp_api_site
+
+        request = RequestFactory().post("/mcp/")
+        request.user = user or self.user
+        site = type("SmallSite", (ERPMcpSite,), site_attrs)(erp_api_site, name="small_mcp")
+        return {tool.name: tool for tool in site.get_tools(request)}["run_dynamic_report"].description
+
+    def test_dynamic_spec_and_catalog_in_the_tool_description(self):
+        from erp_framework.reporting.mcp import RUN_DYNAMIC_REPORT_DESCRIPTION, SPEC_GUIDE
+
+        description = self.dynamic_description()
+        self.assertTrue(description.startswith(RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\nKinds of record you may report on (report_model (name): fields;"))
+        self.assertIn(SPEC_GUIDE, description)
+        self.assertIn('Example: {"report_model": "store.SalesLine", "group_by": "client"', description)
+        self.assertIn("method one of Avg, Count, Max, Min, Sum", description)
+        self.assertIn("(annually, bi-weekly, daily, monthly, quarterly, semiannually, weekly)", description)
+        sales = "\nreporting_tests.SimpleSales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.Client, product>reporting_tests.Product"
+        self.assertIn(sales, description)
+        self.assertIn("\nreporting_tests.Client (Client): id#, slug, name, notes", description)
+        self.assertLessEqual(len(description), 4096)
+        with mock.patch.object(SimpleSalesAdmin, "get_exclude", lambda admin, request, obj=None: ("value", "client")):
+            hidden = self.dynamic_description()
+        self.assertIn("reporting_tests.SimpleSales (Sale): id#, slug, date@, quantity#, price#, product>reporting_tests.Product", hidden.splitlines())
+
+    def test_dynamic_catalog_drops_detail_to_fit(self):
+        from django.contrib.auth.models import AnonymousUser
+
+        from erp_framework.reporting.mcp import RUN_DYNAMIC_REPORT_DESCRIPTION
+
+        full = self.dynamic_description()
+        self.assertEqual(self.dynamic_description(report_tool_description_max_chars=len(full)), full)
+        reportable = self.dynamic_description(report_tool_description_max_chars=len(full) - 1)
+        self.assertIn("(report_model (name): number #, date @ and relation > fields; list_dynamic_report_models has the rest):", reportable)
+        self.assertIn("reporting_tests.Client (Client): id#", reportable.splitlines())
+        self.assertIn("reporting_tests.Journal (journal): id#, date@, value#", reportable.splitlines())
+        models = self.dynamic_description(report_tool_description_max_chars=len(reportable) - 1)
+        self.assertIn("Kinds of record you may report on (list_dynamic_report_models has their fields):\n", models)
+        self.assertIn("reporting_tests.Client (Client)", models.splitlines())
+        fallback = RUN_DYNAMIC_REPORT_DESCRIPTION + " list_dynamic_report_models gives the kinds of record."
+        self.assertEqual(self.dynamic_description(report_tool_description_max_chars=len(models) - 1), fallback)
+        self.assertEqual(self.dynamic_description(user=AnonymousUser()), fallback)
+        self.assertEqual(self.dynamic_description(user=self.limited_user), fallback)
+        from erp_framework.api import erp_mcp_site
+
+        self.assertEqual({t.name: t for t in erp_mcp_site.get_tools()}["run_dynamic_report"].description, fallback)
+
     def test_malformed_spec_types_are_invalid_params(self):
         for spec in (
             {**SALES_BY_CLIENT, "columns": "name"},
