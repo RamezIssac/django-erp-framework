@@ -536,7 +536,10 @@ class RowPolicyTests(BaseTestData, TestCase):
             empty_help("2999-01-01", None),
             ["No rows match.", "Widen start_date and end_date in params (now: From 2999-01-01).", "Or drop the client_id filter."],
         )
-        self.assertEqual(empty_help(None, "2001-01-31"), ["No rows match.", "Or drop the client_id filter."])
+        self.assertEqual(
+            empty_help(None, "2001-01-31"),
+            ["No rows match.", "Widen start_date and end_date in params (now: As of 2001-01-31).", "Or drop the client_id filter."],
+        )
 
     def test_summary_report_the_user_may_not_run_is_not_named(self):
         token = type("Token", (), {"scopes": ["reporting_tests.client:view"], "prefix": "t"})()
@@ -940,6 +943,26 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         from erp_framework.api import erp_mcp_site
 
         self.assertEqual({t.name: t for t in erp_mcp_site.get_tools()}["run_dynamic_report"].description, fallback)
+
+    def test_tool_lookup_skips_the_catalogs(self):
+        from erp_framework.api import erp_mcp_site
+
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        site = type(erp_mcp_site)
+        with mock.patch.object(site, "get_report_catalog") as reports, mock.patch.object(site, "get_dynamic_report_catalog") as dynamic:
+            self.assertEqual(erp_mcp_site.get_tool("run_dynamic_report", request).name, "run_dynamic_report")
+            self.assertEqual(erp_mcp_site.get_tool("list_models", request).name, "list_models")
+            self.assertIsNone(erp_mcp_site.get_tool("no_such_tool", request))
+            self.assertFalse(self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})[1])
+        self.assertEqual({c.args[0] for c in [*reports.call_args_list, *dynamic.call_args_list]}, {None})
+
+    def test_model_without_reportable_fields_is_named_alone(self):
+        from erp_framework.reporting.mcp import dynamic_catalog_line
+
+        entry = {"identifier": "a.B", "verbose_name": "b", "fields": [{"name": "note", "is_numeric": False, "is_date": False, "is_relation": False}]}
+        self.assertEqual(dynamic_catalog_line(entry, "reportable"), "a.B (b)")
+        self.assertEqual(dynamic_catalog_line(entry, "fields"), "a.B (b): note")
 
     def test_malformed_spec_types_are_invalid_params(self):
         for spec in (

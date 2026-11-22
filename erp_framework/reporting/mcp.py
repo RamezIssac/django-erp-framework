@@ -44,6 +44,8 @@ from admin_api.mcp.tools import ToolSpec, obj
 from slick_reporting.dynamic_report import (
     DYNAMIC_REPORT_SPEC_SCHEMA,
     FILTER_LOOKUPS,
+    REPORTABLE_METHODS,
+    TIME_SERIES_DELTAS,
     describe_dynamic_report_models,
     run_dynamic_report,
 )
@@ -90,12 +92,11 @@ RUN_REPORT_DESCRIPTION = (
 )
 
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
-SPEC_METHODS = SPEC_SCHEMA["properties"]["columns"]["items"]["oneOf"][1]["properties"]["method"]["enum"]
 SPEC_GUIDE = (
     "kind 'aggregate' (default) computes columns per group_by value, 'list' returns matching rows. columns are "
-    f"field paths or {{method, field, name}} aggregations, method one of {', '.join(SPEC_METHODS)} (Count on 'id' "
-    "counts rows); optional: date_field with start_date/end_date, time_series_pattern "
-    f"({', '.join(SPEC_SCHEMA['properties']['time_series_pattern']['enum'])}) with time_series_columns, "
+    f"field paths or {{method, field, name}} aggregations, method one of {', '.join(sorted(REPORTABLE_METHODS))} "
+    "(Count on the primary key, e.g. 'id', counts rows); optional: date_field with start_date/end_date, "
+    f"time_series_pattern ({', '.join(sorted(TIME_SERIES_DELTAS))}) with time_series_columns, "
     "crosstab_field with crosstab_ids and crosstab_columns, filters {'<field path>__<lookup>': value}."
 )
 SPEC_EXAMPLE = {
@@ -193,11 +194,7 @@ class ReportToolsMixin:
             if not reports or len(reports) > self.report_catalog_max:
                 return ""
             entries = [report_entry(self, request, report_class, CATALOG_ENTRY_FIELDS) for report_class in reports]
-        for detail, header in CATALOG_HEADERS.items():
-            catalog = "\n".join([header, *(catalog_line(entry, detail) for entry in entries)])
-            if len(catalog) <= room:
-                return catalog
-        return ""
+        return fit_catalog(CATALOG_HEADERS, catalog_line, entries, room)
 
     def get_dynamic_report_catalog(self, request, room: int) -> str:
         """The kinds of record and fields ``request``'s user may put in a dynamic report spec, at the richest
@@ -206,13 +203,7 @@ class ReportToolsMixin:
             return ""
         with self.translation_override(request):
             models = list_dynamic_report_models(self, request, {})["models"]
-        if not models:
-            return ""
-        for detail, header in DYNAMIC_CATALOG_HEADERS.items():
-            catalog = "\n".join([header, *(dynamic_catalog_line(entry, detail) for entry in models)])
-            if len(catalog) <= room:
-                return catalog
-        return ""
+        return fit_catalog(DYNAMIC_CATALOG_HEADERS, dynamic_catalog_line, models, room) if models else ""
 
     # --- registry ------------------------------------------------------------------------------
     def get_reports(self, request, code=None) -> list:
@@ -238,14 +229,19 @@ class ReportToolsMixin:
     def get_tools(self, request=None) -> list:
         return super().get_tools(request) + self.get_report_tools(request)
 
+    def get_tool(self, name: str, request=None):
+        """Look a tool up by name without building the per-user catalogs of the report tool descriptions."""
+        tools = self.get_report_tools() if name in REPORT_TOOL_NAMES else super().get_tools(request)
+        return next((tool for tool in tools if tool.name == name), None)
+
     def get_view_tools(self, request=None, *, reserved=()) -> list:
         return super().get_view_tools(request, reserved={*reserved, *REPORT_TOOL_NAMES})
 
     def get_report_tools(self, request=None) -> list:
         room = self.report_tool_description_max_chars - len(RUN_REPORT_DESCRIPTION) - 2
-        catalog = self.get_report_catalog(request, room) if request is not None else ""
+        catalog = self.get_report_catalog(request, room)
         dynamic_room = self.report_tool_description_max_chars - len(RUN_DYNAMIC_REPORT_DESCRIPTION) - 2
-        dynamic_catalog = self.get_dynamic_report_catalog(request, dynamic_room) if request is not None else ""
+        dynamic_catalog = self.get_dynamic_report_catalog(request, dynamic_room)
         max_rows = {
             "type": "integer",
             "minimum": 1,
@@ -498,14 +494,25 @@ def catalog_line(entry, detail="questions") -> str:
 
 def dynamic_catalog_line(entry, detail) -> str:
     """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``."""
+    line = f"{entry['identifier']} ({entry['verbose_name']})"
+    if detail == "models":
+        return line
     names = []
     for field in entry["fields"]:
         relation = f">{field['related_model']}" if field["is_relation"] else ""
         mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
-        if detail == "fields" or (detail == "reportable" and mark):
+        if detail == "fields" or mark:
             names.append(field["name"] + mark)
-    line = f"{entry['identifier']} ({entry['verbose_name']})"
     return f"{line}: {', '.join(names)}" if names else line
+
+
+def fit_catalog(headers, line, entries, room) -> str:
+    """The first of ``headers`` (richest first) whose catalog of ``line(entry, detail)`` fits in ``room``, else ""."""
+    for detail, header in headers.items():
+        catalog = "\n".join([header, *(line(entry, detail) for entry in entries)])
+        if len(catalog) <= room:
+            return catalog
+    return ""
 
 
 def _max_rows(site, args) -> int:
@@ -618,7 +625,7 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
     if result["row_count"] == 0:
         window = result["date_window"]
         lines = [gettext("No rows match.")]
-        if report_class.date_field and window["start"]:
+        if report_class.date_field and (window["start"] or window["end"]):
             lines.append(gettext("Widen start_date and end_date in params (now: %(window)s).") % {"window": window["label"]})
         picked = [name for name in params if name in record_params(site, report_view(request, report_class))]
         if picked:
