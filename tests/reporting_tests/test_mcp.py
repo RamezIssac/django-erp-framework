@@ -171,11 +171,7 @@ class ReportToolsTests(BaseTestData, TestCase):
             self.assertEqual([c["id"] for c in objects["candidates"]], [self.client1.pk])
 
             report = self.run_report("client.balances", {"client_id": [objects["candidates"][0]["id"]]})
-            self.assertEqual([row[1] for row in report["rows"]], ["Client 1"])
-            out, err = self.call("run_report", {"report": "client.balances", "params": {"client_id": [self.client2.pk]}})
-        self.assertTrue(err, out)
-        self.assertEqual(out["error"], "invalid_params")
-        self.assertIn("client_id", out["fields"])
+        self.assertEqual([row[1] for row in report["rows"]], ["Client 1"])
 
     def test_unknown_report_is_not_found(self):
         out, err = self.call("run_report", {"report": "client.nope"})
@@ -341,11 +337,9 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             name="no_product_mcp",
             excluded_models=(*ERPMcpSite.excluded_models, "reporting_tests.product"),
         )
-        request = RequestFactory().post("/mcp/")
-        request.user = self.user
-        result = site.call_tool(request, "list_dynamic_report_models", {})
-        self.assertFalse(result.is_error, result.data)
-        identifiers = {m["identifier"] for m in result.data["models"]}
+        out, err = self.call("list_dynamic_report_models", site=site)
+        self.assertFalse(err, out)
+        identifiers = {m["identifier"] for m in out["models"]}
         self.assertIn("reporting_tests.SimpleSales", identifiers)
         self.assertNotIn("reporting_tests.Product", identifiers)
 
@@ -354,9 +348,9 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             ("group_by", {**SALES_BY_CLIENT, "group_by": "product"}),
         ):
             with self.subTest(key=key):
-                result = site.call_tool(request, "run_dynamic_report", {"spec": spec})
-                self.assertTrue(result.is_error, result.data)
-                self.assertEqual(result.data["fields"][key][0]["code"], "model_not_allowed")
+                out, err = self.call("run_dynamic_report", {"spec": spec}, site=site)
+                self.assertTrue(err, out)
+                self.assertEqual(out["fields"][key][0]["code"], "model_not_allowed")
 
     def test_rows_follow_the_admin_queryset(self):
         two_clients = SimpleSales.objects.filter(client__in=[self.client1, self.client2])

@@ -4,10 +4,9 @@ All notable changes to this project are/will be documented in this file.
 ## [Unreleased]
 ### Added
 - `erp_framework.reporting.mcp.ReportToolsMixin`, mixed into `ERPMcpSite`: read-only MCP tools `list_reports`, `describe_report`, `run_report`, `list_dynamic_report_models` and `run_dynamic_report`, scoped by `report_access_function`, token scopes and each model admin's `get_queryset(request)` and shown fields. They need django-slick-reporting's headless runner, `compact_response` and `dynamic_report`; without them `ERPMcpSite` publishes the admin tools only. See the API docs, "Reports over MCP".
-- The report tools' server instructions (items 7 and 8, after django-admin-api-mcp's item 6) send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's `x-related-model`.
+- The report tools' server instructions send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's `x-related-model`.
 - `run_dynamic_report` and `list_dynamic_report_models` honour the MCP site's `excluded_models` (also passed to slick as `excluded_models`).
 - `list_objects` rows of entity admins carry `name`: `EntityAdmin.get_list_display` swaps `get_enhanced_obj_title` for `name` on API and MCP requests.
-- Test requirements pin django-slick-reporting to commit `56527cc` of its `feature/dynamic_dashboard` branch and django-admin-api-mcp to commit `4de7f23` (`resolve_entities`, `AdminMcpSite.excluded_models`).
 
 ## [1.8.0] - 2026-11-19
 ### Security
