@@ -36,7 +36,7 @@ jobs:
         run: |
           git diff -U0 ${{ github.event.pull_request.base.sha }}...HEAD -- 'erp_framework/*.py' ':!erp_framework/**/migrations/*' > pr.patch
           if ! grep -q '^+[^+]' pr.patch; then
-            echo "No Python source lines changed: nothing to mutate." >> "$GITHUB_STEP_SUMMARY"
+            echo "No Python source lines changed: nothing to mutate." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # Exit code is a bitmask: 1 is a mutmut error, 2/4/8 are survivors, timeouts, suspicious.
@@ -52,4 +52,4 @@ jobs:
               mutmut show all | sed -n '/^---- /,$p'
               echo '```'
             fi
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
