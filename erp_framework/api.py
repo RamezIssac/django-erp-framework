@@ -26,10 +26,7 @@ transports::
     urlpatterns += [path("mcp/", erp_mcp_site.urls)]   # Streamable HTTP
     # stdio: ADMIN_API_TOKEN=aapi_... python manage.py mcp_serve
 
-When django-slick-reporting provides its headless runner, compact output and dynamic report, the MCP
-site also publishes the registered reports and ad-hoc dynamic reports as read-only tools
-(``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``,
-``run_dynamic_report``); see :mod:`erp_framework.reporting.mcp`.
+The MCP site also publishes the reports as read-only tools; see :mod:`erp_framework.reporting.mcp`.
 
 This module requires django-admin-api-mcp; erp_framework itself does not.
 """
