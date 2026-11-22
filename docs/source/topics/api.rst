@@ -154,7 +154,7 @@ publishes the admin tools only.
   (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``), ``spec_guide`` and ``spec_example``.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec and returns the
-  same shape as ``run_report``; with ``group_by``, each row carries its group's label. The spec may only read the MCP-exposed models the user may view,
+  same shape as ``run_report``; with ``group_by``, each row starts with its group's label. The spec may only read the MCP-exposed models the user may view,
   never the user model nor the site's ``excluded_models`` (``get_dynamic_report_models(request)``).
   Rows follow each model admin's ``get_queryset(request)``, and field paths may only use the fields
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus

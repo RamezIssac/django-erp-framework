@@ -117,7 +117,7 @@ SPEC_EXAMPLE = {
 }
 RUN_DYNAMIC_REPORT_DESCRIPTION = (
     "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
-    "the same shape as run_report; with group_by, each row carries its group's label. Next to spec, order_by "
+    "the same shape as run_report; with group_by, each row starts with its group's label. Next to spec, order_by "
     "takes a column name ('-name' for highest first); with max_rows it gives a top N. "
     f"Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
 )

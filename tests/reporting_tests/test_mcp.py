@@ -1010,7 +1010,7 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertTrue(description.startswith(RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\nKinds of record you may report on (report_model (name): fields;"))
         self.assertIn(SPEC_GUIDE, description)
         self.assertIn(
-            "Returns the same shape as run_report; with group_by, each row carries its group's label. Next to spec, "
+            "Returns the same shape as run_report; with group_by, each row starts with its group's label. Next to spec, "
             "order_by takes a column name ('-name' for highest first); with max_rows it gives a top N. Spec: kind 'aggregate'",
             description,
         )
