@@ -10,15 +10,9 @@ does)::
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
 and ``run_dynamic_report``; docs/source/topics/api.rst ("Reports over MCP") describes them. ``run_report``'s
 description carries a catalog of the reports the user may run, and results carry ``help`` lines naming
-the next call when rows are cut or none match. This module requires django-admin-api-mcp
+the next call when rows are cut or none match (``total_columns`` and ``summary_report`` on a report class
+shape them; see "Row policy and help lines" in the docs). This module requires django-admin-api-mcp
 and django-slick-reporting; erp_framework itself does not.
-
-A report class may declare:
-
-- ``total_columns`` (django-slick-reporting): the columns ``totals`` covers. A list report builds at most
-  ``max_rows`` rows and counts and totals in the database. Run without ``max_rows`` over more than
-  ``report_max_rows`` rows, it returns its totals and first ``report_summary_rows`` rows.
-- ``summary_report``: the code (or class) of the report that aggregates its rows, named in ``help``.
 """
 
 import copy

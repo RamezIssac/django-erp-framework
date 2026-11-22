@@ -287,15 +287,11 @@ class RowPolicyTests(BaseTestData, TestCase):
         from erp_framework.api import ERPMcpSite, erp_api_site
 
         site = type("SmallSite", (ERPMcpSite,), attrs)(erp_api_site, name="small_mcp")
-        request = RequestFactory().post("/mcp/")
-        request.user = self.user
-        if token is not None:
-            request.api_token = token
 
         def call(name, arguments):
-            result = site.call_tool(request, name, arguments)
-            self.assertFalse(result.is_error, result.data)
-            return result.data
+            out, err = self.call(name, arguments, token=token, site=site)
+            self.assertFalse(err, out)
+            return out
 
         return call
 
