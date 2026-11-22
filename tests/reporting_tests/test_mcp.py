@@ -288,6 +288,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(set(run["properties"]), {"report", "params", "order_by", "max_rows"})
         self.assertEqual(run["properties"]["params"]["type"], "object")
         self.assertEqual(run["properties"]["order_by"]["type"], "string")
+        self.assertIn("description", run["properties"]["order_by"])
         self.assertIn("description", run["properties"]["params"])
         self.assertEqual({k: run["properties"]["max_rows"][k] for k in max_rows}, max_rows)
         self.assertIn("description", run["properties"]["max_rows"])
@@ -561,6 +562,63 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(self.run_report_description(user=AnonymousUser()), RUN_REPORT_DESCRIPTION)
         tools = {tool.name: tool for tool in erp_mcp_site.get_tools()}
         self.assertEqual(tools["run_report"].description, RUN_REPORT_DESCRIPTION)
+
+    def test_catalog_kept_at_exact_fit_and_report_limit(self):
+        from erp_framework.api import erp_mcp_site
+
+        self.assertEqual((erp_mcp_site.report_catalog_max, erp_mcp_site.report_tool_description_max_chars), (40, 4096))
+        description = self.run_report_description()
+        reports = self.call("list_reports")[0]["reports"]
+        with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", len(description)), \
+                mock.patch.object(type(erp_mcp_site), "report_catalog_max", len(reports)):
+            self.assertEqual(self.run_report_description(), description)
+
+    def test_catalog_needs_a_request_user(self):
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
+
+        tools = {tool.name: tool for tool in erp_mcp_site.get_tools(RequestFactory().post("/mcp/"))}
+        self.assertEqual(tools["run_report"].description, RUN_REPORT_DESCRIPTION)
+
+    def test_order_by_error_shape(self):
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-name"})
+        self.assertEqual(out["detail"], "Invalid report parameters.")
+        self.assertEqual(
+            out["fields"],
+            {"order_by": [{"message": "Sort by one of: __balance__, __total__; prefix '-' for highest first.", "code": "invalid"}]},
+        )
+
+    def test_required_params_follow_the_shown_params(self):
+        from erp_framework.reporting import mcp
+
+        form_object_schema = mcp.form_object_schema
+
+        def all_required(form_class, **kwargs):
+            return {**form_object_schema(form_class, **kwargs), "required": ["client_id", "product_id"]}
+
+        def required():
+            out, err = self.call("describe_report", {"report": "client.balances"})
+            self.assertFalse(err, out)
+            return out["params_schema"]["required"]
+
+        self.assertEqual(required(), [])
+        with mock.patch.object(mcp, "form_object_schema", all_required):
+            self.assertEqual(required(), ["client_id", "product_id"])
+            with mock.patch.object(ProductAdmin, "mcp_enabled", False, create=True):
+                self.assertEqual(required(), ["client_id"])
+
+    def test_balance_and_labels_read_every_column_shape(self):
+        from erp_framework.reporting.mcp import column_labels, computation_classes, is_balance_report
+
+        columns = {"columns": [("slug", {}), ("__balance__", {"verbose_name": "Balance"})], "time_series_columns": None}
+        self.assertTrue(is_balance_report(type("TupleColumns", (ClientTotalBalance,), columns)))
+        self.assertEqual(list(computation_classes(int)), [])
+        custom_groups = type(
+            "CustomGroups",
+            (ClientTotalBalance,),
+            {"group_by": None, "group_by_custom_querysets": [SimpleSales.objects.all()], "columns": ["__total__"]},
+        )
+        self.assertEqual(column_labels(custom_groups), ["Sum of value"])
 
 
 SALES_BY_CLIENT = {
