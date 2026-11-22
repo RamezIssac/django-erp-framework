@@ -922,9 +922,8 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         value = {"method": "Sum", "field": "value", "name": "value"}
         crosstab = {**SALES_BY_CLIENT, "crosstab_field": "product", "crosstab_ids": [self.product1.pk]}
         for spec, key, given, fixed in (
-            (series, "time_series_columns", ["sales"], [sales]),
-            (series, "time_series_columns", ["value", "__total__"], [value, "__total__"]),
-            (crosstab, "crosstab_columns", ["sales"], [sales]),
+            (series, "time_series_columns", ["sales", "value", "__total__"], [sales, value, "__total__"]),
+            (crosstab, "crosstab_columns", ["value", sales], [value, sales]),
         ):
             with self.subTest(key=key, given=given):
                 out, err = self.call("run_dynamic_report", {"spec": {**spec, key: given}})
