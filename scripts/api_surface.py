@@ -8,9 +8,7 @@ import ast
 
 import griffe
 
-MARKER = "<!-- api-surface-report -->"
 SKIPPED_MODULES = {"tests", "migrations"}
-PARAMETER_PREFIX = {"var_positional": "*", "var_keyword": "**"}
 
 
 def value_kind(value):
@@ -28,19 +26,6 @@ def value_kind(value):
     return {ast.Dict: "dict", ast.List: "list", ast.Tuple: "tuple", ast.Set: "set"}.get(type(node), "expression")
 
 
-def signature(function):
-    parts = []
-    for parameter in function.parameters:
-        text = PARAMETER_PREFIX.get(parameter.kind.name, "") + parameter.name
-        if parameter.annotation is not None:
-            text += f": {parameter.annotation}"
-        if parameter.default is not None and parameter.kind.name not in PARAMETER_PREFIX:
-            text += f"={parameter.default}"
-        parts.append(text)
-    returns = f" -> {function.returns}" if function.returns is not None else ""
-    return f"({', '.join(parts)}){returns}"
-
-
 def describe(obj):
     """One line per public name: its kind plus the signature, bases or value kind that define it."""
     if obj.is_alias:
@@ -51,7 +36,7 @@ def describe(obj):
     if obj.is_class:
         return f"class({', '.join(str(base) for base in obj.bases)})"
     if obj.is_function:
-        return f"{'method' if obj.parent.is_class else 'function'}{labels} `{signature(obj)}`"
+        return f"{'method' if obj.parent.is_class else 'function'}{labels} `{obj.signature()}`"
     annotation = f": {obj.annotation}" if obj.annotation is not None else ""
     scope = "class attribute" if obj.parent.is_class else "constant"
     return f"{scope}{labels}{annotation} ({value_kind(obj.value)})"
@@ -60,8 +45,8 @@ def describe(obj):
 def public_surface(obj, surface):
     """Map dotted path to description for every public member under obj, recursing into modules and classes."""
     for name, member in obj.members.items():
-        in_test_module = not member.is_alias and member.is_module and name.startswith("test")
-        if name.startswith("_") or name in SKIPPED_MODULES or in_test_module:
+        skipped_module = not member.is_alias and member.is_module and (name in SKIPPED_MODULES or name.startswith("test"))
+        if name.startswith("_") or skipped_module:
             continue
         if obj.is_module and not member.is_public:
             continue
@@ -76,8 +61,8 @@ def report(base, head, base_ref, head_ref):
     removed = sorted(set(base) - set(head))
     changed = sorted(path for path in set(base) & set(head) if base[path] != head[path])
     if not (added or removed or changed):
-        return f"{MARKER}\nNo public API changes.\n"
-    lines = [MARKER, "## Public API changes", ""]
+        return "No public API changes.\n"
+    lines = ["## Public API changes", ""]
     for title, paths, kind in (
         ("Added", added, lambda path: head[path]),
         ("Removed", removed, lambda path: base[path]),

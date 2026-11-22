@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [develop]
 
+concurrency:
+  group: api-surface-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -32,8 +36,7 @@ jobs:
         run: |
           base=$(git rev-parse --short "$(git merge-base "$BASE_SHA" HEAD)")
           python scripts/api_surface.py "$base" "$(git rev-parse --short HEAD)" > comment.md
-          cat comment.md >> "$GITHUB_STEP_SUMMARY"
-          cat comment.md
+          tee -a "$GITHUB_STEP_SUMMARY" < comment.md
 
       - uses: actions/upload-artifact@v4
         with:
