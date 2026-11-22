@@ -1,12 +1,16 @@
 from unittest import mock
 
+from django.apps import apps
+from django.core import checks
 from django.test import SimpleTestCase
+from django.test.utils import isolate_apps
 
 from erp_framework.doc_types import (
     MINUS,
     PLUS,
     DocTypes,
     check_doc_type_effects,
+    entity_foreign_key,
     for_entity,
     get_effects,
     transaction_models,
@@ -118,3 +122,71 @@ class DocTypeChecksTests(SimpleTestCase):
     def test_not_a_dict_is_an_error(self):
         with mock.patch.object(Sale, "doc_type_effects", ["customer"]):
             self.assertEqual(check_ids([Sale]), ["erp_framework.E004"])
+
+
+def proxy_of(model, **attrs):
+    meta = type("Meta", (), {"proxy": True, "app_label": "ledger_tests"})
+    return type(f"{model.__name__}Proxy", (model,), {"__module__": __name__, "Meta": meta, **attrs})
+
+
+class DocTypeMessagesTests(SimpleTestCase):
+    def test_declaration_errors_name_the_field_and_the_fix(self):
+        with mock.patch.object(Sale, "doc_type_effects", {"custmer": PLUS, "customer": 2}):
+            bad_effect, not_fk = check_doc_type_effects([Sale])
+        self.assertEqual(not_fk.msg, "doc_type_effects names 'custmer', which is not a foreign key of ledger_tests.Sale.")
+        self.assertEqual(not_fk.hint, "Use the name of a ForeignKey field of the model.")
+        self.assertEqual(bad_effect.msg, "doc_type_effects['customer'] of ledger_tests.Sale is 2.")
+        self.assertEqual(bad_effect.hint, "Use PLUS, MINUS or None from erp_framework.doc_types.")
+        with mock.patch.object(Sale, "doc_type_effects", ["customer"]), mock.patch.object(Movement, "doc_type_effects", {}):
+            not_a_dict, missing = check_doc_type_effects([Sale, Movement])
+        self.assertEqual(not_a_dict.msg, "doc_type_effects of ledger_tests.Sale is not a dict.")
+        self.assertEqual(missing.id, "erp_framework.W001")
+
+    def test_missing_effect_message_and_hint(self):
+        with mock.patch.object(Movement, "doc_type_effects", {}):
+            (warning,) = check_doc_type_effects([Movement])
+        self.assertEqual(
+            warning.msg, "ledger_tests.Movement has a foreign key 'customer' to ledger_tests.Customer and no doc_type_effects entry for it."
+        )
+        self.assertEqual(
+            warning.hint,
+            "Declare doc_type_effects = {'customer': PLUS} (or MINUS, or None for no effect) on the class or one of its bases.",
+        )
+
+    def test_opposite_signs_message_lists_the_classes(self):
+        with mock.patch.object(SaleReturn, "get_doc_type", classmethod(lambda cls: "sale")):
+            (error,) = check_doc_type_effects([Sale, SaleReturn])
+        self.assertEqual(
+            error.msg,
+            "Document type 'sale' is both PLUS and MINUS for ledger_tests.Customer through 'customer' "
+            "(ledger_tests.Sale, ledger_tests.SaleReturn).",
+        )
+        self.assertEqual(error.hint, "Give the classes distinct get_doc_type() values or the same effect.")
+
+    def test_doc_types_repr(self):
+        self.assertEqual(repr(DocTypes(["sale"], [])), "DocTypes(plus=['sale'], minus=[])")
+
+
+class DocTypeModelsTests(SimpleTestCase):
+    def test_reverse_relation_is_not_a_foreign_key(self):
+        self.assertIsNone(entity_foreign_key(Customer, "movement", Movement))
+
+    @isolate_apps("ledger_tests")
+    def test_proxies_count_for_entities_and_inherited_checks_are_not_repeated(self):
+        declared = proxy_of(SaleReturn, doc_type_effects={"customer": PLUS})
+        inherited = proxy_of(Sale)
+        with mock.patch.object(apps, "get_models", lambda: [Movement, Sale, declared, inherited]):
+            self.assertIn(declared.get_doc_type(), for_entity(Customer).plus)
+        with mock.patch.object(declared, "doc_type_effects", {"custmer": PLUS}):
+            self.assertEqual(check_ids([inherited, declared]), ["erp_framework.E004"])
+        with mock.patch.object(Movement, "doc_type_effects", {}), mock.patch.object(Sale, "doc_type_effects", {}):
+            self.assertEqual(check_ids([inherited, ServiceInvoice]), ["erp_framework.W001"])
+
+    def test_check_is_registered_and_follows_app_configs(self):
+        from erp_framework.checks import doc_type_effects_check
+
+        self.assertIn(doc_type_effects_check, checks.registry.registry.get_checks())
+        with mock.patch.object(Movement, "doc_type_effects", {}):
+            ids = [e.id for e in doc_type_effects_check([apps.get_app_config("ledger_tests")])]
+            self.assertEqual(ids, ["erp_framework.W001"])
+            self.assertEqual(doc_type_effects_check([apps.get_app_config("auth")]), [])

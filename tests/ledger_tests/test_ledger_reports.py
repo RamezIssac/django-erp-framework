@@ -1,5 +1,6 @@
 import datetime
 from io import StringIO
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -8,7 +9,18 @@ from django.db.models import Q
 from django.test import TestCase
 from slick_reporting.generator import ReportGenerator
 
+from erp_framework import ledgers
 from erp_framework.doc_types import for_entity
+from erp_framework.ledgers import (
+    _migrated_app_configs,
+    build_ledger_sql,
+    create_ledger_views,
+    create_ledger_views_after_migrate,
+    drop_ledger_views,
+    drop_ledger_views_before_migrate,
+    present_sources,
+)
+from erp_framework.management.commands.rebuild_ledger_views import Command as RebuildCommand
 from erp_framework.reporting.views import ReportView
 
 from .models import (
@@ -169,6 +181,86 @@ class LedgerReportTests(TestCase):
             out.getvalue(),
         )
         self.assertEqual(CustomerLedger.objects.count(), 6)
+
+    def test_rebuild_command_reports_each_view_on_its_own_line(self):
+        out = StringIO()
+        call_command("rebuild_ledger_views", stdout=out)
+        self.assertIn("Rebuilt erp_ledger_ledger_tests_treasury over 1 source table(s).", out.getvalue().splitlines())
+        self.assertTrue(RebuildCommand.help)
+
+    def test_rebuild_command_sql_is_each_view_over_its_present_sources(self):
+        out = StringIO()
+        call_command("rebuild_ledger_views", "--sql", stdout=out)
+        expected = "".join(
+            build_ledger_sql(ledger, connection, present_sources(ledger, connection)[0]) + ";\n"
+            for ledger in (CustomerLedger, TreasuryLedger)
+        )
+        self.assertEqual(out.getvalue(), expected)
+        self.assertIn('FROM "ledger_tests_movement"', expected)
+
+    def test_drop_keeps_other_views(self):
+        with connection.cursor() as cursor:
+            cursor.execute('CREATE VIEW "reporting_snapshot" AS SELECT 1 AS "id"')
+        self.assertEqual(drop_ledger_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertIn("reporting_snapshot", ledgers._views_and_tables(connection)[0])
+
+    def test_create_output_by_verbosity(self):
+        for verbosity, lines in (
+            (None, []),
+            (1, []),
+            (2, [f"  Ledger view {CUSTOMER_VIEW}: 2 source table(s)", f"  Ledger view {TREASURY_VIEW}: 1 source table(s)"]),
+        ):
+            with self.subTest(verbosity=verbosity):
+                out = StringIO()
+                kwargs = {} if verbosity is None else {"verbosity": verbosity}
+                create_ledger_views(stdout=out, **kwargs)
+                self.assertEqual(out.getvalue().splitlines(), lines)
+
+    def test_create_skips_one_ledger_and_keeps_going(self):
+        allow_migrate = ledgers.router.allow_migrate
+
+        def no_customer_ledger(using, app_label, **hints):
+            return hints.get("model_name") != "customerledger" and allow_migrate(using, app_label, **hints)
+
+        views_and_tables = ledgers._views_and_tables
+
+        def no_customer_table(connection):
+            views, tables = views_and_tables(connection)
+            return views, tables - {Customer._meta.db_table}
+
+        for patch in (
+            mock.patch.object(ledgers.router, "allow_migrate", no_customer_ledger),
+            mock.patch.object(ledgers, "_views_and_tables", no_customer_table),
+        ):
+            with self.subTest(patch=patch.attribute), patch:
+                created = create_ledger_views(verbosity=0)
+                self.assertEqual([name for name, _present, _missing in created], [TREASURY_VIEW])
+
+    def test_migrate_receivers_run_once_per_command(self):
+        configs = _migrated_app_configs()
+        for sender, plan in ((configs[1], []), (configs[0], None)):
+            drop_ledger_views_before_migrate(sender, "default", plan=plan)
+            self.assertEqual(ledger_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        drop_ledger_views_before_migrate(configs[0], "default", plan=[])
+        self.assertEqual(ledger_views(), [])
+        out = StringIO()
+        for sender, plan in ((configs[-2], []), (configs[1], []), (configs[-1], None)):
+            create_ledger_views_after_migrate(sender, "default", plan=plan, stdout=out)
+            self.assertEqual(ledger_views(), [])
+        create_ledger_views_after_migrate(configs[-1], "default", plan=[], stdout=out)
+        self.assertEqual(ledger_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(out.getvalue(), "")
+
+    def test_migrate_receivers_are_connected_once(self):
+        from django.db.models.signals import post_migrate, pre_migrate
+
+        for signal, receiver, uid in (
+            (pre_migrate, drop_ledger_views_before_migrate, "erp_ledger_drop"),
+            (post_migrate, create_ledger_views_after_migrate, "erp_ledger_create"),
+        ):
+            with self.subTest(uid=uid):
+                self.assertTrue(signal.disconnect(dispatch_uid=uid))
+                self.addCleanup(signal.connect, receiver, dispatch_uid=uid)
 
     def test_rebuild_command_prints_sql(self):
         out = StringIO()
