@@ -24,19 +24,12 @@ from .models import (
     Treasury,
     TreasuryLedger,
 )
+from .test_ledger_migrate import CUSTOMER_VIEW, TREASURY_VIEW, ledger_views
 
 
 def at(day):
     return datetime.datetime.combine(
         day, datetime.time(10), tzinfo=datetime.timezone.utc
-    )
-
-
-def ledger_view_names():
-    with connection.cursor() as cursor:
-        tables = connection.introspection.get_table_list(cursor)
-    return sorted(
-        t.name for t in tables if t.type == "v" and t.name.startswith("erp_ledger_")
     )
 
 
@@ -113,12 +106,6 @@ class LedgerReportTests(TestCase):
             for r in report.get_report_data()
         }
 
-    def test_views_exist_after_a_fresh_migrate(self):
-        self.assertEqual(
-            ledger_view_names(),
-            ["erp_ledger_ledger_tests_customer", "erp_ledger_ledger_tests_treasury"],
-        )
-
     def test_customer_balance_includes_payments_and_services(self):
         # Acme: service invoice 300, payment 250. Northwind: sales 100 + 300, return 20, payment 250.
         totals = self.debit_credit(CustomerLedger, Customer)
@@ -173,10 +160,7 @@ class LedgerReportTests(TestCase):
             cursor.execute('CREATE VIEW "erp_ledger_retired" AS SELECT 1 AS "id"')
         out = StringIO()
         call_command("rebuild_ledger_views", stdout=out)
-        self.assertEqual(
-            ledger_view_names(),
-            ["erp_ledger_ledger_tests_customer", "erp_ledger_ledger_tests_treasury"],
-        )
+        self.assertEqual(ledger_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
         self.assertIn(
             "Rebuilt erp_ledger_ledger_tests_customer over 2 source table(s).",
             out.getvalue(),

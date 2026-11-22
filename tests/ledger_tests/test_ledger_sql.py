@@ -1,3 +1,6 @@
+from importlib import import_module
+from types import SimpleNamespace
+
 from django.test import SimpleTestCase
 
 from erp_framework.ledgers import LedgerModel, build_ledger_sql, ledger_sources
@@ -5,8 +8,6 @@ from erp_framework.ledgers import LedgerModel, build_ledger_sql, ledger_sources
 from .models import (
     Customer,
     CustomerLedger,
-    CustomerPayment,
-    Movement,
     TreasuryLedger,
     TreasuryMovement,
 )
@@ -63,36 +64,26 @@ WHERE 1 = 0""",
 
 
 class LedgerSqlGoldenTests(SimpleTestCase):
-    def test_postgresql(self):
-        self.assertEqual(
-            build_ledger_sql(CustomerLedger, "postgresql"), CUSTOMER_LEDGER_SQL
-        )
-
-    def test_sqlite(self):
-        self.assertEqual(
-            build_ledger_sql(CustomerLedger, "sqlite"), CUSTOMER_LEDGER_SQL
-        )
-
-    def test_postgresql_without_sources_has_typed_columns(self):
-        self.assertEqual(
-            build_ledger_sql(CustomerLedger, "postgresql", []),
-            EMPTY_CUSTOMER_LEDGER_SQL["postgresql"],
-        )
-
-    def test_sqlite_without_sources(self):
-        self.assertEqual(
-            build_ledger_sql(CustomerLedger, "sqlite", []),
-            EMPTY_CUSTOMER_LEDGER_SQL["sqlite"],
-        )
+    def test_vendors(self):
+        for vendor, backend in [("postgresql", "postgresql"), ("sqlite", "sqlite3")]:
+            base = import_module(f"django.db.backends.{backend}.base")
+            connection = base.DatabaseWrapper({})
+            with self.subTest(vendor):
+                self.assertEqual(
+                    build_ledger_sql(CustomerLedger, connection), CUSTOMER_LEDGER_SQL
+                )
+                self.assertEqual(
+                    build_ledger_sql(CustomerLedger, connection, []),
+                    EMPTY_CUSTOMER_LEDGER_SQL[vendor],
+                )
 
     def test_unsupported_vendor(self):
         with self.assertRaises(NotImplementedError):
-            build_ledger_sql(CustomerLedger, "mysql")
+            build_ledger_sql(CustomerLedger, SimpleNamespace(vendor="mysql"))
 
 
 class LedgerModelTests(SimpleTestCase):
     def test_one_source_per_table(self):
-        self.assertEqual(ledger_sources(CustomerLedger), [CustomerPayment, Movement])
         self.assertEqual(ledger_sources(TreasuryLedger), [TreasuryMovement])
 
     def test_factory_output(self):

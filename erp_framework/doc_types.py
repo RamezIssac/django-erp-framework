@@ -75,17 +75,6 @@ def for_entity(entity, field_name=None):
     return DocTypes(sorted(plus), sorted(minus))
 
 
-def _is_entity_target(field):
-    from erp_framework.base.models import EntityModel, TransactionModel
-
-    target = field.related_model
-    return (
-        isinstance(target, type)
-        and issubclass(target, EntityModel)
-        and not issubclass(target, TransactionModel)
-    )
-
-
 def _check_declaration(model, effects):
     errors = []
     for field_name, effect in effects.items():
@@ -117,6 +106,8 @@ def _check_declaration(model, effects):
 
 def check_doc_type_effects(models):
     """Run the doc type checks over ``models`` (the transaction models of the project)."""
+    from erp_framework.base.models import EntityModel, TransactionModel
+
     errors = []
     signs = {}
     for model in models:
@@ -135,9 +126,14 @@ def check_doc_type_effects(models):
         effects = get_effects(model)
         errors.extend(_check_declaration(model, effects))
         for field in model._meta.get_fields():
-            if not field.many_to_one or not field.concrete:
-                continue
-            if not _is_entity_target(field):
+            target = field.related_model
+            if not (
+                field.many_to_one
+                and field.concrete
+                and isinstance(target, type)
+                and issubclass(target, EntityModel)
+                and not issubclass(target, TransactionModel)
+            ):
                 continue
             if field.name not in effects:
                 errors.append(

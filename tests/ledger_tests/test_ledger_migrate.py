@@ -7,7 +7,12 @@ from django.db import DatabaseError, connection, models
 from django.db.models.signals import pre_migrate
 from django.test import TransactionTestCase
 
-from erp_framework.ledgers import create_ledger_views, drop_ledger_views_before_migrate
+from erp_framework.ledgers import (
+    LEDGER_PREFIX,
+    _views_and_tables,
+    create_ledger_views,
+    drop_ledger_views_before_migrate,
+)
 
 from .models import (
     Customer,
@@ -33,11 +38,8 @@ def migrate(*args):
 
 
 def ledger_views():
-    with connection.cursor() as cursor:
-        tables = connection.introspection.get_table_list(cursor)
-    return sorted(
-        t.name for t in tables if t.type == "v" and t.name.startswith("erp_ledger_")
-    )
+    views = _views_and_tables(connection)[0]
+    return sorted(v for v in views if v.startswith(LEDGER_PREFIX))
 
 
 class LedgerMigrateTests(TransactionTestCase):
