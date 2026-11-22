@@ -75,7 +75,7 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
                 "balance": True,
                 "columns": ["Identifier slug", "Name", "Closing Total", "Sum of value"],
-                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
+                "order_by": {"balance": "Closing Total", "__total__": "Sum of value"},
                 "dates": "all",
             },
         )
@@ -109,7 +109,7 @@ class ReportToolsTests(BaseTestData, TestCase):
 
     def test_run_group_report_with_filter(self):
         out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
-        self.assertEqual(self.column_names(out), ["slug", "name", "__balance__", "__total__"])
+        self.assertEqual(self.column_names(out), ["slug", "name", "balance", "__total__"])
         self.assertEqual(out["row_count"], 1)
         self.assertEqual(out["rows"][0][1], "Client 1")
         self.assertFalse(out["truncated"])
@@ -128,9 +128,9 @@ class ReportToolsTests(BaseTestData, TestCase):
             "client.clientsalesmonthlyseries",
             {"client_id": [self.client1.pk], "start_date": f"{year}-02-01", "end_date": f"{year}-03-31"},
         )
-        # A period column is keyed by the period's end: February ends {year}-03-01, March {year}-04-01.
-        periods = {n.split("TS")[1] for n in self.column_names(out) if "TS" in n}
-        self.assertEqual(periods, {f"{year}0301", f"{year}0401"})
+        # A period column is keyed by the period's first day.
+        periods = {n.rpartition("__")[2] for n in self.column_names(out) if n.startswith("__debit__")}
+        self.assertEqual(periods, {f"{year}_02_01", f"{year}_03_01"})
         self.assertEqual(out["row_count"], 1)
 
     def test_run_crosstab_report(self):
@@ -207,14 +207,14 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual([row[1] for row in report["rows"]], ["Client 1"])
 
     def test_order_by_and_max_rows_give_a_top_n(self):
-        balance = self.column_names(self.run_report("client.balances")).index("__balance__")
+        balance = self.column_names(self.run_report("client.balances")).index("balance")
         full = self.run_report("client.balances")["rows"]
         by_balance = sorted(full, key=lambda row: Decimal(row[balance]), reverse=True)
-        top = self.run_report("client.balances", order_by="-__balance__", max_rows=2)
+        top = self.run_report("client.balances", order_by="-balance", max_rows=2)
         self.assertEqual(top["rows"], by_balance[:2])
         self.assertTrue(top["truncated"])
         self.assertEqual(top["row_count"], len(full))
-        lowest = self.run_report("client.balances", order_by="__balance__", max_rows=1)
+        lowest = self.run_report("client.balances", order_by="balance", max_rows=1)
         self.assertEqual(lowest["rows"], by_balance[-1:])
 
     def test_order_by_is_checked_against_the_report_keys(self):
@@ -223,7 +223,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(out["error"], "invalid_params")
         self.assertEqual(
             out["fields"]["order_by"][0]["message"],
-            "Sort by one of: __balance__, __total__; prefix '-' for highest first.",
+            "Sort by one of: balance, __total__; prefix '-' for highest first.",
         )
         out, err = self.call("run_report", {"report": "client.clientdetailedstatement", "order_by": "value"})
         self.assertTrue(err)
@@ -300,7 +300,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(set(run["properties"]), {"report", "params", "order_by", "max_rows"})
         self.assertEqual(run["properties"]["params"]["type"], "object")
         self.assertEqual(run["properties"]["order_by"]["type"], "string")
-        self.assertIn("description", run["properties"]["order_by"])
+        self.assertIn("e.g. '-balance' for highest first", run["properties"]["order_by"]["description"])
         self.assertIn("description", run["properties"]["params"])
         self.assertEqual({k: run["properties"]["max_rows"][k] for k in max_rows}, max_rows)
         self.assertIn("description", run["properties"]["max_rows"])
@@ -514,12 +514,12 @@ class RowPolicyTests(BaseTestData, TestCase):
             out["help"],
             [
                 "1 of 3 rows shown; totals cover all 3.",
-                "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
+                "For a top N pass order_by='-balance' and max_rows=<n> (order_by keys: balance, __total__).",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
                 "For more rows pass max_rows (up to 1000).",
             ],
         )
-        top = self.run_report("client.balances", order_by="-__balance__", max_rows=1)
+        top = self.run_report("client.balances", order_by="-balance", max_rows=1)
         self.assertTrue(top["truncated"])
         self.assertNotIn("help", top)
         self.assertNotIn("help", self.run_report("client.balances"))
@@ -578,8 +578,19 @@ class RowPolicyTests(BaseTestData, TestCase):
         self.assertEqual(
             out["help"], ["run_report(report='client.balances', params={'client_id': ['<id from resolve_entities>']})"]
         )
-        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-balance"})
-        self.assertEqual(out["help"], ["run_report(report='client.balances', order_by='-__balance__')"])
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-balanc"})
+        self.assertEqual(out["help"], ["run_report(report='client.balances', order_by='-balance')"])
+
+    def test_period_order_on_a_time_series_keeps_the_rows(self):
+        report = {"report": "client.clientsalesmonthlyseries", "params": {"start_date": f"{year}-01-01"}}
+        plain, err = self.call("run_report", report)
+        for order_by in ("period", "__period__"):
+            with self.subTest(order_by=order_by):
+                self.assertEqual(self.call("run_report", {**report, "order_by": order_by}), (plain, False))
+        out, err = self.call("run_report", {**report, "order_by": "-period"})
+        self.assertEqual(out["fields"]["order_by"][0]["message"], "This report cannot be sorted.")
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "period"})
+        self.assertEqual((err, out["error"]), (True, "invalid_params"))
 
     def test_list_reports_defaults_to_four_fields(self):
         out, err = self.call("list_reports")
@@ -590,7 +601,7 @@ class RowPolicyTests(BaseTestData, TestCase):
                 "report": "client.balances",
                 "question": "Clients Balances",
                 "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
-                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
+                "order_by": {"balance": "Closing Total", "__total__": "Sum of value"},
             },
         )
         out, err = self.call("list_reports", {"fields": ["kind"]})
@@ -651,12 +662,12 @@ class RowPolicyTests(BaseTestData, TestCase):
             out["help"],
             [
                 "2 of 3 rows shown; totals cover all 3.",
-                "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
+                "For a top N pass order_by='-balance' and max_rows=<n> (order_by keys: balance, __total__).",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
             ],
         )
         call = self.small_site(report_max_rows=1)
-        out = call("run_report", {"report": "client.balances", "order_by": "-__balance__"})
+        out = call("run_report", {"report": "client.balances", "order_by": "-balance"})
         self.assertEqual(out["help"][0], "1 of 3 rows shown; totals cover all 3.")
         self.assertFalse([line for line in out["help"] if line.startswith("For a top N")])
 
@@ -667,7 +678,7 @@ class RowPolicyTests(BaseTestData, TestCase):
             [
                 f"2 of {out['row_count']} rows shown.",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
-                "For a top N or totals per group run_dynamic_report on reporting_tests.SimpleSales with kind "
+                "For a top N or totals per group run_dynamic_report on reporting_tests.simplesales with kind "
                 "'aggregate', group_by, order_by and max_rows=<n>.",
                 "For more rows pass max_rows (up to 1000).",
             ],
@@ -750,22 +761,28 @@ class ReportRoutingTests(BaseTestData, TestCase):
 
         description = self.run_report_description()
         self.assertTrue(
-            description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run, dates all (code: question|shape|")
+            description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run (code: question|shape|")
         )
         self.assertLessEqual(len(description), 4096)
-        self.assertIn("run one directly; describe_report only adds columns", description)
+        self.assertIn("Run a report listed below (or by list_reports) directly; describe_report only adds", description)
         self.assertIn("A top N or 'which X' is the report by X with order_by and max_rows N.", description)
-        self.assertIn("Everything but 'report' is optional", description)
+        self.assertIn("(omitted: every record)", description)
+        self.assertNotIn("Without start_date/end_date", description)  # most reports here have no default dates
         self.assertIn("(omitted: the report's own order)", description)
         lines = self.catalog(description)
         self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
         self.assertIn(
             "client.balances: Clients Balances|by client|client_id, product_id|"
-            "order_by __balance__=Closing Total, __total__=Sum of value|balance",
+            "order_by balance=Closing Total, __total__=Sum of value|balance",
             lines,
         )
         self.assertIn(
             f"client.clientdatedstatement: Client dated statement|list|client_id, product_id|dates {year}-01-01 to today",
+            lines,
+        )
+        self.assertIn(
+            "client.clientsalesmonthlyseries: Client Sales Monthly|by client monthly|client_id, product_id|no order_by|balance|"
+            f"dates {year}-01-01 to today",
             lines,
         )
         request = RequestFactory().post("/mcp/")
@@ -792,6 +809,8 @@ class ReportRoutingTests(BaseTestData, TestCase):
             self.assertEqual(report_shape(ClientTotalBalance), "by client series")
         with mock.patch.object(ClientTotalBalance, "group_by", None):
             self.assertEqual(report_shape(ClientTotalBalance), "group")
+        with mock.patch.object(ClientTotalBalance, "group_by", "service__category"):
+            self.assertEqual(report_shape(ClientTotalBalance), "by service category")
         with mock.patch.multiple(ClientTotalBalance, start_date_field_name="date", end_date_field_name="date"):
             self.assertEqual(default_dates(request, ClientTotalBalance), f"{year}-01-01 to today")
         own = {"start_date": datetime.date(2025, 1, 1), "end_date": None}
@@ -801,16 +820,19 @@ class ReportRoutingTests(BaseTestData, TestCase):
     def test_catalog_drops_detail_to_fit(self):
         from erp_framework.api import erp_mcp_site
 
+        dates = " Without start_date/end_date a report covers 2026-01-01 to today; any other window works.\n"
         budget = len(self.run_report_description()) - 1
-        with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
+        with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True), \
+                mock.patch("erp_framework.reporting.mcp.default_dates", return_value="2026-01-01 to today"):
+            self.assertIn("|balance = includes all before start_date)." + dates, self.run_report_description())
             for header, line in (
                 (
-                    "Reports you may run, dates all (code: question|shape|params|order_by keys):",
-                    "client.balances: Who owes us money?|by client|client_id, product_id|order_by __balance__, __total__",
+                    "Reports you may run (code: question|shape|params|order_by keys)." + dates,
+                    "client.balances: Who owes us money?|by client|client_id, product_id|order_by balance, __total__",
                 ),
                 (
-                    "Reports you may run, dates all (code|shape|params|order_by keys;",
-                    "client.balances|by client|client_id, product_id|order_by __balance__, __total__",
+                    "Reports you may run (code|shape|params|order_by keys; list_reports has the questions)." + dates,
+                    "client.balances|by client|client_id, product_id|order_by balance, __total__",
                 ),
                 ("Reports you may run (codes;", "client.balances"),
             ):
@@ -846,7 +868,8 @@ class ReportRoutingTests(BaseTestData, TestCase):
             description = self.run_report_description()
         self.assertLessEqual(len(description), 4096)
         self.assertIn(
-            "\n\nReports you may run, dates 2026-01-01 to today (code: question|shape|params|order_by keys):",
+            "\n\nReports you may run (code: question|shape|params|order_by keys). Without start_date/end_date a "
+            "report covers 2026-01-01 to today; any other window works.\n",
             description,
         )
         lines = self.catalog(description)
@@ -870,7 +893,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
             lines,
             [
                 "client.balances: Clients Balances|by client|client_id, product_id|"
-                "order_by __balance__=Closing Total, __total__=Sum of value|balance"
+                "order_by balance=Closing Total, __total__=Sum of value|balance"
             ],
         )
 
@@ -912,7 +935,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(out["detail"], "Invalid report parameters.")
         self.assertEqual(
             out["fields"],
-            {"order_by": [{"message": "Sort by one of: __balance__, __total__; prefix '-' for highest first.", "code": "invalid"}]},
+            {"order_by": [{"message": "Sort by one of: balance, __total__; prefix '-' for highest first.", "code": "invalid"}]},
         )
 
     def test_required_params_follow_the_shown_params(self):
@@ -949,7 +972,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
 
 
 SALES_BY_CLIENT = {
-    "report_model": "reporting_tests.SimpleSales",
+    "report_model": "reporting_tests.simplesales",
     "group_by": "client",
     "columns": ["name", {"method": "Sum", "field": "value", "name": "sales"}],
 }
@@ -1008,6 +1031,30 @@ class DynamicReportToolTests(BaseTestData, TestCase):
                 self.assertFalse(err, out)
                 self.assertEqual(out["rows"], expected)
                 self.assertEqual((out["totals"], out["truncated"]), (everything["totals"], True))
+
+    def test_default_max_rows_cuts_an_aggregate(self):
+        from erp_framework.api import erp_mcp_site
+
+        with mock.patch.object(type(erp_mcp_site), "report_max_rows", 2):
+            out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
+        self.assertEqual((len(out["rows"]), out["truncated"]), (2, True))
+
+    def test_period_order_on_a_time_series_keeps_the_rows(self):
+        spec = {
+            **SALES_BY_CLIENT,
+            "date_field": "date",
+            "time_series_pattern": "monthly",
+            "time_series_columns": [{"method": "Sum", "field": "value", "name": "sales"}],
+        }
+        plain, err = self.call("run_dynamic_report", {"spec": spec})
+        for order_by in ("period", "__period__"):
+            with self.subTest(order_by=order_by):
+                self.assertEqual(self.call("run_dynamic_report", {"spec": spec, "order_by": order_by}), (plain, False))
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT, "order_by": "period"})
+        self.assertEqual((err, out["error"]), (True, "invalid_params"))
+        january = [c["name"] for c in plain["columns"]].index(f"sales_{year}_01_01")
+        out, err = self.call("run_dynamic_report", {"spec": spec, "order_by": f"-sales_{year}_01_01"})
+        self.assertEqual(out["rows"], sorted(plain["rows"], key=lambda row: Decimal(row[january] or 0), reverse=True))
 
     def test_order_by_puts_empty_cells_last(self):
         from erp_framework.api import erp_mcp_site
@@ -1099,28 +1146,28 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             description,
         )
         self.assertIn('"time_series_pattern": "monthly", "time_series_columns": [{"method": "Sum", "field": "value", "name": "sales"}]}', description)
-        self.assertIn('Example: {"report_model": "store.SalesLine", "group_by": "client"', description)
+        self.assertIn('Example: {"report_model": "store.salesline", "group_by": "client"', description)
         self.assertIn("method one of Avg, Count, Max, Min, Sum", description)
         self.assertIn("(annually, bi-weekly, daily, monthly, quarterly, semiannually, weekly)", description)
-        sales = "\nreporting_tests.SimpleSales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.Client, product>reporting_tests.Product"
+        sales = "\nreporting_tests.simplesales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.client, product>reporting_tests.product"
         self.assertIn(sales, description)
         self.assertLessEqual(len(description), 4096)
         with mock.patch.object(SimpleSalesAdmin, "get_exclude", lambda admin, request, obj=None: ("value", "client")):
             hidden = self.dynamic_description()
-        self.assertIn("reporting_tests.SimpleSales (Sale): id#, slug, date@, quantity#, price#, product>reporting_tests.Product", hidden.splitlines())
+        self.assertIn("reporting_tests.simplesales (Sale): id#, slug, date@, quantity#, price#, product>reporting_tests.product", hidden.splitlines())
 
     def test_dynamic_catalog_carries_each_model_description(self):
         with mock.patch.object(SimpleSalesAdmin, "mcp_description", SALES_DESCRIPTION, create=True):
             description = self.dynamic_description()
             models = {entry["identifier"]: entry for entry in self.call("list_dynamic_report_models")[0]["models"]}
         self.assertIn(
-            "reporting_tests.SimpleSales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.Client, "
-            "product>reporting_tests.Product|A sale to a client. Credit notes are sales too: totals over sales include them.",
+            "reporting_tests.simplesales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.client, "
+            "product>reporting_tests.product|A sale to a client. Credit notes are sales too: totals over sales include them.",
             description.splitlines(),
         )
-        self.assertIn("\nreporting_tests.Client: id#, slug, name, notes\n", description)
-        self.assertEqual(models["reporting_tests.SimpleSales"]["description"], SALES_DESCRIPTION)
-        self.assertNotIn("description", models["reporting_tests.Client"])
+        self.assertIn("\nreporting_tests.client: id#, slug, name, notes\n", description)
+        self.assertEqual(models["reporting_tests.simplesales"]["description"], SALES_DESCRIPTION)
+        self.assertNotIn("description", models["reporting_tests.client"])
 
     def test_dynamic_catalog_drops_detail_to_fit(self):
         from django.contrib.auth.models import AnonymousUser
@@ -1136,21 +1183,24 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             names = self.dynamic_description(report_tool_description_max_chars=len(models) - 1)
             fallback = self.dynamic_description(report_tool_description_max_chars=len(names) - 1)
         lines = reportable.splitlines()
-        self.assertIn(DYNAMIC_CATALOG_HEADERS["reportable"], lines)
-        self.assertIn("reporting_tests.Client: id#", lines)
-        self.assertIn("reporting_tests.Journal: id#, date@, value#", lines)
         self.assertIn(
-            "reporting_tests.SimpleSales (Sale): id#, date@, value#, quantity#, price#, client>reporting_tests.Client, "
-            f"product>reporting_tests.Product|{sales}",
+            "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields|description):",
+            lines,
+        )
+        self.assertIn("reporting_tests.client: id#", lines)
+        self.assertIn("reporting_tests.journal: id#, date@, value#", lines)
+        self.assertIn(
+            "reporting_tests.simplesales (Sale): id#, date@, value#, quantity#, price#, client>reporting_tests.client, "
+            f"product>reporting_tests.product|{sales}",
             lines,
         )
         lines = models.splitlines()
         self.assertIn(DYNAMIC_CATALOG_HEADERS["models"], lines)
-        self.assertIn("reporting_tests.Client", lines)
-        self.assertIn(f"reporting_tests.SimpleSales (Sale)|{sales}", lines)
+        self.assertIn("reporting_tests.client", lines)
+        self.assertIn(f"reporting_tests.simplesales (Sale)|{sales}", lines)
         lines = names.splitlines()
         self.assertIn(DYNAMIC_CATALOG_HEADERS["names"], lines)
-        self.assertIn("reporting_tests.SimpleSales (Sale)", lines)
+        self.assertIn("reporting_tests.simplesales (Sale)", lines)
         self.assertNotIn("Credit notes", names)
         self.assertEqual(fallback, RUN_DYNAMIC_REPORT_DESCRIPTION + " list_dynamic_report_models gives the kinds of record.")
         self.assertEqual(self.dynamic_description(user=AnonymousUser()), fallback)
@@ -1175,10 +1225,10 @@ class DynamicReportToolTests(BaseTestData, TestCase):
     def test_model_without_reportable_fields_is_named_alone(self):
         from erp_framework.reporting.mcp import dynamic_catalog_line
 
-        entry = {"identifier": "a.BeeHive", "verbose_name": "Bee hive", "fields": [{"name": "note", "is_numeric": False, "is_date": False, "is_relation": False}]}
-        self.assertEqual(dynamic_catalog_line(entry, "reportable"), "a.BeeHive")
-        self.assertEqual(dynamic_catalog_line(entry, "fields"), "a.BeeHive: note")
-        self.assertEqual(dynamic_catalog_line({**entry, "verbose_name": "hive"}, "names"), "a.BeeHive (hive)")
+        entry = {"identifier": "a.beehive", "verbose_name": "Bee hive", "fields": [{"name": "note", "is_numeric": False, "is_date": False, "is_relation": False}]}
+        self.assertEqual(dynamic_catalog_line(entry, "reportable"), "a.beehive")
+        self.assertEqual(dynamic_catalog_line(entry, "fields"), "a.beehive: note")
+        self.assertEqual(dynamic_catalog_line({**entry, "verbose_name": "hive"}, "names"), "a.beehive (hive)")
 
     def test_malformed_spec_types_are_invalid_params(self):
         for spec in (
@@ -1216,14 +1266,14 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         out, err = self.call("list_dynamic_report_models", user=self.limited_user)
         self.assertFalse(err, out)
         models = {m["identifier"]: m for m in out["models"]}
-        self.assertEqual(set(models), {"reporting_tests.SimpleSales"})
-        relations = {f["name"] for f in models["reporting_tests.SimpleSales"]["fields"] if f["is_relation"]}
+        self.assertEqual(set(models), {"reporting_tests.simplesales"})
+        relations = {f["name"] for f in models["reporting_tests.simplesales"]["fields"] if f["is_relation"]}
         self.assertNotIn("client", relations)
 
     def test_token_scope_narrows_dynamic_report_models(self):
         out, err = self.call("list_dynamic_report_models", token=PRODUCT_TOKEN)
         self.assertFalse(err, out)
-        self.assertEqual({m["identifier"] for m in out["models"]}, {"reporting_tests.Product"})
+        self.assertEqual({m["identifier"] for m in out["models"]}, {"reporting_tests.product"})
         out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, token=PRODUCT_TOKEN)
         self.assertTrue(err)
         self.assertEqual(out["fields"]["report_model"][0]["code"], "model_not_allowed")
@@ -1254,8 +1304,8 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         out, err = self.call("list_dynamic_report_models", site=site)
         self.assertFalse(err, out)
         identifiers = {m["identifier"] for m in out["models"]}
-        self.assertIn("reporting_tests.SimpleSales", identifiers)
-        self.assertNotIn("reporting_tests.Product", identifiers)
+        self.assertIn("reporting_tests.simplesales", identifiers)
+        self.assertNotIn("reporting_tests.product", identifiers)
 
         for key, spec in (
             ("report_model", {"report_model": "reporting_tests.Product", "kind": "list", "columns": ["name"]}),
@@ -1308,7 +1358,7 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             out, err = self.call("list_dynamic_report_models")
         self.assertFalse(err, out)
         models = {m["identifier"]: m for m in out["models"]}
-        names = {f["name"] for f in models["reporting_tests.SimpleSales"]["fields"]}
+        names = {f["name"] for f in models["reporting_tests.simplesales"]["fields"]}
         self.assertIn("date", names)
         self.assertFalse(names & set(hidden), names)
 
@@ -1356,7 +1406,7 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertFalse(err, out)
         self.assertEqual(out["rows"], [["Client 1", "2"]])
         out, err = self.call("list_dynamic_report_models")
-        fields = {m["identifier"]: m["fields"] for m in out["models"]}["reporting_tests.RushOrder"]
+        fields = {m["identifier"]: m["fields"] for m in out["models"]}["reporting_tests.rushorder"]
         self.assertIn("id", [f["name"] for f in fields])
 
     def test_non_string_field_path_is_invalid_not_a_crash(self):
@@ -1454,7 +1504,7 @@ class EntityListRowsTests(BaseTestData, TestCase):
         out, err = self.call("run_dynamic_report", {"spec": spec})
         self.assertFalse(err, out)
         names = [c["name"] for c in out["columns"]]
-        self.assertEqual((names[:2], len(names), names[2][:7]), (["name", "sales"], 14, "salesTS"))
+        self.assertEqual((names[:3], len(names)), (["name", "sales", f"sales_{year}_01_01"], 14))
         self.assertEqual([Decimal(row[1]) for row in out["rows"]], [sum(map(Decimal, row[2:])) for row in out["rows"]])
         example = {**SPEC_EXAMPLE, "report_model": "reporting_tests.SimpleSales"}
         self.assertFalse(self.call("run_dynamic_report", {"spec": example})[1])

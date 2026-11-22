@@ -544,21 +544,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
         :return: :class:`ChangeformResult`
         """
         add = not change
-        ModelForm = self.get_form(request, obj, change=change)
-        form = ModelForm(request.POST, request.FILES, instance=obj)
-        form_validated = form.is_valid()
-        if form_validated:
-            new_object = self.save_form(request, form, change=change)
-        else:
-            new_object = form.instance
-        formsets, inline_instances = self._create_formsets(
-            request, new_object, change=change
-        )
-        if (
-            all_valid(formsets)
-            and form_validated
-            and self.whole_changeform_validation(request, form, formsets, change)
-        ):
+        result = self.validate_changeform(request, obj, change)
+        form, formsets, new_object = result.form, result.formsets, result.obj
+        if result.valid:
             self.pre_save(form, formsets, change=change)
             self.save_model(request, new_object, form, change)
             self.save_related(request, form, formsets, change)
@@ -570,10 +558,37 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
                 self.log_addition(request, new_object, change_message)
             else:
                 self.log_change(request, new_object, change_message)
-            return ChangeformResult(
-                True, new_object, form, formsets, change, inline_instances
-            )
-        return ChangeformResult(False, None, form, formsets, change, inline_instances)
+            return result
+        return ChangeformResult(
+            False, None, form, formsets, change, result.inline_instances
+        )
+
+    def validate_changeform(self, request, obj, change):
+        """
+        The change form, its inlines and ``whole_changeform_validation``; nothing is saved.
+
+        django-admin-api-mcp runs it for a dry run; :meth:`process_changeform` saves after it.
+
+        :return: :class:`ChangeformResult` holding the unsaved object
+        """
+        ModelForm = self.get_form(request, obj, change=change)
+        form = ModelForm(request.POST, request.FILES, instance=obj)
+        form_validated = form.is_valid()
+        if form_validated:
+            new_object = self.save_form(request, form, change=change)
+        else:
+            new_object = form.instance
+        formsets, inline_instances = self._create_formsets(
+            request, new_object, change=change
+        )
+        valid = (
+            all_valid(formsets)
+            and form_validated
+            and self.whole_changeform_validation(request, form, formsets, change)
+        )
+        return ChangeformResult(
+            valid, new_object, form, formsets, change, inline_instances
+        )
 
     def _changeform_view(self, request, object_id, form_url, extra_context):
         """
