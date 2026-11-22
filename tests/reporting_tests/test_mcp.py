@@ -493,6 +493,7 @@ class RowPolicyTests(BaseTestData, TestCase):
         self.assertEqual(
             out["help"],
             [
+                f"1 of {full['row_count']} rows shown; totals cover all {full['row_count']}.",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
                 "For totals run client.balances (Clients Balances).",
                 "For more rows pass max_rows (up to 1000).",
@@ -512,6 +513,7 @@ class RowPolicyTests(BaseTestData, TestCase):
         self.assertEqual(
             out["help"],
             [
+                "1 of 3 rows shown; totals cover all 3.",
                 "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
                 "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
                 "For more rows pass max_rows (up to 1000).",
@@ -643,6 +645,62 @@ class RowPolicyTests(BaseTestData, TestCase):
             out = call("run_report", {"report": "client.clientdetailedstatement"})
         self.assertFalse([line for line in out["help"] if line.startswith("For totals")])
 
+    def test_explicit_max_rows_over_the_cap_names_the_row_count_and_top_n(self):
+        out = self.small_site(report_max_rows_cap=2)("run_report", {"report": "client.balances", "max_rows": 200})
+        self.assertEqual(
+            out["help"],
+            [
+                "2 of 3 rows shown; totals cover all 3.",
+                "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
+                "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
+            ],
+        )
+        call = self.small_site(report_max_rows=1)
+        out = call("run_report", {"report": "client.balances", "order_by": "-__balance__"})
+        self.assertEqual(out["help"][0], "1 of 3 rows shown; totals cover all 3.")
+        self.assertFalse([line for line in out["help"] if line.startswith("For a top N")])
+
+    def test_row_count_line_without_totals(self):
+        out = self.small_site(report_max_rows=2)("run_report", {"report": "client.clientdatedstatement"})
+        self.assertEqual(out["help"][0], f"2 of {out['row_count']} rows shown.")
+
+    def test_truncated_dynamic_report_names_the_row_count_and_top_n(self):
+        call = self.small_site(report_max_rows=1)
+        out = call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
+        shown = f"1 of {out['row_count']} rows shown; totals cover all {out['row_count']}."
+        more = "For more rows pass max_rows (up to 1000)."
+        self.assertEqual(out["help"], [shown, "For a top N pass order_by='-sales' and max_rows=<n>.", more])
+        out = call("run_dynamic_report", {"spec": SALES_BY_CLIENT, "order_by": "-sales"})
+        self.assertEqual(out["help"], [shown, more])
+        out = call("run_dynamic_report", {"spec": SALES_BY_CLIENT, "max_rows": 1})
+        self.assertEqual(out["help"], [shown, "For a top N pass order_by='-sales' and max_rows=<n>."])
+        top = call("run_dynamic_report", {"spec": SALES_BY_CLIENT, "order_by": "-sales", "max_rows": 1})
+        self.assertNotIn("help", top)
+        names = call("run_dynamic_report", {"spec": {**SALES_BY_CLIENT, "columns": ["name"]}, "max_rows": 1})
+        self.assertEqual(names["help"], [f"1 of {names['row_count']} rows shown."])
+        self.assertNotIn("help", self.small_site()("run_dynamic_report", {"spec": SALES_BY_CLIENT}))
+
+    def test_truncated_dynamic_list_points_to_an_aggregate(self):
+        call = self.small_site()
+        spec = {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["slug", "value"]}
+        out = call("run_dynamic_report", {"spec": spec, "max_rows": 2})
+        self.assertEqual(
+            out["help"][1:],
+            [
+                "For a top N or totals per group use kind 'aggregate' with group_by and the column "
+                "{'method': 'Sum', 'field': 'value', 'name': 'value'}, then order_by='-value' and max_rows=<n>."
+            ],
+        )
+        out = call("run_dynamic_report", {"spec": {**spec, "columns": ["slug"]}, "max_rows": 2})
+        self.assertIn("'field': '<number field>'", out["help"][1])
+
+    def test_top_n_routing_within_the_description_budget(self):
+        from erp_framework.reporting import mcp
+
+        self.assertIn("For a top N or 'which X' question, run a report grouped by X with order_by", mcp.REPORT_INSTRUCTIONS)
+        self.assertLessEqual(len(mcp.RUN_REPORT_DESCRIPTION), 642)
+        self.assertLessEqual(len(mcp.RUN_DYNAMIC_REPORT_DESCRIPTION), 1160)
+
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
 @override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
@@ -686,7 +744,8 @@ class ReportRoutingTests(BaseTestData, TestCase):
             description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run, dates all (code: question|shape|")
         )
         self.assertLessEqual(len(description), 4096)
-        self.assertIn("run one directly; describe_report only adds its columns", description)
+        self.assertIn("run one directly; describe_report only adds columns", description)
+        self.assertIn("A top N or 'which X' is the report by X with order_by and max_rows N.", description)
         self.assertIn("Everything but 'report' is optional", description)
         self.assertIn("(omitted: the report's own order)", description)
         lines = self.catalog(description)
@@ -1020,8 +1079,9 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertTrue(description.startswith(RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\n" + DYNAMIC_CATALOG_HEADERS["fields"]))
         self.assertIn(SPEC_GUIDE, description)
         self.assertIn(
-            "Returns the same shape as run_report; with group_by, each row starts with its group's label. Next to spec, "
-            "order_by takes a column name ('-name' for highest first); with max_rows it gives a top N. Spec: kind 'aggregate'",
+            "Returns the same shape as run_report; with group_by, each row starts with its group's label. order_by "
+            "takes a column name, '-name' for highest first. A top N or 'which X' is an aggregate by X with order_by "
+            "and max_rows N, not a list. Spec: kind 'aggregate'",
             description,
         )
         self.assertIn(

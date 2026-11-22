@@ -161,7 +161,9 @@ publishes the admin tools only.
   ``get_exclude(request)``). On a multi-table inheritance child the parent's primary key (``id``)
   counts as the primary key, so ``{"method": "Count", "field": "id"}`` counts its rows.
   ``order_by``, next to ``spec``, sorts the rows by a result column (``-name`` for highest first, empty
-  cells last); with ``max_rows`` it gives a top N. An ``unknown_field`` error carries a ``help`` line:
+  cells last); with ``max_rows`` it gives a top N. Cut rows carry ``help`` as for ``run_report``: the
+  row count, ``order_by`` on the first number column for a top N (for a ``list`` spec, the ``aggregate``
+  spec with a ``Sum`` of it) and ``max_rows`` for more rows. An ``unknown_field`` error carries a ``help`` line:
   the spec with each name in ``time_series_columns`` or ``crosstab_columns`` replaced by the ``columns``
   aggregation of that name, else a ``Sum`` of that field.
   Its description, built per request by ``get_dynamic_report_catalog(request, room)``, carries the spec
@@ -231,10 +233,12 @@ A list report that declares ``total_columns`` and is run without ``max_rows`` ov
 ``report_max_rows`` rows returns its ``totals`` and its first ``report_summary_rows`` (10) rows.
 An explicit ``max_rows`` returns that many rows, up to the cap.
 
-``run_report`` adds ``help`` (a list of lines) when no row matches or when the default ``max_rows``
-cut the rows. On a cut, the lines name ``order_by`` and ``max_rows`` for a top N (reports with
-``order_by`` keys), a ``params`` filter for one record, the ``summary_report`` and ``max_rows`` for more
-rows. With no rows, they name the date window to widen and the record filters to drop. Errors carry
+``run_report`` adds ``help`` (a list of lines) when no row matches or when rows are cut, except for a
+top N asked with ``order_by`` and ``max_rows``. On a cut, the first line gives the rows shown and the
+row count (``2 of 4094 rows shown; totals cover all 4094.``), then the lines name ``order_by`` and
+``max_rows`` for a top N (reports with ``order_by`` keys, when no ``order_by`` was given), a ``params``
+filter for one record, the ``summary_report`` and, when the default ``max_rows`` cut the rows,
+``max_rows`` for more rows. With no rows, they name the date window to widen and the record filters to drop. Errors carry
 ``help`` too: the closest report code for an unknown one, and the corrected ``run_report`` call for an
 unknown parameter, a bad ID or an unknown ``order_by`` key.
 

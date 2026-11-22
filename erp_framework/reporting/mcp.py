@@ -68,8 +68,8 @@ REPORT_TOOL_NAMES = frozenset(
 REPORT_INSTRUCTIONS = """
 7. Reports: run_report's description lists the reports you may run (else call list_reports). Run one \
 with run_report, passing resolve_entities IDs as lists: {'client_id': [5]}; when none fits, \
-run_dynamic_report. For a top N, pass order_by ('-key' for highest first) and max_rows. Name reports by \
-title, columns by label.
+run_dynamic_report. For a top N or 'which X' question, run a report grouped by X with order_by ('-key' \
+for highest first) and a small max_rows, not detail rows to rank yourself. Name reports by title, columns by label.
 Note: run the report for a kind of record ('sales by client'), not resolve_entities or describe_model, \
 because it groups by it.
 Note: answer totals and balances with a report, not summed list_objects rows, because hand sums hide \
@@ -87,12 +87,12 @@ CATALOG_HEADERS = {
 
 RUN_REPORT_DESCRIPTION = (
     "Run a registered report. The reports below (or list_reports) show each report's shape, params, order_by "
-    "keys and default dates: run one directly; describe_report only adds its columns. Everything but "
-    "'report' is optional: 'params' takes the listed params as lists of IDs (omitted: every record) plus "
-    "start_date and end_date as YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first "
-    "(omitted: the report's own order); with max_rows it gives a top N. Returns 'columns', positional "
-    "'rows', 'totals' computed over all rows even when 'truncated' is true, row_count, date_window and, "
-    "when rows are cut or none match, 'help' with the next call."
+    "keys and dates: run one directly; describe_report only adds columns. Everything but 'report' is "
+    "optional: 'params' takes the listed params as lists of IDs (omitted: every record) plus start_date and "
+    "end_date as YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first (omitted: the report's "
+    "own order). A top N or 'which X' is the report by X with order_by and max_rows N. Returns 'columns', "
+    "positional 'rows', 'totals' over all rows even when 'truncated', row_count, date_window and, when rows "
+    "are cut or none match, 'help'."
 )
 
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
@@ -116,9 +116,9 @@ SPEC_EXAMPLE = {
     "time_series_columns": [SALES],
 }
 RUN_DYNAMIC_REPORT_DESCRIPTION = (
-    "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
-    "the same shape as run_report; with group_by, each row starts with its group's label. Next to spec, order_by "
-    "takes a column name ('-name' for highest first); with max_rows it gives a top N. "
+    "Run an ad-hoc report spec when no registered report fits. Returns the same shape as run_report; with "
+    "group_by, each row starts with its group's label. order_by takes a column name, '-name' for highest "
+    "first. A top N or 'which X' is an aggregate by X with order_by and max_rows N, not a list. "
     f"Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
 )
 # Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
@@ -679,9 +679,26 @@ def params_help(view, code, params, error: InvalidParams) -> list:
     return lines
 
 
-def run_report_help(site, request, report_class, result, params, order_by) -> list:
-    """The next calls when none match or the default ``max_rows`` cut the rows, from the report's order_by
-    keys, params and ``summary_report``."""
+def cut_help(site, result, args, lines) -> list:
+    """``help`` for cut rows: the row count, ``lines``, then ``max_rows`` when the default cut them; none for a
+    top N asked with order_by and max_rows."""
+    by_default = "max_rows" not in args
+    if args.get("order_by") and not by_default:
+        return []
+    counts = {"shown": len(result["rows"]), "count": result["row_count"]}
+    if result["totals"]:
+        shown = gettext("%(shown)s of %(count)s rows shown; totals cover all %(count)s.") % counts
+    else:
+        shown = gettext("%(shown)s of %(count)s rows shown.") % counts
+    cap = site.report_max_rows_cap
+    if by_default and counts["shown"] < cap:
+        lines = [*lines, gettext("For more rows pass max_rows (up to %(cap)s).") % {"cap": cap}]
+    return [shown, *lines]
+
+
+def run_report_help(site, request, report_class, result, params, args) -> list:
+    """The next calls when none match or rows are cut, from the report's order_by keys, params and
+    ``summary_report``."""
     if result["row_count"] == 0:
         window = result["date_window"]
         lines = [gettext("No rows match.")]
@@ -696,7 +713,7 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
     code = report_class.get_report_code()
     lines = []
     keys = order_columns(report_class)
-    if keys and not order_by:
+    if keys and not args.get("order_by"):
         lines.append(
             gettext("For a top N pass order_by='-%(key)s' and max_rows=<n> (order_by keys: %(keys)s).")
             % {"key": next(iter(keys)), "keys": ", ".join(keys)}
@@ -718,9 +735,7 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
             gettext("For totals run %(code)s (%(title)s).")
             % {"code": summary, "title": summary_class.get_report_title()}
         )
-    if len(result["rows"]) < site.report_max_rows_cap:
-        lines.append(gettext("For more rows pass max_rows (up to %(cap)s).") % {"cap": site.report_max_rows_cap})
-    return lines
+    return cut_help(site, result, args, lines)
 
 
 def check_order_by(order_by, keys, retry=None) -> None:
@@ -774,10 +789,10 @@ def run_report(site, request, args) -> dict:
         error.extra["help"] = params_help(view, code, params, error)
         raise error from exc
     result = compact_response(full_response, max_rows=max_rows)
-    cut_by_default = result["truncated"] and "max_rows" not in args
-    if cut_by_default and report_kind(report_class) == "list" and getattr(report_class, "total_columns", None):
+    summary_first = report_kind(report_class) == "list" and getattr(report_class, "total_columns", None)
+    if result["truncated"] and "max_rows" not in args and summary_first:
         result["rows"] = result["rows"][: site.report_summary_rows]
-    help_lines = run_report_help(site, request, report_class, {**result, "truncated": cut_by_default}, params, order_by)
+    help_lines = run_report_help(site, request, report_class, result, params, args)
     return {
         "report": code,
         "title": str(report_class.get_report_title()),
@@ -931,7 +946,30 @@ def dynamic_report(site, request, args) -> dict:
             (empty if value in (None, "") else filled).append(index)
         order = sorted(filled, key=values.__getitem__, reverse=descending) + empty
         full_response["data"] = {name: [column[index] for index in order] for name, column in data.items()}
-    return compact_response(full_response, max_rows=max_rows)
+    result = compact_response(full_response, max_rows=max_rows)
+    help_lines = dynamic_report_help(site, spec, result, args)
+    return {**result, "help": help_lines} if help_lines else result
+
+
+def dynamic_report_help(site, spec, result, args) -> list:
+    """``help`` for cut rows: a top N by the first number column (an aggregate for a list)."""
+    if not result["truncated"]:
+        return []
+    lines = []
+    number = next((c["name"] for c in result["columns"] if c["type"] == "number"), None)
+    if spec.get("kind") == "list":
+        column = number or "<number field>"
+        lines.append(
+            gettext(
+                "For a top N or totals per group use kind 'aggregate' with group_by and the column "
+                "{'method': 'Sum', 'field': '%(column)s', 'name': '%(column)s'}, then order_by='-%(column)s' "
+                "and max_rows=<n>."
+            )
+            % {"column": column}
+        )
+    elif number and not args.get("order_by"):
+        lines.append(gettext("For a top N pass order_by='-%(name)s' and max_rows=<n>.") % {"name": number})
+    return cut_help(site, result, args, lines)
 
 
 def corrected_spec_help(spec, keys) -> str:
