@@ -151,6 +151,29 @@ class ReportToolsTests(BaseTestData, TestCase):
             out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
         self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
 
+    def test_instructions_send_report_params_to_resolve_entities(self):
+        from erp_framework.api import erp_mcp_site
+
+        instructions = erp_mcp_site.instructions
+        self.assertIn("get them from resolve_entities with 'models' set to the parameter's", instructions)
+        self.assertNotIn("look them up with list_objects", instructions)
+        for item in ("6.", "7.", "8."):
+            self.assertEqual(instructions.count(f"\n{item} "), 1, item)
+
+    def test_resolved_id_runs_the_report_within_the_admin_scope(self):
+        one_client = Client.objects.filter(pk=self.client1.pk)
+        with mock.patch.object(ClientAdmin, "get_queryset", lambda admin, request: one_client):
+            out, err = self.call(
+                "resolve_entities", {"terms": [{"text": "client", "models": ["reporting_tests.client"]}]}
+            )
+            self.assertFalse(err, out)
+            objects = out["results"][0]["objects"]
+            self.assertEqual(objects["status"], "unique", objects)
+            self.assertEqual([c["id"] for c in objects["candidates"]], [self.client1.pk])
+
+            report = self.run_report("client.balances", {"client_id": [objects["candidates"][0]["id"]]})
+        self.assertEqual([row[1] for row in report["rows"]], ["Client 1"])
+
     def test_unknown_report_is_not_found(self):
         out, err = self.call("run_report", {"report": "client.nope"})
         self.assertTrue(err)
@@ -454,6 +477,29 @@ class DynamicReportToolTests(BaseTestData, TestCase):
             self.assertTrue(err, out)
             self.assertEqual(out["error"], "invalid_params")
 
+    def test_excluded_models_are_not_readable(self):
+        from erp_framework.api import ERPMcpSite, erp_api_site
+
+        site = ERPMcpSite(
+            erp_api_site,
+            name="no_product_mcp",
+            excluded_models=(*ERPMcpSite.excluded_models, "reporting_tests.product"),
+        )
+        out, err = self.call("list_dynamic_report_models", site=site)
+        self.assertFalse(err, out)
+        identifiers = {m["identifier"] for m in out["models"]}
+        self.assertIn("reporting_tests.SimpleSales", identifiers)
+        self.assertNotIn("reporting_tests.Product", identifiers)
+
+        for key, spec in (
+            ("report_model", {"report_model": "reporting_tests.Product", "kind": "list", "columns": ["name"]}),
+            ("group_by", {**SALES_BY_CLIENT, "group_by": "product"}),
+        ):
+            with self.subTest(key=key):
+                out, err = self.call("run_dynamic_report", {"spec": spec}, site=site)
+                self.assertTrue(err, out)
+                self.assertEqual(out["fields"][key][0]["code"], "model_not_allowed")
+
     def test_rows_follow_the_admin_queryset(self):
         two_clients = SimpleSales.objects.filter(client__in=[self.client1, self.client2])
         with mock.patch.object(SimpleSalesAdmin, "get_queryset", lambda admin, request: two_clients):
@@ -594,6 +640,27 @@ class DynamicReportToolTests(BaseTestData, TestCase):
                 with self.subTest(column=column):
                     spec = {"report_model": "reporting_tests.SimpleSales", "group_by": "client", "columns": [column]}
                     self.assertEqual(self.hidden_field_keys(spec, admin=admin, hidden=hidden), {"columns": ["hidden_field"]})
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class EntityListRowsTests(BaseTestData, TestCase):
+    call = ReportToolsTests.call
+
+    def test_api_list_rows_carry_the_name(self):
+        out, err = self.call("list_objects", {"model": "reporting_tests.client"})
+        self.assertFalse(err, out)
+        self.assertEqual(out["columns"], ["pk", "name", "slug", "notes"])
+        self.assertIn("Client 1", {row[1] for row in out["rows"]})
+
+    def test_html_changelist_keeps_the_title_column(self):
+        from erp_framework.sites import erp_admin_site
+
+        request = RequestFactory().get("/")
+        request.user = self.user
+        list_display = erp_admin_site._registry[Client].get_list_display(request)
+        self.assertIn("get_enhanced_obj_title", list_display)
+        self.assertNotIn("name", list_display)
 
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")

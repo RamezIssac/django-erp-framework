@@ -25,6 +25,7 @@ from admin_api.detail import detail_fields
 from admin_api.custom_views import InvalidParams
 from admin_api.errors import NotFound, PermissionDeniedError
 from admin_api.jsonschema import form_object_schema
+from admin_api.mcp.resolve import is_excluded
 from admin_api.mcp.sites import DEFAULT_INSTRUCTIONS
 from admin_api.mcp.handlers import READ as READ_ONLY
 from admin_api.mcp.tools import ToolSpec, obj
@@ -46,11 +47,12 @@ REPORT_TOOL_NAMES = frozenset(
 )
 
 REPORT_INSTRUCTIONS = """
-6. Reports: call list_reports to see the reports you may run, describe_report for a report's \
+7. Reports: call list_reports to see the reports you may run, describe_report for a report's \
 parameters, then run_report. Results are compact: 'columns', positional 'rows', and 'totals' \
-computed over all rows even when 'truncated' is true. Foreign-key parameters take primary keys of \
-the model named in the parameter's 'x-related-model' (look them up with list_objects).
-7. When no registered report answers the question, call list_dynamic_report_models for the models \
+computed over all rows even when 'truncated' is true. A parameter that picks records, such as a \
+client or a product, takes their IDs: get them from resolve_entities with 'models' set to the \
+parameter's 'x-related-model'.
+8. When no registered report answers the question, call list_dynamic_report_models for the models \
 and fields you may use, then build a report with run_dynamic_report."""
 
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
@@ -90,12 +92,13 @@ class ReportToolsMixin:
 
     def get_dynamic_report_models(self, request) -> dict:
         """``{model: model_admin}`` a dynamic report may read: the MCP-exposed models the user may view,
-        except the user model (its rows hold password hashes)."""
+        except ``excluded_models`` and the user model (its rows hold password hashes)."""
         user_model = get_user_model()
         return {
             model: model_admin
             for model, model_admin in self.api_site.exposed_admins()
             if model is not user_model
+            and not is_excluded(self, model)
             and self.is_exposed(model_admin)
             and model_admin.has_view_or_change_permission(request)
         }
@@ -426,7 +429,9 @@ def _as_list(value) -> list:
 def list_dynamic_report_models(site, request, args) -> dict:
     admins = site.get_dynamic_report_models(request)
     scope = AdminScope(request, admins)
-    catalog = describe_dynamic_report_models(request, allowed_models=list(admins))
+    catalog = describe_dynamic_report_models(
+        request, allowed_models=list(admins), excluded_models=site.excluded_models
+    )
     for entry in catalog:
         visible = scope.visible_fields(apps.get_model(entry["identifier"]))
         entry["fields"] = [field for field in entry["fields"] if field["name"] in visible]
@@ -445,7 +450,11 @@ def dynamic_report(site, request, args) -> dict:
     scope.check_spec(spec)
     try:
         full_response = run_dynamic_report(
-            spec, request, allowed_models=list(admins), base_querysets=scope.base_querysets()
+            spec,
+            request,
+            allowed_models=list(admins),
+            excluded_models=site.excluded_models,
+            base_querysets=scope.base_querysets(),
         )
     except PermissionDenied as exc:
         raise PermissionDeniedError(str(exc) or None) from exc

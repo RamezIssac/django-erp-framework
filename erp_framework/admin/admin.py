@@ -712,6 +712,9 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
 
     def get_list_display(self, request):
         list_display = super(EntityAdmin, self).get_list_display(request)
+        if getattr(request, "is_api", False) and any(f.name == "name" for f in self.model._meta.concrete_fields):
+            # JSON/MCP list rows carry the plain name; the HTML title column is not exposed there.
+            list_display = tuple("name" if c == "get_enhanced_obj_title" else c for c in list_display)
 
         if self.enable_view_view and self.has_view_permission(request):
             list_display = ("get_stats_icon",) + list_display
