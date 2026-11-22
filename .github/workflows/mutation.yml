@@ -1,0 +1,55 @@
+name: Mutation
+
+# Report only: mutates the Python lines a PR changed and lists the survivors in the job summary.
+on:
+  pull_request:
+    branches: [develop]
+    paths: ['erp_framework/**.py', '.github/workflows/mutation.yml']
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y libmemcached-dev  # pylibmc in tests/requirements.txt
+          pip install -e . -r tests/requirements.txt "mutmut[patch]==2.5.1"
+
+      - uses: actions/cache@v4
+        with:
+          path: .mutmut-cache
+          key: mutmut-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          restore-keys: mutmut-${{ github.event.pull_request.number }}-
+
+      - name: Mutate the changed lines
+        run: |
+          git diff -U0 ${{ github.event.pull_request.base.sha }}...HEAD -- 'erp_framework/*.py' ':!erp_framework/**/migrations/*' > pr.patch
+          if ! grep -q '^+[^+]' pr.patch; then
+            echo "No Python source lines changed: nothing to mutate." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Exit code is a bitmask: 1 is a mutmut error, 2/4/8 are survivors, timeouts, suspicious.
+          mutmut run --paths-to-mutate erp_framework --use-patch-file pr.patch \
+            --runner "python tests/runtests.py --noinput --failfast" > mutmut.log 2>&1 || rc=$?
+          if [ $(( ${rc:-0} & 1 )) -ne 0 ]; then cat mutmut.log; exit 1; fi
+          read -r _ total killed timeout suspicious survived skipped < <(grep -oE '[0-9]+/[0-9]+  🎉 [0-9]+  ⏰ [0-9]+  🤔 [0-9]+  🙁 [0-9]+  🔇 [0-9]+' mutmut.log | tail -1 | grep -oE '[0-9]+' | xargs)
+          {
+            echo "## Mutation testing on the changed lines"
+            echo "Mutants: ${total:-0}, killed: ${killed:-0}, survived: ${survived:-0}, timeout: ${timeout:-0}, suspicious: ${suspicious:-0}, skipped: ${skipped:-0}"
+            if [ "${survived:-0}" -gt 0 ]; then
+              echo '```diff'
+              mutmut show all | sed -n '/^---- /,$p'
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
