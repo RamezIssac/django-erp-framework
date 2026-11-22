@@ -109,6 +109,52 @@ Tools: ``list_models``, ``describe_model``, ``list_objects``, ``get_object``,
 ``confirm``), ``run_action``. Give the agent context with ``mcp_description = "..."`` on an
 admin; hide an admin from MCP only with ``mcp_enabled = False``.
 
+Reports over MCP
+~~~~~~~~~~~~~~~~
+
+``erp_mcp_site`` also publishes the registered reports as read-only tools, through
+``erp_framework.reporting.mcp.ReportToolsMixin``. These tools need django-slick-reporting's headless
+runner (``ReportViewBase.run``), ``slick_reporting.helpers.compact_response`` and
+``slick_reporting.dynamic_report``. With a django-slick-reporting that lacks them, ``erp_mcp_site``
+publishes the admin tools only.
+
+- ``list_reports``: the reports the user may run, with code (``<base_model>.<report_slug>``),
+  title, description, base model, kind (``group``, ``series``, ``crosstab`` or ``list``) and
+  whether it filters by date.
+- ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
+  group by, date field, time series pattern and crosstab field. Foreign-key parameters take
+  primary keys of the model named in ``x-related-model``.
+- ``run_report``: runs the report through django-slick-reporting's headless runner and returns
+  ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
+  ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A foreign-key parameter
+  naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
+- ``list_dynamic_report_models``: the models and fields a dynamic report spec may use.
+- ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
+  report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
+  same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
+  never the user model (``get_dynamic_report_models(request)``). Rows follow each model admin's
+  ``get_queryset(request)``, and field paths may only use the fields the admin shows (change form,
+  readonly and ``list_display`` fields and the primary key, minus ``get_exclude(request)``).
+
+A report is listed and runnable when ``report_access_function(request, "view", report)`` passes
+and the token scopes allow ``view`` on its base model. Every registered report is exposed by
+default. Narrow it, or change the row limits, in a subclass:
+
+.. code-block:: python
+
+    from admin_api.mcp import AdminMcpSite
+    from erp_framework.reporting.mcp import ReportToolsMixin
+
+    class MyMcpSite(ReportToolsMixin, AdminMcpSite):
+        report_max_rows = 100
+        report_max_rows_cap = 500
+
+        def is_report_exposed(self, report_class):
+            return report_class.get_base_model_name() != "payroll"
+
+``get_report_description(report_class, request)`` returns ``report_description``, else the class
+docstring, else the title. Override it to give the agent more context.
+
 **Dry runs and side effects.** ``dry_run`` runs the whole changeform pipeline, including
 ``pre_save``, ``post_save`` and the ``changeform_saved`` signal, then rolls the database back.
 Side effects outside the database (e-mails, queued jobs) still happen unless you guard them:

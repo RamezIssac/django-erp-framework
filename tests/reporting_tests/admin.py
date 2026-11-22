@@ -30,7 +30,7 @@ class ProductAdmin(EntityAdmin):
 
 
 class SimpleSalesAdmin(TransactionAdmin):
-    pass
+    fields = [("slug", "date"), "client", "product", "quantity", "price", "value"]
 
 
 erp_admin_site.register(Client, ClientAdmin)

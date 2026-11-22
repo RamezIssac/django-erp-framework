@@ -2,6 +2,8 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+### Added
+- `erp_framework.reporting.mcp.ReportToolsMixin`, mixed into `ERPMcpSite`: read-only MCP tools `list_reports`, `describe_report`, `run_report`, `list_dynamic_report_models` and `run_dynamic_report`, scoped by `report_access_function`, token scopes and each model admin's `get_queryset(request)` and shown fields. They need django-slick-reporting's headless runner, `compact_response` and `dynamic_report`; without them `ERPMcpSite` publishes the admin tools only. See the API docs, "Reports over MCP".
 
 ## [1.8.0] - 2026-11-19
 ### Security
