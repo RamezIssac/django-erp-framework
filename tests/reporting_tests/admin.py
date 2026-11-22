@@ -18,6 +18,7 @@ from .models import (
     InvoiceLine,
     JournalItem,
     Journal,
+    RushOrder,
 )
 
 
@@ -77,3 +78,6 @@ class MovementPrepopulatedAdmin(GridAutosaveAdminMixin, HeaderLookupAdminMixin, 
 
 
 erp_admin_site.register(Journal, MovementPrepopulatedAdmin)
+
+
+erp_admin_site.register(RushOrder)

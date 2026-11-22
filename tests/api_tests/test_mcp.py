@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import unittest
+from unittest import mock
 
 from django.contrib.admin.models import LogEntry
 from django.contrib.auth import get_user_model
@@ -10,8 +11,9 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 from reversion.models import Version
 
-from erp_framework.admin.admin import changeform_saved
+from erp_framework.admin.admin import ChangeformResult, changeform_saved
 from erp_framework.api import erp_mcp_site
+from erp_framework.sites import erp_admin_site
 
 from . import admin as api_admin
 from .models import Customer, Item, Order, OrderLine
@@ -80,16 +82,12 @@ class ErpMcpTests(TestCase):
         self.assertEqual(order.owner, self.user)
         self.assertEqual(Version.objects.get_for_object(order).count(), 1)
 
-    def test_dry_run_runs_hooks_then_rolls_back(self):
+    def test_dry_run_validates_without_saving(self):
         out, err = self.call("create_object", {"model": "api_tests.order", "data": self.order_data(), "dry_run": True})
         self.assertFalse(err, out)
-        self.assertTrue(out["valid"])
-        self.assertEqual(out["object"]["value"], "20.00")
-        self.assertEqual(
-            api_admin.calls, [("whole_changeform_validation", True), ("pre_save", False), ("post_save", False)]
-        )
-        # the signal fires during a dry run; receivers can tell from request.is_dry_run
-        self.assertEqual(self.signals, [("Order", True, True)])
+        self.assertEqual(out, {"dry_run": True, "valid": True, "note": out["note"]})
+        self.assertEqual(api_admin.calls, [("whole_changeform_validation", True)])
+        self.assertEqual(self.signals, [])
         self.assertFalse(Order.objects.exists())
         self.assertFalse(OrderLine.objects.exists())
         self.assertFalse(LogEntry.objects.exists())
@@ -109,6 +107,16 @@ class ErpMcpTests(TestCase):
             },
         )
         self.assertEqual(self.signals, [])
+
+    def test_dry_run_reports_form_errors(self):
+        out, err = self.call("create_object", {"model": "api_tests.order", "data": self.order_data(customer=None), "dry_run": True})
+        self.assertEqual((out["valid"], list(out["errors"]["fields"])), (False, ["customer"]))
+
+    def test_rejected_change_returns_no_object(self):
+        model_admin = erp_admin_site._registry[Order]
+        rejected = ChangeformResult(False, Order(), form=None)
+        with mock.patch.object(model_admin, "validate_changeform", return_value=rejected):
+            self.assertIsNone(model_admin.process_changeform(None, None, change=False).obj)
 
     def test_rejected_write_is_an_error(self):
         out, err = self.call("create_object", {"model": "api_tests.order", "data": self.order_data(notes="reject")})

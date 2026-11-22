@@ -125,8 +125,11 @@ publishes the admin tools only.
   (``{key: label}`` of the computed columns ``run_report`` can sort by, e.g.
   ``{"__balance__": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
   ``title``, ``description``, ``base_model`` and ``base_model_name`` (the verbose name), ``kind``
-  (``group``, ``series``, ``crosstab`` or ``list``), ``date_filter``, ``balance`` (true when a column adds
-  everything before ``start_date``, such as ``__balance__``) and ``columns`` (the column labels). An
+  (``group``, ``series``, ``crosstab`` or ``list``), ``shape`` (``list``, else ``by <group_by>`` with ``__`` as a
+  space, ``x <crosstab_field>`` and the time series pattern, e.g. ``by client monthly``), ``date_filter``,
+  ``dates`` (the default ``start_date`` and ``end_date``, e.g. ``2026-01-01 to today``; ``all`` without a
+  date field), ``balance`` (true when a column adds everything before ``start_date``, such as
+  ``__balance__``) and ``columns`` (the column labels). An
   unknown field is refused with a ``help`` line naming the accepted ones.
   A parameter whose model is not exposed through MCP, or is in ``excluded_models``, is left out of ``params`` and ``params_schema``.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
@@ -143,7 +146,8 @@ publishes the admin tools only.
   takes a list of IDs is read as a one-item list. ``order_by`` takes one of the report's ``order_by``
   keys, ``-key`` for highest first, and goes to slick as ``default_order_by``; with ``max_rows`` it
   gives a top N, and ``totals`` still cover every row. Another key, or any key on a list report, is
-  refused with the keys it accepts. A foreign-key parameter
+  refused with the keys it accepts. On a time series, ``period`` (or ``__period__``) is accepted and
+  keeps the report's own order: the period columns run oldest first. A foreign-key parameter
   naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
   See `Row policy and help lines`_ for ``help``, ``total_columns`` and ``summary_report``.
 - ``list_dynamic_report_models``: the models and fields a dynamic report spec may use, each with its
@@ -151,11 +155,28 @@ publishes the admin tools only.
   (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``), ``spec_guide`` and ``spec_example``.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec and returns the
-  same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
+  same shape as ``run_report``; with ``group_by``, each row starts with its group's label. The spec may only read the MCP-exposed models the user may view,
   never the user model nor the site's ``excluded_models`` (``get_dynamic_report_models(request)``).
   Rows follow each model admin's ``get_queryset(request)``, and field paths may only use the fields
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
-  ``get_exclude(request)``).
+  ``get_exclude(request)``). On a multi-table inheritance child the parent's primary key (``id``)
+  counts as the primary key, so ``{"method": "Count", "field": "id"}`` counts its rows.
+  ``order_by``, next to ``spec``, sorts the rows by a result column name (``-name`` for highest first, empty
+  cells last); with ``max_rows`` it gives a top N. ``max_rows`` defaults to 50 as for ``run_report``, and a
+  spec with ``time_series_pattern`` accepts ``period`` as ``run_report`` does. Cut rows carry ``help`` as for ``run_report``: the
+  row count, ``order_by`` on the first number column for a top N (for a ``list`` spec, the ``aggregate``
+  spec with a ``Sum`` of it) and ``max_rows`` for more rows. An ``unknown_field`` error carries a ``help`` line:
+  the spec with each name in ``time_series_columns`` or ``crosstab_columns`` replaced by the ``columns``
+  aggregation of that name, else a ``Sum`` of that field.
+  Its description, built per request by ``get_dynamic_report_catalog(request, room)``, carries the spec
+  grammar (``spec_guide``: kinds, aggregation methods, time series patterns), ``spec_example`` and one
+  line per model the user may read: ``label (name): field, number#, date@, relation>label|description``,
+  with each label in the lowercase ``app_label.model_name`` form of ``list_models`` and ``resolve_entities``
+  when that fits in ``report_tool_description_max_chars``, else only the number, date and relation
+  fields, else the labels and descriptions, else the labels alone, else the agent calls
+  ``list_dynamic_report_models``. The description is the site's ``get_model_description`` (the admin's
+  ``mcp_description``), also returned by ``list_dynamic_report_models``; ``(name)`` is left out when the
+  verbose name is the model name without spaces (``store.salesreturn``, ``sales return``).
 
 A report is listed and runnable when ``is_report_exposed(report)`` allows it,
 ``report_access_function(request, "view", report)`` passes and the token scopes allow ``view`` on its
@@ -167,11 +188,14 @@ typed names with ``resolve_entities``, then call ``run_report``. ``run_report``'
 request by ``get_report_catalog(request, room)``, ends with a catalog: one line per report the user may
 run, when there are at most ``report_catalog_max`` (40) of them. The whole description stays within
 ``report_tool_description_max_chars`` (4096). Each line is enough for a plain run:
-``code: description | params ... | order_by key=label | balance`` when that fits, else
-``code: question | params ... | order_by keys`` with the short question, else
-``code | params ... | order_by keys``, else the code alone, else the catalog is left out and the agent
-calls ``list_reports``. The description says the listed params and ``order_by`` keys are complete and
-optional, with their defaults, and to call ``describe_report`` only for a parameter a line does not list.
+``code: description|shape|params ...|order_by key=label|balance`` when that fits, else
+``code: question|shape|params ...|order_by keys`` with the short question, else
+``code|shape|params ...|order_by keys``, else the code alone, else the catalog is left out and the
+agent calls ``list_reports``. A grouped report without ``order_by`` keys says ``no order_by``. The header
+names the default dates most reports share as a default (``Without start_date/end_date a report covers
+2026-01-01 to today; any other window works.``); a line whose report differs ends with its own
+``dates``. The description says to run a listed report directly, and that ``describe_report`` only adds
+its columns.
 
 Claude Code keeps 4,096 characters of server instructions and of each tool description (16,384 once
 the tool is loaded through tool search). The instructions keep only the routing rules.
@@ -213,10 +237,13 @@ A list report that declares ``total_columns`` and is run without ``max_rows`` ov
 ``report_max_rows`` rows returns its ``totals`` and its first ``report_summary_rows`` (10) rows.
 An explicit ``max_rows`` returns that many rows, up to the cap.
 
-``run_report`` adds ``help`` (a list of lines) when no row matches or when the default ``max_rows``
-cut the rows. On a cut, the lines name ``order_by`` and ``max_rows`` for a top N (reports with
-``order_by`` keys), a ``params`` filter for one record, the ``summary_report`` and ``max_rows`` for more
-rows. With no rows, they name the date window to widen and the record filters to drop. Errors carry
+``run_report`` adds ``help`` (a list of lines) when no row matches or when rows are cut, except for a
+top N asked with ``order_by`` and ``max_rows``. On a cut, the first line gives the rows shown and the
+row count (``2 of 4094 rows shown; totals cover all 4094.``), then the lines name ``order_by`` and
+``max_rows`` for a top N (reports with ``order_by`` keys, when no ``order_by`` was given), a ``params``
+filter for one record, the ``summary_report`` (else, without ``order_by`` keys, a ``run_dynamic_report``
+aggregate on the report model) and, when the default ``max_rows`` cut the rows,
+``max_rows`` for more rows. With no rows, they name the date window to widen and the record filters to drop. Errors carry
 ``help`` too: the closest report code for an unknown one, and the corrected ``run_report`` call for an
 unknown parameter, a bad ID or an unknown ``order_by`` key.
 
@@ -225,17 +252,14 @@ catalog), else the title. ``get_report_description(report_class, request)`` retu
 ``report_description``, else the class docstring, else the title. Override either to give the agent
 more context.
 
-**Dry runs and side effects.** ``dry_run`` runs the whole changeform pipeline, including
-``pre_save``, ``post_save`` and the ``changeform_saved`` signal, then rolls the database back.
-Side effects outside the database (e-mails, queued jobs) still happen unless you guard them:
-use ``transaction.on_commit`` (discarded by a dry run), or check ``request.is_dry_run``. The
-``changeform_saved`` signal now passes ``request`` for this purpose:
+**Dry runs and side effects.** ``dry_run`` validates only: it runs ``EntityAdmin.validate_changeform``
+(the change form, its inlines and ``whole_changeform_validation``) and saves nothing. ``pre_save``,
+``post_save`` and the ``changeform_saved`` signal run on the real write only. The signal passes
+``request``; send e-mails and queue jobs from ``transaction.on_commit``:
 
 .. code-block:: python
 
     @receiver(changeform_saved)
     def notify(sender, instance, created, request=None, **kwargs):
-        if request is not None and request.is_dry_run:
-            return
         transaction.on_commit(lambda: send_invoice_mail(instance))
 
