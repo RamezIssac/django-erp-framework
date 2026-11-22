@@ -174,7 +174,6 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertIn("7. Reports: run_report's description lists the reports you may run", instructions)
         self.assertIn("passing resolve_entities IDs as lists", instructions)
         self.assertIn("when none fits, run_dynamic_report", instructions)
-        self.assertIn("Name reports by title, columns by label.", instructions)
         self.assertIn("Note: run the report for a kind of record ('sales by client')", instructions)
         self.assertIn("Note: answer totals and balances with a report, not summed list_objects rows", instructions)
         self.assertNotIn("look them up with list_objects", instructions)
@@ -257,7 +256,9 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertFalse(err, out)
         self.assertTrue(out["reports"])
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]))
-        with mock.patch.object(ClientTotalBalance, "base_model", None):  # scope-checked on report_model
+
+    def test_token_scope_checks_report_model_without_base_model(self):
+        with mock.patch.object(ClientTotalBalance, "base_model", None):
             out, err = self.call("list_reports", {"fields": ["base_model"]}, token=PRODUCT_TOKEN)
         self.assertFalse(err, out)
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]), out["reports"])
@@ -829,6 +830,12 @@ class ReportWordingTests(BaseTestData, TestCase):
         text = str(out.get("detail", "")) + str(out.get("fields", ""))
         for word in technical:
             self.assertNotIn(word, text)
+
+    def test_instructions_ask_for_labels_and_titles(self):
+        from erp_framework.api import erp_mcp_site
+
+        instructions = erp_mcp_site.instructions
+        self.assertIn("Name reports by title, columns by label.", instructions)
 
     def test_hidden_field_message_uses_verbose_names(self):
         hidden = ("type", "client", "value")
