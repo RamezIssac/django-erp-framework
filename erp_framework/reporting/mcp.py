@@ -53,7 +53,7 @@ from slick_reporting.dynamic_report import (
 )
 from slick_reporting.fields import ComputationField, FirstBalanceField
 from slick_reporting.generator import ReportGenerator
-from slick_reporting.helpers import compact_response, get_field_from_query_text
+from slick_reporting.helpers import compact_response, get_field_from_query_text, public_column_name
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
 
@@ -307,7 +307,7 @@ class ReportToolsMixin:
                         },
                         "order_by": {
                             "type": "string",
-                            "description": "An order_by key of the report, e.g. '-__balance__' for highest first.",
+                            "description": "An order_by key of the report, e.g. '-balance' for highest first.",
                         },
                         "max_rows": max_rows,
                     },
@@ -499,11 +499,16 @@ def column_labels(report_class) -> list:
 
 
 def order_columns(report_class) -> dict:
-    """``{key: label}`` of the computed columns slick can sort a grouped report's rows by (not list reports)."""
+    """``{key: label}`` of the computed columns slick can sort a grouped report's rows by (not list reports), keyed
+    by their names in results ('balance')."""
     if report_kind(report_class) == "list":
         return {}
     parsed = parse_columns(report_class, report_class.columns or []) or []
-    return {column["name"]: str(column["verbose_name"]) for column in parsed if column["source"] == "magic_field"}
+    return {
+        public_column_name(column["name"]): str(column["verbose_name"])
+        for column in parsed
+        if column["source"] == "magic_field"
+    }
 
 
 ENTRY_FIELDS = {
@@ -957,9 +962,11 @@ def dynamic_report(site, request, args) -> dict:
         raise error from exc
     order_by = args.get("order_by")
     if order_by:
-        check_order_by(order_by, [c["name"] for c in full_response["columns"] if c.get("visible", True) is not False])
+        shown = [c for c in full_response["columns"] if c.get("visible", True) is not False]
+        names = {public_column_name(c["name"], c.get("period")): c["name"] for c in shown}
+        check_order_by(order_by, list(names))
         data, descending = full_response["data"], order_by.startswith("-")
-        values = data[order_by.removeprefix("-")]
+        values = data[names[order_by.removeprefix("-")]]
         filled, empty = [], []
         for index, value in enumerate(values):
             (empty if value in (None, "") else filled).append(index)

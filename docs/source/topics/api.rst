@@ -122,8 +122,8 @@ publishes the admin tools only.
 - ``list_reports``: the reports the user may run. Each entry carries ``report`` (the code,
   ``<base_model>.<report_slug>``), ``question`` (the short catalog question), ``params`` (each parameter
   that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``) and ``order_by``
-  (``{key: label}`` of the computed columns ``run_report`` can sort by, e.g.
-  ``{"__balance__": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
+  (``{key: label}`` of the computed columns ``run_report`` can sort by, keyed by their names in results
+  (slick's ``public_column_name``), e.g. ``{"balance": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
   ``title``, ``description``, ``base_model`` and ``base_model_name`` (the verbose name), ``kind``
   (``group``, ``series``, ``crosstab`` or ``list``), ``shape`` (``list``, else ``by <group_by>`` with ``__`` as a
   space, ``x <crosstab_field>`` and the time series pattern, e.g. ``by client monthly``), ``date_filter``,
@@ -161,7 +161,7 @@ publishes the admin tools only.
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
   ``get_exclude(request)``). On a multi-table inheritance child the parent's primary key (``id``)
   counts as the primary key, so ``{"method": "Count", "field": "id"}`` counts its rows.
-  ``order_by``, next to ``spec``, sorts the rows by a result column (``-name`` for highest first, empty
+  ``order_by``, next to ``spec``, sorts the rows by a result column name (``-name`` for highest first, empty
   cells last); with ``max_rows`` it gives a top N. ``max_rows`` defaults to 50 as for ``run_report``, and a
   spec with ``time_series_pattern`` accepts ``period`` as ``run_report`` does. Cut rows carry ``help`` as for ``run_report``: the
   row count, ``order_by`` on the first number column for a top N (for a ``list`` spec, the ``aggregate``
