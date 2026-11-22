@@ -31,6 +31,7 @@ from django.core.exceptions import (
     PermissionDenied,
     ValidationError,
 )
+from django.utils.text import camel_case_to_spaces
 from django.utils.translation import gettext
 
 from admin_api import scopes
@@ -77,11 +78,10 @@ what the report leaves out."""
 # Catalog detail levels, richest first: run_report's description uses the first that fits.
 # {dates} is the default date range most reports share; a line names its own only when it differs.
 CATALOG_HEADERS = {
-    "questions": "Reports you may run, dates {dates} (code: question | shape | params | order_by key=label | "
+    "questions": "Reports you may run, dates {dates} (code: question|shape|params|order_by key=label|"
     "balance = includes all before start_date):",
-    "short": "Reports you may run, dates {dates} (code: question | shape | params | order_by keys):",
-    "params": "Reports you may run, dates {dates} (code | shape | params | order_by keys; list_reports has the "
-    "questions):",
+    "short": "Reports you may run, dates {dates} (code: question|shape|params|order_by keys):",
+    "params": "Reports you may run, dates {dates} (code|shape|params|order_by keys; list_reports has the questions):",
     "codes": "Reports you may run (codes; list_reports has questions, params and order_by keys):",
 }
 
@@ -123,10 +123,13 @@ RUN_DYNAMIC_REPORT_DESCRIPTION = (
 )
 # Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
 DYNAMIC_CATALOG_HEADERS = {
-    "fields": "Kinds of record you may report on (report_model (name): fields; # number, @ date, > relation to):",
-    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields; "
-    "list_dynamic_report_models has the rest):",
-    "models": "Kinds of record you may report on (list_dynamic_report_models has their fields):",
+    "fields": "Kinds of record you may report on (report_model (name): fields | description; # number, @ date, "
+    "> relation to):",
+    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields "
+    "| description; list_dynamic_report_models has the rest):",
+    "models": "Kinds of record you may report on (report_model (name) | description; list_dynamic_report_models "
+    "has their fields):",
+    "names": "Kinds of record you may report on (list_dynamic_report_models has their fields and descriptions):",
 }
 
 # list_reports fields: the defaults route a question to a run, the others come with 'fields'.
@@ -532,7 +535,7 @@ def catalog_line(entry, detail="questions") -> str:
         parts = [f"{entry['report']}: {' '.join(text.split())}"]
     parts.append(entry["shape"])
     if entry["params"]:
-        parts.append("params " + ", ".join(entry["params"]))
+        parts.append(", ".join(entry["params"]))
     if entry["order_by"]:
         keys = entry["order_by"].items() if detail == "questions" else ((key, None) for key in entry["order_by"])
         parts.append("order_by " + ", ".join(key if label is None else f"{key}={label}" for key, label in keys))
@@ -540,21 +543,26 @@ def catalog_line(entry, detail="questions") -> str:
         parts.append("balance")
     if entry["dates"]:
         parts.append(f"dates {entry['dates']}")
-    return " | ".join(parts)
+    return "|".join(parts)
 
 
 def dynamic_catalog_line(entry, detail) -> str:
-    """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``."""
-    line = f"{entry['identifier']} ({entry['verbose_name']})"
-    if detail == "models":
+    """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``;
+    the name only when it is not the model's own name in words."""
+    line = entry["identifier"]
+    if entry["verbose_name"].lower() != camel_case_to_spaces(line.rpartition(".")[2]):
+        line += f" ({entry['verbose_name']})"
+    if detail == "names":
         return line
     names = []
-    for field in entry["fields"]:
+    for field in entry["fields"] if detail != "models" else ():
         relation = f">{field['related_model']}" if field["is_relation"] else ""
         mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
         if detail == "fields" or mark:
             names.append(field["name"] + mark)
-    return f"{line}: {', '.join(names)}" if names else line
+    line = f"{line}: {', '.join(names)}" if names else line
+    description = entry.get("description")
+    return f"{line} | {' '.join(description.split())}" if description else line
 
 
 def fit_catalog(headers, line, entries, room) -> str:
@@ -876,8 +884,12 @@ def list_dynamic_report_models(site, request, args) -> dict:
         request, allowed_models=list(admins), excluded_models=site.excluded_models
     )
     for entry in catalog:
-        visible = scope.visible_fields(apps.get_model(entry["identifier"]))
+        model = apps.get_model(entry["identifier"])
+        visible = scope.visible_fields(model)
         entry["fields"] = [field for field in entry["fields"] if field["name"] in visible]
+        description = site.get_model_description(admins[model], request)
+        if description:
+            entry["description"] = description
     return {"models": catalog, "spec_schema": SPEC_SCHEMA, "spec_guide": SPEC_GUIDE, "spec_example": SPEC_EXAMPLE}
 
 

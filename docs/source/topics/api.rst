@@ -166,9 +166,12 @@ publishes the admin tools only.
   aggregation of that name, else a ``Sum`` of that field.
   Its description, built per request by ``get_dynamic_report_catalog(request, room)``, carries the spec
   grammar (``spec_guide``: kinds, aggregation methods, time series patterns), ``spec_example`` and one
-  line per model the user may read: ``label (name): field, number#, date@, relation>label`` when that
-  fits in ``report_tool_description_max_chars``, else only the number, date and relation fields, else
-  the labels alone, else the agent calls ``list_dynamic_report_models``.
+  line per model the user may read: ``label (name): field, number#, date@, relation>label | description``
+  when that fits in ``report_tool_description_max_chars``, else only the number, date and relation
+  fields, else the labels and descriptions, else the labels alone, else the agent calls
+  ``list_dynamic_report_models``. The description is the site's ``get_model_description`` (the admin's
+  ``mcp_description``), also returned by ``list_dynamic_report_models``; ``(name)`` is left out when the
+  verbose name is the model name in words (``store.SalesReturn``, ``sales return``).
 
 A report is listed and runnable when ``is_report_exposed(report)`` allows it,
 ``report_access_function(request, "view", report)`` passes and the token scopes allow ``view`` on its
@@ -180,9 +183,9 @@ typed names with ``resolve_entities``, then call ``run_report``. ``run_report``'
 request by ``get_report_catalog(request, room)``, ends with a catalog: one line per report the user may
 run, when there are at most ``report_catalog_max`` (40) of them. The whole description stays within
 ``report_tool_description_max_chars`` (4096). Each line is enough for a plain run:
-``code: description | shape | params ... | order_by key=label | balance`` when that fits, else
-``code: question | shape | params ... | order_by keys`` with the short question, else
-``code | shape | params ... | order_by keys``, else the code alone, else the catalog is left out and the
+``code: description|shape|params ...|order_by key=label|balance`` when that fits, else
+``code: question|shape|params ...|order_by keys`` with the short question, else
+``code|shape|params ...|order_by keys``, else the code alone, else the catalog is left out and the
 agent calls ``list_reports``. The header names the default dates most reports share
 (``Reports you may run, dates 2026-01-01 to today``); a line whose report differs ends with its own
 ``dates``. The description says the lines carry each report's shape, params, ``order_by`` keys and
