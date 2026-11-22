@@ -8,10 +8,9 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. ``run_report``'s description carries a catalog of the reports the user may
-run, sized to fit ``report_tool_description_max_chars``. Reports run through django-slick-reporting's
-headless runner and come back as compact rows plus server-side totals. This module requires django-admin-api-mcp and
-django-slick-reporting's headless runner, compact output and dynamic report; erp_framework itself does not.
+and ``run_dynamic_report``; docs/source/topics/api.rst ("Reports over MCP") describes them. ``run_report``'s
+description carries a catalog of the reports the user may run. This module requires django-admin-api-mcp
+and django-slick-reporting; erp_framework itself does not.
 """
 
 import copy
@@ -31,10 +30,12 @@ from django.utils.translation import gettext
 from admin_api import scopes
 from admin_api.changelist import get_columns
 from admin_api.detail import detail_fields
-from admin_api.errors import ApiError, NotFound, PermissionDeniedError
+from admin_api.custom_views import InvalidParams
+from admin_api.errors import NotFound, PermissionDeniedError
 from admin_api.jsonschema import form_object_schema
 from admin_api.mcp.resolve import is_excluded
 from admin_api.mcp.sites import DEFAULT_INSTRUCTIONS
+from admin_api.mcp.handlers import READ as READ_ONLY
 from admin_api.mcp.tools import ToolSpec, obj
 from slick_reporting.dynamic_report import (
     DYNAMIC_REPORT_SPEC_SCHEMA,
@@ -44,7 +45,7 @@ from slick_reporting.dynamic_report import (
 )
 from slick_reporting.fields import ComputationField, FirstBalanceField
 from slick_reporting.generator import ReportGenerator
-from slick_reporting.helpers import compact_response
+from slick_reporting.helpers import compact_response, get_field_from_query_text
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
 
@@ -84,7 +85,6 @@ RUN_REPORT_DESCRIPTION = (
     "true, row_count and date_window."
 )
 
-READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
 
 REPORT_ARG = {
@@ -93,11 +93,6 @@ REPORT_ARG = {
     "(e.g. 'client.balances'). "
     "Tell the user the report's title, not its code.",
 }
-
-
-class InvalidParams(ApiError):
-    status = 400
-    code = "invalid_params"
 
 
 class ReportToolsMixin:
@@ -285,7 +280,7 @@ def report_kind(report_class) -> str:
 
 
 def model_label(model) -> str | None:
-    return f"{model._meta.app_label}.{model._meta.model_name}" if model is not None else None
+    return model._meta.label_lower if model is not None else None
 
 
 def model_name(model) -> str | None:
@@ -605,10 +600,11 @@ class AdminScope:
         errors = {}
         for key in ("date_field", "group_by", "crosstab_field"):
             self.check_path(report_model, spec.get(key), key, errors)
-        group_by_field = _field_or_none(report_model, spec.get("group_by"))
-        column_prefix = ""
-        if spec.get("kind") != "list" and getattr(group_by_field, "related_model", None) is not None:
-            column_prefix = f"{spec['group_by']}__"
+        try:
+            group_by_model = get_field_from_query_text(spec.get("group_by"), report_model).related_model
+        except (AttributeError, FieldDoesNotExist):
+            group_by_model = None
+        column_prefix = f"{spec['group_by']}__" if spec.get("kind") != "list" and group_by_model else ""
         for column in _as_list(spec.get("columns")):
             if isinstance(column, str) and column not in field_registry.get_all_report_fields_names():
                 self.check_path(report_model, f"{column_prefix}{column}", "columns", errors)
@@ -629,20 +625,6 @@ class AdminScope:
 
 def _as_list(value) -> list:
     return value if isinstance(value, list) else []
-
-
-def _field_or_none(model, path):
-    if not isinstance(path, str) or not path:
-        return None
-    for part in path.split("__"):
-        try:
-            field = model._meta.get_field(part)
-        except FieldDoesNotExist:
-            return None
-        model = field.related_model
-        if model is None:
-            break
-    return field
 
 
 def list_dynamic_report_models(site, request, args) -> dict:
