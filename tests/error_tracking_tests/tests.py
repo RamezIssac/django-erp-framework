@@ -335,6 +335,13 @@ class CustomBackendsTest(TestCase):
         self.assertEqual(RecordingBackend.started_with, {"api_key": "k1"})
         self.assertContains(response, "https://tracker.example.com/k1.js")
 
+    def test_missing_sdk_hint_without_an_extra_names_the_package(self):
+        backend = type("NoExtraBackend", (ErrorTrackingBackend,), {"sdk_module": "no_such_sdk_pkg"})({})
+        (message,) = backend.check()
+        self.assertEqual((message.id, message.hint), ("erp_framework.E010", "pip install no_such_sdk_pkg"))
+        backend.extra = "tracker"
+        self.assertEqual(backend.check()[0].hint, "pip install django-erp-framework[tracker]")
+
     def test_external_mode_renders_project_template_only(self):
         options = {"template": "error_tracking_tests/external.html", "config": {"api_key": "k2"}}
         with error_tracking("external", options):

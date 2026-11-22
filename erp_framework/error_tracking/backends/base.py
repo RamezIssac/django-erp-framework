@@ -39,7 +39,7 @@ class ErrorTrackingBackend:
             return [
                 Error(
                     f"Error tracking backend {type(self).__name__} needs {self.sdk_module}, which is not installed.",
-                    hint=f"pip install django-erp-framework[{self.extra}]",
+                    hint=f"pip install django-erp-framework[{self.extra}]" if self.extra else f"pip install {self.sdk_module}",
                     obj="ERP_FRAMEWORK_SETTINGS['error_tracking']",
                     id="erp_framework.E010",
                 )
