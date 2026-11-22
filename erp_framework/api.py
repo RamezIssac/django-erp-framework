@@ -26,7 +26,7 @@ transports::
     urlpatterns += [path("mcp/", erp_mcp_site.urls)]   # Streamable HTTP
     # stdio: ADMIN_API_TOKEN=aapi_... python manage.py mcp_serve
 
-When django-slick-reporting provides its headless runner, compact output and dynamic report, the MCP
+When django-slick-reporting provides its headless runner (with ``max_rows``), compact output and dynamic report, the MCP
 site also publishes the registered reports and ad-hoc dynamic reports as read-only tools
 (``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``,
 ``run_dynamic_report``); see :mod:`erp_framework.reporting.mcp`.
@@ -44,7 +44,7 @@ from slick_reporting.views import ReportViewBase
 from erp_framework.sites import erp_admin_site
 
 HAS_REPORT_TOOLS = (
-    hasattr(ReportViewBase, "run")
+    hasattr(ReportViewBase, "run_max_rows")
     and hasattr(slick_helpers, "compact_response")
     and find_spec("slick_reporting.dynamic_report") is not None
 )

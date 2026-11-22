@@ -115,18 +115,19 @@ Reports over MCP
 
 ``erp_mcp_site`` also publishes the registered reports as read-only tools, through
 ``erp_framework.reporting.mcp.ReportToolsMixin``. These tools need django-slick-reporting's headless
-runner (``ReportViewBase.run``), ``slick_reporting.helpers.compact_response`` and
+runner (``ReportViewBase.run`` with ``max_rows``), ``slick_reporting.helpers.compact_response`` and
 ``slick_reporting.dynamic_report``. With a django-slick-reporting that lacks them, ``erp_mcp_site``
 publishes the admin tools only.
 
-- ``list_reports``: the reports the user may run, with code (``<base_model>.<report_slug>``),
-  title, description, base model (``base_model`` path and ``base_model_name``, the verbose name),
-  kind (``group``, ``series``, ``crosstab`` or ``list``), whether it filters by date, ``params``
-  (each parameter that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``),
-  ``balance`` (true when a column adds everything before ``start_date``, such as ``__balance__``),
-  ``columns`` (the column labels), ``order_by`` (``{key: label}`` of the computed columns
-  ``run_report`` can sort by, e.g. ``{"__balance__": "Closing Total"}``; empty for list reports) and
-  ``question``, the short catalog question.
+- ``list_reports``: the reports the user may run. Each entry carries ``report`` (the code,
+  ``<base_model>.<report_slug>``), ``question`` (the short catalog question), ``params`` (each parameter
+  that picks records mapped to its model, e.g. ``{"client_id": "store.client"}``) and ``order_by``
+  (``{key: label}`` of the computed columns ``run_report`` can sort by, e.g.
+  ``{"__balance__": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
+  ``title``, ``description``, ``base_model`` and ``base_model_name`` (the verbose name), ``kind``
+  (``group``, ``series``, ``crosstab`` or ``list``), ``date_filter``, ``balance`` (true when a column adds
+  everything before ``start_date``, such as ``__balance__``) and ``columns`` (the column labels). An
+  unknown field is refused with a ``help`` line naming the accepted ones.
   A parameter whose model is not exposed through MCP, or is in ``excluded_models``, is left out of ``params`` and ``params_schema``.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
   group by, date field, time series pattern and crosstab field, with ``base_model_name`` and
@@ -137,16 +138,19 @@ publishes the admin tools only.
   errors are worded with verbose names and carry a plain ``detail``, without model paths.
 - ``run_report``: runs the report through django-slick-reporting's headless runner and returns
   ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
-  ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A single ID for a parameter that
+  ``date_window``. ``max_rows`` defaults to 50 (``report_max_rows``) and is capped at 1000
+  (``report_max_rows_cap``). A single ID for a parameter that
   takes a list of IDs is read as a one-item list. ``order_by`` takes one of the report's ``order_by``
   keys, ``-key`` for highest first, and goes to slick as ``default_order_by``; with ``max_rows`` it
   gives a top N, and ``totals`` still cover every row. Another key, or any key on a list report, is
   refused with the keys it accepts. A foreign-key parameter
   naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
+  See `Row policy and help lines`_ for ``help``, ``total_columns`` and ``summary_report``.
 - ``list_dynamic_report_models``: the models and fields a dynamic report spec may use, each with its
-  ``verbose_name``.
+  ``verbose_name``, plus the spec grammar: ``spec_schema``
+  (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``), ``spec_guide`` and ``spec_example``.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
-  report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
+  report spec and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
   never the user model nor the site's ``excluded_models`` (the same list ``resolve_entities``
   honours, passed to slick as ``excluded_models``). ``get_dynamic_report_models(request)``
@@ -191,6 +195,36 @@ Narrow the reports, or change the row limits, in a subclass:
 
         def is_report_exposed(self, report_class):
             return super().is_report_exposed(report_class) and report_class.get_base_model_name() != "payroll"
+
+Row policy and help lines
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A report class may declare two attributes for ``run_report``:
+
+.. code-block:: python
+
+    class ClientStatement(ListReportView):
+        columns = ["slug", "date", "product__name", "quantity", "price", "value"]
+        total_columns = ["value"]
+        summary_report = "client.balances"  # or the report class
+
+- ``total_columns`` (django-slick-reporting): the columns ``totals`` covers, over every row, on top of
+  slick's summable computed columns. Without it, a list report returns ``totals: {}``.
+- ``summary_report``: the code (or class) of the report that aggregates this report's rows. ``help``
+  names it when the user may run it.
+
+``run_report`` passes ``max_rows`` to slick's ``run()``: a list report builds at most that many rows and
+counts and totals all rows in the database.
+A list report that declares ``total_columns`` and is run without ``max_rows`` over more than
+``report_max_rows`` rows returns its ``totals`` and its first ``report_summary_rows`` (10) rows.
+An explicit ``max_rows`` returns that many rows, up to the cap.
+
+``run_report`` adds ``help`` (a list of lines) when no row matches or when the default ``max_rows``
+cut the rows. On a cut, the lines name ``order_by`` and ``max_rows`` for a top N (reports with
+``order_by`` keys), a ``params`` filter for one record, the ``summary_report`` and ``max_rows`` for more
+rows. With no rows, they name the date window to widen and the record filters to drop. Errors carry
+``help`` too: the closest report code for an unknown one, and the corrected ``run_report`` call for an
+unknown parameter, a bad ID or an unknown ``order_by`` key.
 
 ``get_report_question(report_class, request)`` returns ``report_question`` (5 to 8 words, for the
 catalog), else the title. ``get_report_description(report_class, request)`` returns

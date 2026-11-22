@@ -14,7 +14,7 @@ from erp_framework.reporting.models import UserReportPermission
 
 from .admin import ClientAdmin, ProductAdmin, SimpleSalesAdmin
 from .models import Client, SimpleSales
-from .reports import ClientTotalBalance
+from .reports import ClientDetailedStatement, ClientTotalBalance
 from .tests import BaseTestData, year
 
 HAS_ADMIN_API = importlib.util.find_spec("admin_api") is not None
@@ -50,7 +50,8 @@ class ReportToolsTests(BaseTestData, TestCase):
             self.assertFalse(tools[name].writes, name)
 
     def test_list_reports_entry_carries_params_and_balance(self):
-        out, err = self.call("list_reports")
+        fields = ["title", "description", "base_model", "base_model_name", "kind", "date_filter", "balance", "columns"]
+        out, err = self.call("list_reports", {"fields": fields})
         self.assertFalse(err, out)
         reports = {r["report"]: r for r in out["reports"]}
         self.assertEqual(
@@ -251,14 +252,14 @@ class ReportToolsTests(BaseTestData, TestCase):
 
     def test_model_view_permission_grants_its_reports(self):
         self.limited_user.user_permissions.add(Permission.objects.get(codename="view_client"))
-        out, err = self.call("list_reports", user=self.limited_user)
+        out, err = self.call("list_reports", {"fields": ["base_model"]}, user=self.limited_user)
         self.assertFalse(err, out)
         self.assertTrue(out["reports"])
         self.assertTrue(all(r["base_model"] == "reporting_tests.client" for r in out["reports"]))
 
     def test_token_scope_narrows_reports(self):
         token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
-        out, err = self.call("list_reports", token=token)
+        out, err = self.call("list_reports", {"fields": ["base_model"]}, token=token)
         self.assertFalse(err, out)
         self.assertTrue(out["reports"])
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]))
@@ -266,7 +267,7 @@ class ReportToolsTests(BaseTestData, TestCase):
     def test_token_scope_checks_report_model_without_base_model(self):
         token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
         with mock.patch.object(ClientTotalBalance, "base_model", None):
-            out, err = self.call("list_reports", token=token)
+            out, err = self.call("list_reports", {"fields": ["base_model"]}, token=token)
         self.assertFalse(err, out)
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]), out["reports"])
 
@@ -283,6 +284,159 @@ class ReportToolsTests(BaseTestData, TestCase):
         result = site.call_tool(request, "list_reports", {})
         self.assertFalse(result.is_error, result.data)
         self.assertTrue(all(r["report"].startswith("product.") for r in result.data["reports"]))
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class RowPolicyTests(BaseTestData, TestCase):
+    """run_report's row policy: declared totals, summary-first list reports, help lines and error help."""
+
+    call = ReportToolsTests.call
+    run_report = ReportToolsTests.run_report
+    column_names = ReportToolsTests.column_names
+
+    def small_site(self, token=None, **attrs):
+        from erp_framework.api import ERPMcpSite, erp_api_site
+
+        site = type("SmallSite", (ERPMcpSite,), attrs)(erp_api_site, name="small_mcp")
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        if token is not None:
+            request.api_token = token
+
+        def call(name, arguments):
+            result = site.call_tool(request, name, arguments)
+            self.assertFalse(result.is_error, result.data)
+            return result.data
+
+        return call
+
+    def test_default_max_rows_is_50(self):
+        from erp_framework.api import erp_mcp_site
+
+        self.assertEqual(erp_mcp_site.report_max_rows, 50)
+        tools = {t.name: t for t in erp_mcp_site.get_tools()}
+        self.assertEqual(tools["run_report"].input_schema["properties"]["max_rows"]["default"], 50)
+
+    def test_declared_total_columns_are_totalled_alone(self):
+        out = self.run_report("client.clientdetailedstatement")
+        value = self.column_names(out).index("value")
+        expected = sum(Decimal(row[value]) for row in out["rows"])
+        self.assertEqual(out["totals"], {"value": format(expected, "f")})
+
+    def test_row_limit_reaches_the_list_report_generator(self):
+        from slick_reporting.generator import ListViewReportGenerator
+
+        full = self.run_report("client.clientdetailedstatement")
+        database_totals = ListViewReportGenerator.get_database_totals
+        with mock.patch.object(
+            ListViewReportGenerator, "get_database_totals", autospec=True, side_effect=database_totals
+        ) as totals:
+            out = self.run_report("client.clientdetailedstatement", max_rows=2)
+        totals.assert_called_once()
+        self.assertEqual(len(out["rows"]), 2)
+        self.assertEqual((out["row_count"], out["totals"]), (full["row_count"], full["totals"]))
+
+    def test_summary_first_for_a_list_report_over_the_default(self):
+        call = self.small_site(report_max_rows=2, report_summary_rows=1)
+        full = self.run_report("client.clientdetailedstatement")
+        out = call("run_report", {"report": "client.clientdetailedstatement"})
+        self.assertEqual(len(out["rows"]), 1)
+        self.assertTrue(out["truncated"])
+        self.assertEqual((out["row_count"], out["totals"]), (full["row_count"], full["totals"]))
+        self.assertEqual(
+            out["help"],
+            [
+                "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
+                "For totals run client.balances (Clients Balances).",
+                "For more rows pass max_rows (up to 1000).",
+            ],
+        )
+        explicit = call("run_report", {"report": "client.clientdetailedstatement", "max_rows": 3})
+        self.assertEqual(len(explicit["rows"]), 3)
+
+    def test_a_report_without_total_columns_keeps_its_rows(self):
+        call = self.small_site(report_max_rows=2, report_summary_rows=1)
+        out = call("run_report", {"report": "client.clientdatedstatement"})
+        self.assertEqual(len(out["rows"]), 2)
+        self.assertEqual(out["totals"], {})
+
+    def test_truncated_group_report_names_top_n_and_one_record(self):
+        out = self.small_site(report_max_rows=1)("run_report", {"report": "client.balances"})
+        self.assertEqual(
+            out["help"],
+            [
+                "For a top N pass order_by='-__balance__' and max_rows=<n> (order_by keys: __balance__, __total__).",
+                "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
+                "For more rows pass max_rows (up to 1000).",
+            ],
+        )
+        top = self.run_report("client.balances", order_by="-__balance__", max_rows=1)
+        self.assertTrue(top["truncated"])
+        self.assertNotIn("help", top)
+        self.assertNotIn("help", self.run_report("client.balances"))
+
+    def test_empty_result_says_so_and_names_the_window(self):
+        out = self.run_report(
+            "client.clientdatedstatement",
+            {"client_id": [self.client1.pk], "start_date": "2001-01-01", "end_date": "2001-01-31"},
+        )
+        self.assertEqual(out["rows"], [])
+        self.assertEqual(
+            out["help"],
+            [
+                "No rows match.",
+                "Widen start_date and end_date (now 2001-01-01 to 2001-01-31) in params.",
+                "Or drop the client_id filter.",
+            ],
+        )
+
+    def test_summary_report_the_user_may_not_run_is_not_named(self):
+        token = type("Token", (), {"scopes": ["reporting_tests.client:view"], "prefix": "t"})()
+        scoped = self.small_site(token=token, report_max_rows=2, report_summary_rows=1)
+        call = self.small_site(report_max_rows=2, report_summary_rows=1)
+        with mock.patch.object(ClientDetailedStatement, "summary_report", "product.total_sales"):
+            out = scoped("run_report", {"report": "client.clientdetailedstatement"})
+            self.assertFalse([line for line in out["help"] if "product.total_sales" in line])
+            out = call("run_report", {"report": "client.clientdetailedstatement"})
+        self.assertIn("For totals run product.total_sales (Product Sales).", out["help"])
+
+    def test_unknown_report_names_the_closest_code(self):
+        out, err = self.call("run_report", {"report": "client.balance"})
+        self.assertTrue(err)
+        self.assertEqual(out["help"], ["Closest report: run_report(report='client.balances')."])
+        out, err = self.call("run_report", {"report": "zzz"})
+        self.assertEqual(out["help"], ["Call list_reports for the codes you may run."])
+
+    def test_bad_params_carry_the_fixed_call(self):
+        out, err = self.call("run_report", {"report": "client.balances", "params": {"client": [1]}})
+        self.assertTrue(err)
+        self.assertEqual(out["help"], ["run_report(report='client.balances', params={'client_id': [1]})"])
+        out, err = self.call("run_report", {"report": "client.balances", "params": {"client_id": ["x"]}})
+        self.assertEqual(
+            out["help"], ["run_report(report='client.balances', params={'client_id': ['<id from resolve_entities>']})"]
+        )
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-balance"})
+        self.assertEqual(out["help"], ["run_report(report='client.balances', order_by='-__balance__')"])
+
+    def test_list_reports_defaults_to_four_fields(self):
+        out, err = self.call("list_reports")
+        self.assertFalse(err, out)
+        self.assertEqual(
+            {r["report"]: r for r in out["reports"]}["client.balances"],
+            {
+                "report": "client.balances",
+                "question": "Clients Balances",
+                "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
+                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
+            },
+        )
+        out, err = self.call("list_reports", {"fields": ["kind"]})
+        self.assertEqual({r["report"]: r for r in out["reports"]}["client.balances"]["kind"], "group")
+        out, err = self.call("list_reports", {"fields": ["nope"]})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+        self.assertIn("'fields' takes any of: title, description", out["help"][0])
 
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
@@ -482,6 +636,28 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertEqual(out["error"], "invalid_params")
         self.assertIn("columns", out["fields"])
 
+    def test_spec_grammar_comes_with_the_models(self):
+        from erp_framework.api import erp_mcp_site
+
+        tools = {t.name: t for t in erp_mcp_site.get_tools()}
+        self.assertEqual(tools["run_dynamic_report"].input_schema["properties"]["spec"]["type"], "object")
+        self.assertNotIn("properties", tools["run_dynamic_report"].input_schema["properties"]["spec"])
+        out, err = self.call("list_dynamic_report_models")
+        self.assertFalse(err, out)
+        self.assertEqual(out["spec_schema"]["required"], ["report_model"])
+        self.assertIn("group_by", out["spec_example"])
+
+    def test_malformed_spec_types_are_invalid_params(self):
+        for spec in (
+            {**SALES_BY_CLIENT, "columns": "name"},
+            {**SALES_BY_CLIENT, "kind": 5},
+            {**SALES_BY_CLIENT, "filters": ["client_id"]},
+            {"report_model": 7},
+        ):
+            out, err = self.call("run_dynamic_report", {"spec": spec})
+            self.assertTrue(err, spec)
+            self.assertEqual(out["error"], "invalid_params", (spec, out))
+
     def test_model_outside_the_mcp_site_is_rejected(self):
         spec = {"report_model": "reporting_tests.JournalItem", "kind": "list", "columns": ["data"]}
         out, err = self.call("run_dynamic_report", {"spec": spec})
@@ -649,6 +825,19 @@ class WithoutSlickRunnerTests(BaseTestData, TestCase):
         self.assertFalse(result.is_error, result.data)
         self.assertEqual(result.data["count"], Client.objects.count())
         self.assertTrue(module.erp_api_site.urls)
+
+    def test_runner_without_max_rows_serves_admin_tools(self):
+        import erp_framework.api
+        from slick_reporting.views import ReportViewBase
+
+        spec = importlib.util.spec_from_file_location("erp_api_without_max_rows", erp_framework.api.__file__)
+        module = importlib.util.module_from_spec(spec)
+        del ReportViewBase.run_max_rows
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            ReportViewBase.run_max_rows = None
+        self.assertFalse(module.HAS_REPORT_TOOLS)
 
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
