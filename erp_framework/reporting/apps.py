@@ -56,6 +56,7 @@ def sync_reports():
 
 class ERPFrameworkReportingAppConfig(apps.AppConfig):
     name = "erp_framework.reporting"
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         super().ready()

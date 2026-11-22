@@ -18,7 +18,6 @@ from django.test import TestCase, TransactionTestCase
 from django.test.selenium import SeleniumTestCaseBase
 from django.test.utils import get_runner
 
-# from django.utils.deprecation import RemovedInDjango31Warning
 from django.utils.log import DEFAULT_LOGGING
 
 try:
@@ -29,10 +28,12 @@ else:
     # Ignore informational warnings from QuerySet.explain().
     warnings.filterwarnings("ignore", r"\(1003, *", category=MySQLdb.Warning)
 
-# Make deprecation warnings errors to ensure no usage of deprecated features.
-# warnings.simplefilter('error', RemovedInDjango31Warning)
-# Make runtime warning errors to ensure no usage of error prone patterns.
-warnings.simplefilter("error", RuntimeWarning)
+# Make deprecated features, leaked resources and error prone patterns errors.
+for category in (DeprecationWarning, PendingDeprecationWarning, ResourceWarning, RuntimeWarning):
+    warnings.simplefilter("error", category)
+# A warning raised in a finalizer (an unclosed file) cannot fail its test: fail the run.
+unraisable = []
+sys.unraisablehook = lambda hook_args: (unraisable.append(hook_args), sys.__unraisablehook__(hook_args))
 # Ignore known warnings in test dependencies.
 warnings.filterwarnings(
     "ignore", "'U' mode is deprecated", DeprecationWarning, module="docutils.io"
@@ -593,5 +594,5 @@ if __name__ == "__main__":
             options.tags,
             options.exclude_tags,
         )
-        if failures:
+        if failures or unraisable:
             sys.exit(1)
