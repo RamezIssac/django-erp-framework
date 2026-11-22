@@ -7,7 +7,12 @@ from django.db import DatabaseError, connection, models
 from django.db.models.signals import pre_migrate
 from django.test import TransactionTestCase
 
-from erp_framework.ledgers import create_ledger_views, drop_ledger_views_before_migrate
+from erp_framework.ledgers import (
+    LEDGER_PREFIX,
+    _views_and_tables,
+    create_ledger_views,
+    drop_ledger_views_before_migrate,
+)
 
 from .models import (
     Customer,
@@ -33,11 +38,8 @@ def migrate(*args):
 
 
 def ledger_views():
-    with connection.cursor() as cursor:
-        tables = connection.introspection.get_table_list(cursor)
-    return sorted(
-        t.name for t in tables if t.type == "v" and t.name.startswith("erp_ledger_")
-    )
+    views = _views_and_tables(connection)[0]
+    return sorted(v for v in views if v.startswith(LEDGER_PREFIX))
 
 
 class LedgerMigrateTests(TransactionTestCase):
@@ -109,6 +111,19 @@ class LedgerMigrateTests(TransactionTestCase):
             list(CustomerLedger.objects.values_list("type", "value")),
             [("customerpayment", 250)],
         )
+
+    def test_partial_migrate_names_skipped_sources_on_one_line(self):
+        migrate("zero")
+        output = migrate("0001")
+        line = (
+            f"  Ledger view {CUSTOMER_VIEW} skips ledger_tests.CustomerPayment, ledger_tests.Movement: "
+            "table or column not migrated yet"
+        )
+        self.assertIn(line, output.splitlines())
+        sql = StringIO()
+        call_command("rebuild_ledger_views", "--sql", stdout=sql)
+        self.assertNotIn("ledger_tests_movement", sql.getvalue())
+        self.assertIn('FROM "ledger_tests_treasurymovement"', sql.getvalue())
 
     def test_alter_of_a_source_table_with_ledgers_present(self):
         customer = Customer.objects.create(name="Acme", **self.stamp())
