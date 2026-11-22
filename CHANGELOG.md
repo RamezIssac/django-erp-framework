@@ -23,7 +23,8 @@ All notable changes to this project are/will be documented in this file.
 
 ### Fixed
 - Dynamic reports accept `Count` on `id` for a multi-table inheritance child: every concrete primary key field, the parent's included, counts as shown by the admin.
-- `run_report`'s empty-result help names an open-ended date window by slick's label ("now: From 2001-01-01"); it read "now 2001-01-01 to " with `end_date` null.
+- `run_report`'s empty-result help names an open-ended date window by slick's label ("now: From 2001-01-01", "now: As of 2001-01-31"); it read "now 2001-01-01 to " with `end_date` null and gave no widen line with `start_date` null.
+- A tool call looks its tool up by name without building the per-user catalogs of the `run_report` and `run_dynamic_report` descriptions (`ReportToolsMixin.get_tool`).
 
 ## [1.8.0] - 2026-11-19
 ### Security
