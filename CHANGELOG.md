@@ -2,6 +2,12 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+### Changed
+- `EntityAdmin` no longer sets `list_select_related = True` (deprecated in Django 6.1). The changelist joins the foreign keys named in `list_display`; set `list_select_related` on a subclass whose callables read `owner` or `lastmod_user`.
+- `EntityAdmin.get_actions()` accepts Django 6.1's `action_location` argument.
+
+### Fixed
+- `erp_framework.reporting` sets `default_auto_field = BigAutoField` to match its migrations: projects on `DEFAULT_AUTO_FIELD = AutoField` no longer get a pending migration for `GroupReportPermission.id` and `UserReportPermission.id`.
 
 ## [1.8.0] - 2026-11-19
 ### Security

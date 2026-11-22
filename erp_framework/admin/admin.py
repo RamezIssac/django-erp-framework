@@ -258,7 +258,6 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
     list_per_page = 25
     save_on_top = True
     save_as = True
-    list_select_related = True
     fields = default_fields
     list_display = ("get_enhanced_obj_title", "slug", "notes", "get_history_link")
     list_display_links = ("slug",)
@@ -700,8 +699,10 @@ class EntityAdmin(RaThemeMixin, AdminViewMixin, VersionAdmin):
             request, context, add=add, change=not add, obj=obj, form_url=form_url
         )
 
-    def get_actions(self, request):
-        actions = super(EntityAdmin, self).get_actions(request)
+    def get_actions(self, request, action_location=None):
+        # Django < 6.1 has no action_location parameter.
+        kwargs = {} if action_location is None else {"action_location": action_location}
+        actions = super().get_actions(request, **kwargs)
         if not (
             app_settings.ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL
             and request.user.is_superuser

@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django import test
 from django.contrib.admin.models import LogEntry
 from django.test import RequestFactory
@@ -10,6 +12,7 @@ from erp_framework.admin.admin import (
     RaPrePopulatedAdmin,
     TransactionAdmin,
 )
+from erp_framework.base import app_settings
 from erp_framework.sites import erp_admin_site
 from .models import Client, Product, Invoice, InvoiceLine, SaleDocType, SimpleSales
 
@@ -39,6 +42,16 @@ class TestAdminFunctionality(test.TestCase):
             reverse("erp_framework:reporting_tests_client_changelist")
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_delete_selected_needs_the_delete_all_setting(self):
+        self.client.login(username="admin", password="admin")
+        url = reverse("erp_framework:reporting_tests_client_changelist")
+        self.assertNotContains(self.client.get(url), 'value="delete_selected"')
+        with mock.patch.object(app_settings, "ERP_FRAMEWORK_ENABLE_ADMIN_DELETE_ALL", True):
+            response = self.client.get(url)
+            actions = erp_admin_site._registry[Client].get_actions(response.wsgi_request)
+        self.assertContains(response, 'value="delete_selected"')
+        self.assertIn("delete_selected", actions)
 
 
 @test.override_settings(ROOT_URLCONF="reporting_tests.urls")

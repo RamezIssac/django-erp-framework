@@ -321,6 +321,7 @@ class DocsViewTest(TestCase):
                     )
                 )
                 self.assertEqual(response.status_code, expected)
+                response.close()
 
     def test_asset_view_never_serves_markdown_sources(self):
         self.client.force_login(self.superuser)

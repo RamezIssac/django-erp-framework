@@ -242,7 +242,6 @@ class ReportTest(BaseTestData, TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        return response
 
     def test_view_filter(self):
         self.client.login(username="super", password="secret")
