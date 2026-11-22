@@ -442,8 +442,6 @@ def report_shape(report_class) -> str:
     """The catalog's shape of the report's rows: 'list', else 'by <group_by>', 'x <crosstab_field>' and the
     time series pattern."""
     kind = report_kind(report_class)
-    if kind == "list":
-        return kind
     parts = [
         f"by {report_class.group_by}" if report_class.group_by else "",
         f"x {report_class.crosstab_field}" if report_class.crosstab_field else "",

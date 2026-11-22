@@ -712,6 +712,25 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(reports["client.balances"]["question"], "Who owes us money?")
         self.assertEqual(reports["client.clientdetailedstatement"]["question"], "Client statement")
 
+    def test_report_shape_and_default_dates_edges(self):
+        import datetime
+
+        from erp_framework.reporting.mcp import default_dates, report_shape
+
+        from .reports import ClientSalesMonthlySeries
+
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        with mock.patch.object(ClientTotalBalance, "time_series_selector", True):
+            self.assertEqual(report_shape(ClientTotalBalance), "by client series")
+        with mock.patch.object(ClientTotalBalance, "group_by", None):
+            self.assertEqual(report_shape(ClientTotalBalance), "group")
+        with mock.patch.multiple(ClientTotalBalance, start_date_field_name="date", end_date_field_name="date"):
+            self.assertEqual(default_dates(request, ClientTotalBalance), f"{year}-01-01 to today")
+        own = {"start_date": datetime.date(2025, 1, 1), "end_date": None}
+        with mock.patch.object(ClientSalesMonthlySeries, "get_initial", lambda view: own):
+            self.assertEqual(default_dates(request, ClientSalesMonthlySeries), "2025-01-01 to any")
+
     def test_catalog_drops_detail_to_fit(self):
         from erp_framework.api import erp_mcp_site
 
