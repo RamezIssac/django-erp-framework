@@ -2,6 +2,7 @@
 import argparse
 import atexit
 import copy
+import importlib.util
 import os
 import shutil
 import socket
@@ -86,13 +87,10 @@ ALWAYS_MIDDLEWARE = [
 ]
 
 # django-admin-api-mcp (optional): JSON API over the erp admin site, tested in api_tests.
-try:
-    import admin_api  # noqa: F401
-except ImportError:
-    HAS_ADMIN_API = False
+HAS_ADMIN_API = importlib.util.find_spec("admin_api") is not None
+if not HAS_ADMIN_API:
     SUBDIRS_TO_SKIP.append("api_tests")
 else:
-    HAS_ADMIN_API = True
     ALWAYS_INSTALLED_APPS.append("admin_api")
     ALWAYS_MIDDLEWARE.append("admin_api.middleware.ApiRequestMiddleware")
 

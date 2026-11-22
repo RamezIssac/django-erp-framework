@@ -120,17 +120,21 @@ runner (``ReportViewBase.run``), ``slick_reporting.helpers.compact_response`` an
 publishes the admin tools only.
 
 - ``list_reports``: the reports the user may run, with code (``<base_model>.<report_slug>``),
-  title, description, base model, kind (``group``, ``series``, ``crosstab`` or ``list``) and
-  whether it filters by date.
+  title, description, base model (``base_model`` path and ``base_model_name``, the verbose name),
+  kind (``group``, ``series``, ``crosstab`` or ``list``) and whether it filters by date.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
-  group by, date field, time series pattern and crosstab field. Foreign-key parameters take
+  group by, date field, time series pattern and crosstab field, with ``base_model_name`` and
+  ``report_model_name`` next to the model paths. Foreign-key parameters take
   IDs of the model named in ``x-related-model``; the server instructions point the agent to
   ``resolve_entities`` with ``models`` set to that value to turn a typed name into IDs.
+  The instructions also ask the agent to name reports by title and records by label. Refusals and field
+  errors are worded with verbose names and carry a plain ``detail``, without model paths.
 - ``run_report``: runs the report through django-slick-reporting's headless runner and returns
   ``columns``, positional ``rows``, ``totals`` over all rows, ``row_count``, ``truncated`` and
   ``date_window``. ``max_rows`` defaults to 200 and is capped at 1000. A foreign-key parameter
   naming a row that the related model admin's ``get_queryset(request)`` hides is rejected.
-- ``list_dynamic_report_models``: the models and fields a dynamic report spec may use.
+- ``list_dynamic_report_models``: the models and fields a dynamic report spec may use, each with its
+  ``verbose_name``.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,

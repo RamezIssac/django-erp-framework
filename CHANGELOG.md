@@ -7,6 +7,9 @@ All notable changes to this project are/will be documented in this file.
 - The report tools' server instructions send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's `x-related-model`.
 - `run_dynamic_report` and `list_dynamic_report_models` honour the MCP site's `excluded_models` (also passed to slick as `excluded_models`).
 - `list_objects` rows of entity admins carry `name`: `EntityAdmin.get_list_display` swaps `get_enhanced_obj_title` for `name` on API and MCP requests.
+- `list_reports` and `describe_report` return `base_model_name` (and `report_model_name`), the verbose names next to the model paths; `list_dynamic_report_models` entries already carry `verbose_name`.
+- The report tools' instructions ask the agent to name reports by title, columns by label, kinds of record by name and records by label.
+- Report tool messages use verbose names and no model paths: a hidden field reads "Field 'Value' of Sales is not available.", and permission refusals carry a plain `detail` ("You may not view this report.").
 
 ## [1.8.0] - 2026-11-19
 ### Security

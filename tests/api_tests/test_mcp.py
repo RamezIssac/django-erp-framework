@@ -71,7 +71,7 @@ class ErpMcpTests(TestCase):
     def test_create_runs_erp_hooks(self):
         out, err = self.call("create_object", {"model": "api_tests.order", "data": self.order_data()})
         self.assertFalse(err, out)
-        order = Order.objects.get(pk=out["object"]["pk"])
+        order = Order.objects.get(pk=out["object"]["id"])
         self.assertEqual(out["object"]["value"], "20.00")  # post_save recomputed it
         self.assertEqual(
             api_admin.calls, [("whole_changeform_validation", True), ("pre_save", False), ("post_save", False)]

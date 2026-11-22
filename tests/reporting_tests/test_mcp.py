@@ -62,6 +62,7 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "title": "Clients Balances",
                 "description": "Clients Balances",
                 "base_model": "reporting_tests.client",
+                "base_model_name": "Client",
                 "kind": "group",
                 "date_filter": False,
             },
@@ -74,6 +75,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         out, err = self.call("describe_report", {"report": "product.productclientsalesmatrix"})
         self.assertFalse(err, out)
         self.assertEqual(out["kind"], "crosstab")
+        self.assertEqual((out["base_model_name"], out["report_model_name"]), ("Product", "Sale"))
         self.assertEqual(out["crosstab_field"], "client")
         self.assertEqual(out["group_by"], "client")
         self.assertEqual(out["columns"], ["slug", "name"])
@@ -157,8 +159,9 @@ class ReportToolsTests(BaseTestData, TestCase):
         instructions = erp_mcp_site.instructions
         self.assertIn("get them from resolve_entities with 'models' set to the parameter's", instructions)
         self.assertNotIn("look them up with list_objects", instructions)
-        for item in ("6.", "7.", "8."):
+        for item in ("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8."):
             self.assertEqual(instructions.count(f"\n{item} "), 1, item)
+        self.assertNotIn("primary key", instructions)
 
     def test_resolved_id_runs_the_report_within_the_admin_scope(self):
         one_client = Client.objects.filter(pk=self.client1.pk)
@@ -277,7 +280,9 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "title": "Client Sales Monthly",
                 "description": "Client Sales Monthly",
                 "base_model": "reporting_tests.client",
+                "base_model_name": "Client",
                 "report_model": "reporting_tests.simplesales",
+                "report_model_name": "Sale",
                 "kind": "series",
                 "group_by": "client",
                 "date_field": "date",
@@ -569,7 +574,7 @@ class DynamicReportToolTests(BaseTestData, TestCase):
                 self.assertEqual(self.hidden_field_keys(spec, hidden=hidden), {key: ["hidden_field"]})
 
     def test_related_model_fields_follow_the_related_admin(self):
-        message = "Field 'name' of reporting_tests.Client is not available."
+        message = "Field 'Name' of Clients is not available."
         list_spec = {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["client__name"]}
         group_spec = {"report_model": "reporting_tests.SimpleSales", "group_by": "client", "columns": ["name"]}
         for spec in (list_spec, group_spec):
@@ -589,13 +594,13 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         out, err = self.call("run_dynamic_report", {"spec": 5})
         self.assertEqual((out["error"], out["detail"]), ("invalid_params", "'spec' must be an object."))
         out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, user=self.limited_user)
-        self.assertEqual(out["detail"], "You may not view any model a dynamic report could read.")
+        self.assertEqual(out["detail"], "You may not view any kind of record a dynamic report could read.")
         out, err = self.call("run_dynamic_report", {"spec": {**SALES_BY_CLIENT, "group_by": "nope"}})
         self.assertEqual(out["detail"], "Invalid report spec.")
         denied = PermissionDenied("No view permission on reporting_tests.Client.")
         with mock.patch("erp_framework.reporting.mcp.run_dynamic_report", side_effect=denied):
             out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
-        self.assertEqual((out["error"], out["detail"]), ("permission_denied", "No view permission on reporting_tests.Client."))
+        self.assertEqual((out["error"], out["detail"]), ("permission_denied", "You may not view one of the kinds of record in this report."))
 
     def test_user_model_is_not_listed_even_when_exposed(self):
         from django.contrib.auth import get_user_model
@@ -650,7 +655,7 @@ class EntityListRowsTests(BaseTestData, TestCase):
     def test_api_list_rows_carry_the_name(self):
         out, err = self.call("list_objects", {"model": "reporting_tests.client"})
         self.assertFalse(err, out)
-        self.assertEqual(out["columns"], ["pk", "name", "slug", "notes"])
+        self.assertEqual(out["columns"], ["id", "name", "slug", "notes"])
         self.assertIn("Client 1", {row[1] for row in out["rows"]})
 
     def test_html_changelist_keeps_the_title_column(self):
@@ -684,3 +689,54 @@ class WithoutSlickRunnerTests(BaseTestData, TestCase):
         self.assertFalse(result.is_error, result.data)
         self.assertEqual(result.data["count"], Client.objects.count())
         self.assertTrue(module.erp_api_site.urls)
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class ReportWordingTests(BaseTestData, TestCase):
+    call = ReportToolsTests.call
+    grant = DynamicReportToolTests.grant
+
+    def assert_plain(self, out, *technical):
+        text = str(out.get("detail", "")) + str(out.get("fields", ""))
+        for word in technical:
+            self.assertNotIn(word, text)
+
+    def test_instructions_ask_for_labels_and_titles(self):
+        from erp_framework.api import erp_mcp_site
+
+        instructions = erp_mcp_site.instructions
+        self.assertIn("name each record by its label", instructions)
+        self.assertIn("Name a report by its 'title'", instructions)
+
+    def test_hidden_field_message_uses_verbose_names(self):
+        hidden = ("type", "client", "value")
+        spec = {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["value"]}
+        with mock.patch.object(SimpleSalesAdmin, "get_exclude", lambda admin, request, obj=None: hidden):
+            out, err = self.call("run_dynamic_report", {"spec": spec})
+        self.assertTrue(err, out)
+        message = out["fields"]["columns"][0]["message"]
+        self.assertEqual(message, f"Field 'Value' of {SimpleSales._meta.verbose_name_plural} is not available.")
+        self.assert_plain(out, "reporting_tests", "SimpleSales")
+
+    def test_permission_refusals_carry_a_plain_detail(self):
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, user=self.limited_user)
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "permission_denied")
+        self.assertEqual(out["detail"], "You may not view any kind of record a dynamic report could read.")
+
+        self.grant("view_client")
+        denied = PermissionDenied("No view on reporting_tests.client")
+        with mock.patch.object(ClientTotalBalance, "run", side_effect=denied):
+            out, err = self.call("run_report", {"report": "client.balances"}, user=self.limited_user)
+        self.assertTrue(err, out)
+        self.assertEqual(out["detail"], "You may not view this report.")
+        self.assert_plain(out, "reporting_tests")
+
+    def test_slick_permission_message_is_not_passed_through(self):
+        denied = PermissionDenied("No view permission on reporting_tests.SimpleSales.")
+        with mock.patch("erp_framework.reporting.mcp.run_dynamic_report", side_effect=denied):
+            out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
+        self.assertTrue(err, out)
+        self.assertEqual(out["detail"], "You may not view one of the kinds of record in this report.")
+        self.assert_plain(out, "reporting_tests", "SimpleSales")
