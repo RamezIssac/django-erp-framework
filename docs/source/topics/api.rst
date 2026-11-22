@@ -125,8 +125,11 @@ publishes the admin tools only.
   (``{key: label}`` of the computed columns ``run_report`` can sort by, e.g.
   ``{"__balance__": "Closing Total"}``; empty for list reports). The ``fields`` argument adds any of:
   ``title``, ``description``, ``base_model`` and ``base_model_name`` (the verbose name), ``kind``
-  (``group``, ``series``, ``crosstab`` or ``list``), ``date_filter``, ``balance`` (true when a column adds
-  everything before ``start_date``, such as ``__balance__``) and ``columns`` (the column labels). An
+  (``group``, ``series``, ``crosstab`` or ``list``), ``shape`` (``list``, else ``by <group_by>``,
+  ``x <crosstab_field>`` and the time series pattern, e.g. ``by client monthly``), ``date_filter``,
+  ``dates`` (the default ``start_date`` and ``end_date``, e.g. ``2026-01-01 to today``; ``all`` without a
+  date field), ``balance`` (true when a column adds everything before ``start_date``, such as
+  ``__balance__``) and ``columns`` (the column labels). An
   unknown field is refused with a ``help`` line naming the accepted ones.
   A parameter whose model is not exposed through MCP, or is in ``excluded_models``, is left out of ``params`` and ``params_schema``.
 - ``describe_report``: the report's parameters as JSON Schema (``params_schema``), its columns,
@@ -151,7 +154,7 @@ publishes the admin tools only.
   (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``), ``spec_guide`` and ``spec_example``.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec and returns the
-  same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
+  same shape as ``run_report``; with ``group_by``, each row carries its group's label. The spec may only read the MCP-exposed models the user may view,
   never the user model nor the site's ``excluded_models`` (``get_dynamic_report_models(request)``).
   Rows follow each model admin's ``get_queryset(request)``, and field paths may only use the fields
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
@@ -177,11 +180,13 @@ typed names with ``resolve_entities``, then call ``run_report``. ``run_report``'
 request by ``get_report_catalog(request, room)``, ends with a catalog: one line per report the user may
 run, when there are at most ``report_catalog_max`` (40) of them. The whole description stays within
 ``report_tool_description_max_chars`` (4096). Each line is enough for a plain run:
-``code: description | params ... | order_by key=label | balance`` when that fits, else
-``code: question | params ... | order_by keys`` with the short question, else
-``code | params ... | order_by keys``, else the code alone, else the catalog is left out and the agent
-calls ``list_reports``. The description says the listed params and ``order_by`` keys are complete and
-optional, with their defaults, and to call ``describe_report`` only for a parameter a line does not list.
+``code: description | shape | params ... | order_by key=label | balance`` when that fits, else
+``code: question | shape | params ... | order_by keys`` with the short question, else
+``code | shape | params ... | order_by keys``, else the code alone, else the catalog is left out and the
+agent calls ``list_reports``. The header names the default dates most reports share
+(``Reports you may run, dates 2026-01-01 to today``); a line whose report differs ends with its own
+``dates``. The description says the lines carry each report's shape, params, ``order_by`` keys and
+default dates, and that ``describe_report`` only adds its columns.
 
 Claude Code keeps 4,096 characters of server instructions and of each tool description (16,384 once
 the tool is loaded through tool search). The instructions keep only the routing rules.

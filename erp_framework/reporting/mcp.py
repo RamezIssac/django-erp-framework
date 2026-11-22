@@ -16,8 +16,10 @@ and django-slick-reporting; erp_framework itself does not.
 """
 
 import copy
+import datetime
 import difflib
 import json
+import statistics
 
 from django import forms
 from django.apps import apps
@@ -73,22 +75,24 @@ Note: answer totals and balances with a report, not summed list_objects rows, be
 what the report leaves out."""
 
 # Catalog detail levels, richest first: run_report's description uses the first that fits.
+# {dates} is the default date range most reports share; a line names its own only when it differs.
 CATALOG_HEADERS = {
-    "questions": "Reports you may run (code: question | params | order_by key=label | balance = includes all "
-    "before start_date):",
-    "short": "Reports you may run (code: question | params | order_by keys):",
-    "params": "Reports you may run (code | params | order_by keys; list_reports has the questions):",
+    "questions": "Reports you may run, dates {dates} (code: question | shape | params | order_by key=label | "
+    "balance = includes all before start_date):",
+    "short": "Reports you may run, dates {dates} (code: question | shape | params | order_by keys):",
+    "params": "Reports you may run, dates {dates} (code | shape | params | order_by keys; list_reports has the "
+    "questions):",
     "codes": "Reports you may run (codes; list_reports has questions, params and order_by keys):",
 }
 
 RUN_REPORT_DESCRIPTION = (
-    "Run a registered report. The reports below (or list_reports) show each report's params and order_by "
-    "keys in full: run one directly, and call describe_report only for a parameter it does not list. "
-    "Everything but 'report' is optional: 'params' takes the listed params as lists of IDs (omitted: every "
-    "record) plus start_date and end_date (omitted: the report's default range); 'order_by' takes one "
-    "listed key, '-key' for highest first (omitted: the report's own order); with max_rows it gives a top "
-    "N. Returns 'columns', positional 'rows', 'totals' computed over all rows even when 'truncated' is "
-    "true, row_count, date_window and, when rows are cut or none match, 'help' with the next call."
+    "Run a registered report. The reports below (or list_reports) show each report's shape, params, order_by "
+    "keys and default dates: run one directly; describe_report only adds its columns. Everything but "
+    "'report' is optional: 'params' takes the listed params as lists of IDs (omitted: every record) plus "
+    "start_date and end_date as YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first "
+    "(omitted: the report's own order); with max_rows it gives a top N. Returns 'columns', positional "
+    "'rows', 'totals' computed over all rows even when 'truncated' is true, row_count, date_window and, "
+    "when rows are cut or none match, 'help' with the next call."
 )
 
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
@@ -113,8 +117,9 @@ SPEC_EXAMPLE = {
 }
 RUN_DYNAMIC_REPORT_DESCRIPTION = (
     "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
-    "the same shape as run_report. Next to spec, order_by takes a column name ('-name' for highest first); "
-    f"with max_rows it gives a top N. Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
+    "the same shape as run_report; with group_by, each row carries its group's label. Next to spec, order_by "
+    "takes a column name ('-name' for highest first); with max_rows it gives a top N. "
+    f"Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
 )
 # Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
 DYNAMIC_CATALOG_HEADERS = {
@@ -126,7 +131,7 @@ DYNAMIC_CATALOG_HEADERS = {
 
 # list_reports fields: the defaults route a question to a run, the others come with 'fields'.
 DEFAULT_ENTRY_FIELDS = ("report", "question", "params", "order_by")
-CATALOG_ENTRY_FIELDS = ("report", "description", "question", "params", "order_by", "balance")
+CATALOG_ENTRY_FIELDS = ("report", "description", "question", "shape", "params", "order_by", "balance", "dates")
 
 REPORT_ARG = {
     "type": "string",
@@ -199,7 +204,11 @@ class ReportToolsMixin:
             if not reports or len(reports) > self.report_catalog_max:
                 return ""
             entries = [report_entry(self, request, report_class, CATALOG_ENTRY_FIELDS) for report_class in reports]
-        return fit_catalog(CATALOG_HEADERS, catalog_line, entries, room)
+        dates = statistics.mode(entry["dates"] for entry in entries)
+        for entry in entries:
+            entry["dates"] = None if entry["dates"] == dates else entry["dates"]
+        headers = {detail: header.format(dates=dates) for detail, header in CATALOG_HEADERS.items()}
+        return fit_catalog(headers, catalog_line, entries, room)
 
     def get_dynamic_report_catalog(self, request, room: int) -> str:
         """The kinds of record and fields ``request``'s user may put in a dynamic report spec, at the richest
@@ -276,8 +285,8 @@ class ReportToolsMixin:
             ToolSpec(
                 name="describe_report",
                 title="Describe a report",
-                description="A report's parameters as JSON Schema ('params_schema'), its columns, "
-                "group by, time series pattern and crosstab field.",
+                description="A report's columns and its parameters as JSON Schema ('params_schema'), plus the "
+                "group by, time series pattern and crosstab field its run_report line shows as shape.",
                 input_schema=obj({"report": REPORT_ARG}, required=["report"]),
                 handler=describe_report,
                 annotations=READ_ONLY,
@@ -429,6 +438,35 @@ def report_view(request, report_class):
     return view
 
 
+def report_shape(report_class) -> str:
+    """The catalog's shape of the report's rows: 'list', else 'by <group_by>', 'x <crosstab_field>' and the
+    time series pattern."""
+    kind = report_kind(report_class)
+    if kind == "list":
+        return kind
+    parts = [
+        f"by {report_class.group_by}" if report_class.group_by else "",
+        f"x {report_class.crosstab_field}" if report_class.crosstab_field else "",
+        str(report_class.time_series_pattern or ("series" if kind == "series" else "")),
+    ]
+    return " ".join(part for part in parts if part) or kind
+
+
+def default_dates(request, report_class) -> str:
+    """The start_date and end_date a run takes when params omit them, e.g. '2026-01-01 to today'."""
+    if not (report_class.date_field or (report_class.start_date_field_name and report_class.end_date_field_name)):
+        return "all"
+    view = report_view(request, report_class)
+    initial, fields = view.get_initial(), view.get_form_class().base_fields
+    bounds = []
+    for name in ("start_date", "end_date"):
+        value = initial.get(name, fields[name].initial) if name in fields else None
+        value = value() if callable(value) else value
+        value = value.date() if isinstance(value, datetime.datetime) else value
+        bounds.append("today" if value == datetime.date.today() else str(value or "any"))
+    return " to ".join(bounds)
+
+
 def report_entry(site, request, report_class, fields) -> dict:
     """What ``list_reports`` and the run_report catalog say about a report: ``fields`` of ``ENTRY_FIELDS``."""
     return {name: ENTRY_FIELDS[name](site, request, report_class) for name in ENTRY_FIELDS if name in fields}
@@ -475,6 +513,8 @@ ENTRY_FIELDS = {
     "base_model": lambda site, request, report_class: model_label(report_class.base_model),
     "base_model_name": lambda site, request, report_class: model_name(report_class.base_model),
     "kind": lambda site, request, report_class: report_kind(report_class),
+    "shape": lambda site, request, report_class: report_shape(report_class),
+    "dates": lambda site, request, report_class: default_dates(request, report_class),
     "date_filter": lambda site, request, report_class: bool(report_class.date_field),
     "params": lambda site, request, report_class: record_params(site, report_view(request, report_class)),
     "balance": lambda site, request, report_class: is_balance_report(report_class),
@@ -484,13 +524,15 @@ ENTRY_FIELDS = {
 
 
 def catalog_line(entry, detail="questions") -> str:
-    """The report's catalog line at ``detail``, one of ``CATALOG_HEADERS``: enough for a plain run."""
+    """The report's catalog line at ``detail``, one of ``CATALOG_HEADERS``: enough for a plain run. Its
+    ``dates`` are None when the header names them."""
     if detail == "codes":
         return entry["report"]
     parts = [entry["report"]]
     if detail in ("questions", "short"):
         text = entry["description"] if detail == "questions" else entry["question"]
         parts = [f"{entry['report']}: {' '.join(text.split())}"]
+    parts.append(entry["shape"])
     if entry["params"]:
         parts.append("params " + ", ".join(entry["params"]))
     if entry["order_by"]:
@@ -498,6 +540,8 @@ def catalog_line(entry, detail="questions") -> str:
         parts.append("order_by " + ", ".join(key if label is None else f"{key}={label}" for key, label in keys))
     if detail == "questions" and entry["balance"]:
         parts.append("balance")
+    if entry["dates"]:
+        parts.append(f"dates {entry['dates']}")
     return " | ".join(parts)
 
 

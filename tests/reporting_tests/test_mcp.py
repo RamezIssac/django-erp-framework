@@ -53,7 +53,10 @@ class ReportToolsTests(BaseTestData, TestCase):
             self.assertFalse(tools[name].writes, name)
 
     def test_list_reports_entry_carries_params_and_balance(self):
-        fields = ["title", "description", "base_model", "base_model_name", "kind", "date_filter", "balance", "columns"]
+        fields = [
+            "title", "description", "base_model", "base_model_name", "kind", "shape", "date_filter", "balance", "columns",
+            "dates",
+        ]
         out, err = self.call("list_reports", {"fields": fields})
         self.assertFalse(err, out)
         reports = {r["report"]: r for r in out["reports"]}
@@ -67,13 +70,19 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "base_model": "reporting_tests.client",
                 "base_model_name": "Client",
                 "kind": "group",
+                "shape": "by client",
                 "date_filter": False,
                 "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
                 "balance": True,
                 "columns": ["Identifier slug", "Name", "Closing Total", "Sum of value"],
                 "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
+                "dates": "all",
             },
         )
+        self.assertEqual(reports["client.clientsalesmonthlyseries"]["dates"], f"{year}-01-01 to today")
+        self.assertEqual(reports["client.clientsalesmonthlyseries"]["shape"], "by client monthly")
+        self.assertEqual(reports["product.productclientsalesmatrix"]["shape"], "by client x client")
+        self.assertEqual(reports["client.clientdetailedstatement"]["shape"], "list")
         self.assertFalse(reports["client.clientdetailedstatement"]["balance"])
         self.assertEqual(reports["client.clientdetailedstatement"]["order_by"], {})
         self.assertTrue(reports["product.productsalesmonthlyseries"]["balance"])
@@ -673,16 +682,23 @@ class ReportRoutingTests(BaseTestData, TestCase):
         from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
 
         description = self.run_report_description()
-        self.assertTrue(description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run (code: question |"))
+        self.assertTrue(
+            description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run, dates all (code: question | shape |")
+        )
         self.assertLessEqual(len(description), 4096)
-        self.assertIn("call describe_report only for a parameter it does not list", description)
+        self.assertIn("run one directly; describe_report only adds its columns", description)
         self.assertIn("Everything but 'report' is optional", description)
         self.assertIn("(omitted: the report's own order)", description)
         lines = self.catalog(description)
         self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
         self.assertIn(
-            "client.balances: Clients Balances | params client_id, product_id | "
+            "client.balances: Clients Balances | by client | params client_id, product_id | "
             "order_by __balance__=Closing Total, __total__=Sum of value | balance",
+            lines,
+        )
+        self.assertIn(
+            "client.clientdatedstatement: Client dated statement | list | params client_id, product_id | "
+            f"dates {year}-01-01 to today",
             lines,
         )
         request = RequestFactory().post("/mcp/")
@@ -703,13 +719,13 @@ class ReportRoutingTests(BaseTestData, TestCase):
         with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
             for header, line in (
                 (
-                    "Reports you may run (code: question | params | order_by keys):",
-                    "client.balances: Who owes us money? | params client_id, product_id "
+                    "Reports you may run, dates all (code: question | shape | params | order_by keys):",
+                    "client.balances: Who owes us money? | by client | params client_id, product_id "
                     "| order_by __balance__, __total__",
                 ),
                 (
-                    "Reports you may run (code | params | order_by keys;",
-                    "client.balances | params client_id, product_id | order_by __balance__, __total__",
+                    "Reports you may run, dates all (code | shape | params | order_by keys;",
+                    "client.balances | by client | params client_id, product_id | order_by __balance__, __total__",
                 ),
                 ("Reports you may run (codes;", "client.balances"),
             ):
@@ -723,28 +739,34 @@ class ReportRoutingTests(BaseTestData, TestCase):
     def test_two_dozen_reports_fit_a_tool_description(self):
         from erp_framework.api import erp_mcp_site
 
-        # 24 reports shaped like a downstream services ERP's: 32-char codes, one or two params
+        # 25 reports shaped like a downstream services ERP's: 32-char codes, one or two params, one own date range
         entries = [
             {
                 "report": f"service.service-sales-summary-{n:03d}"[:32],
                 "description": "Who are our top clients for services, by net sales in the period?",
                 "question": "Top clients by sales this year?",
+                "shape": "by service monthly" if n % 3 else "by client",
                 "params": {"client_id": "x", "service_id": "x"} if n % 2 else {"client_id": "x"},
                 "order_by": {"value__sum": "Net sales"},
                 "balance": True,
+                "dates": "all" if n == 7 else "2026-01-01 to today",
             }
-            for n in range(24)
+            for n in range(25)
         ]
-        reports = [ClientTotalBalance] * 24
+        reports = [ClientTotalBalance] * 25
         with mock.patch.object(type(erp_mcp_site), "get_reports", lambda site, request, code=None: reports), \
                 mock.patch("erp_framework.reporting.mcp.report_entry", side_effect=entries):
             description = self.run_report_description()
         self.assertLessEqual(len(description), 4096)
-        self.assertIn("\n\nReports you may run (code: question | params | order_by keys):", description)
+        self.assertIn(
+            "\n\nReports you may run, dates 2026-01-01 to today (code: question | shape | params | order_by keys):",
+            description,
+        )
         lines = self.catalog(description)
-        self.assertEqual(len(lines), 24)
-        expected_end = ": Top clients by sales this year? | params client_id | order_by value__sum"
+        self.assertEqual(len(lines), 25)
+        expected_end = ": Top clients by sales this year? | by client | params client_id | order_by value__sum"
         self.assertTrue(lines[0].endswith(expected_end), lines[0])
+        self.assertTrue(lines[7].endswith("| by service monthly | params client_id, service_id | order_by value__sum | dates all"))
 
     def test_catalog_lists_only_reports_the_user_may_run(self):
         UserReportPermission.objects.create(
@@ -754,7 +776,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
         self.assertEqual(
             lines,
             [
-                "client.balances: Clients Balances | params client_id, product_id | "
+                "client.balances: Clients Balances | by client | params client_id, product_id | "
                 "order_by __balance__=Closing Total, __total__=Sum of value | balance"
             ],
         )
@@ -969,8 +991,8 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertTrue(description.startswith(RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\nKinds of record you may report on (report_model (name): fields;"))
         self.assertIn(SPEC_GUIDE, description)
         self.assertIn(
-            "Next to spec, order_by takes a column name ('-name' for highest first); with max_rows it gives a top N. "
-            "Spec: kind 'aggregate'",
+            "Returns the same shape as run_report; with group_by, each row carries its group's label. Next to spec, "
+            "order_by takes a column name ('-name' for highest first); with max_rows it gives a top N. Spec: kind 'aggregate'",
             description,
         )
         self.assertIn(
