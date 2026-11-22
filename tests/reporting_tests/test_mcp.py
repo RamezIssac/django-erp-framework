@@ -206,7 +206,9 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertFalse(err, out)
         self.assertTrue(out["reports"])
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]))
-        with mock.patch.object(ClientTotalBalance, "base_model", None):  # scope-checked on report_model
+
+    def test_token_scope_checks_report_model_without_base_model(self):
+        with mock.patch.object(ClientTotalBalance, "base_model", None):
             out, err = self.call("list_reports", token=PRODUCT_TOKEN)
         self.assertFalse(err, out)
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]), out["reports"])
