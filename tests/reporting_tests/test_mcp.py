@@ -522,10 +522,21 @@ class RowPolicyTests(BaseTestData, TestCase):
             out["help"],
             [
                 "No rows match.",
-                "Widen start_date and end_date (now 2001-01-01 to 2001-01-31) in params.",
+                "Widen start_date and end_date in params (now: From 2001-01-01 to 2001-01-31).",
                 "Or drop the client_id filter.",
             ],
         )
+
+    def test_empty_result_with_an_open_ended_window(self):
+        def empty_help(start_date, end_date):
+            params = {"client_id": [self.client1.pk], "start_date": start_date, "end_date": end_date}
+            return self.run_report("client.clientdatedstatement", params)["help"]
+
+        self.assertEqual(
+            empty_help("2999-01-01", None),
+            ["No rows match.", "Widen start_date and end_date in params (now: From 2999-01-01).", "Or drop the client_id filter."],
+        )
+        self.assertEqual(empty_help(None, "2001-01-31"), ["No rows match.", "Or drop the client_id filter."])
 
     def test_summary_report_the_user_may_not_run_is_not_named(self):
         token = type("Token", (), {"scopes": ["reporting_tests.client:view"], "prefix": "t"})()

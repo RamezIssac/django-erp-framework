@@ -576,10 +576,7 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
         window = result["date_window"]
         lines = [gettext("No rows match.")]
         if report_class.date_field and window["start"]:
-            lines.append(
-                gettext("Widen start_date and end_date (now %(start)s to %(end)s) in params.")
-                % {"start": window["start"][:10], "end": (window["end"] or "")[:10]}
-            )
+            lines.append(gettext("Widen start_date and end_date in params (now: %(window)s).") % {"window": window["label"]})
         picked = [name for name in params if name in record_params(site, report_view(request, report_class))]
         if picked:
             lines.append(gettext("Or drop the %(names)s filter.") % {"names": ", ".join(picked)})
