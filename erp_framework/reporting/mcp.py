@@ -625,7 +625,7 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
     if result["row_count"] == 0:
         window = result["date_window"]
         lines = [gettext("No rows match.")]
-        if report_class.date_field and (window["start"] or window["end"]):
+        if window["start"] or window["end"]:
             lines.append(gettext("Widen start_date and end_date in params (now: %(window)s).") % {"window": window["label"]})
         picked = [name for name in params if name in record_params(site, report_view(request, report_class))]
         if picked:
