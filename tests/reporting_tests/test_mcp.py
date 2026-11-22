@@ -451,6 +451,7 @@ class WithoutSlickRunnerTests(BaseTestData, TestCase):
 @override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class ReportWordingTests(BaseTestData, TestCase):
     call = ReportToolsTests.call
+    grant = DynamicReportToolTests.grant
 
     def assert_plain(self, out, *technical):
         text = str(out.get("detail", "")) + str(out.get("fields", ""))
@@ -480,8 +481,7 @@ class ReportWordingTests(BaseTestData, TestCase):
         self.assertEqual(out["error"], "permission_denied")
         self.assertEqual(out["detail"], "You may not view any kind of record a dynamic report could read.")
 
-        self.limited_user.user_permissions.add(*Permission.objects.filter(codename__in=["view_client"]))
-        self.limited_user = type(self.limited_user).objects.get(pk=self.limited_user.pk)
+        self.grant("view_client")
         denied = PermissionDenied("No view on reporting_tests.client")
         with mock.patch.object(ClientTotalBalance, "run", side_effect=denied):
             out, err = self.call("run_report", {"report": "client.balances"}, user=self.limited_user)
@@ -490,12 +490,8 @@ class ReportWordingTests(BaseTestData, TestCase):
         self.assert_plain(out, "reporting_tests")
 
     def test_slick_permission_message_is_not_passed_through(self):
-        from slick_reporting import dynamic_report
-
         denied = PermissionDenied("No view permission on reporting_tests.SimpleSales.")
-        with mock.patch.object(dynamic_report, "run_dynamic_report", side_effect=denied), mock.patch(
-            "erp_framework.reporting.mcp.run_dynamic_report", side_effect=denied
-        ):
+        with mock.patch("erp_framework.reporting.mcp.run_dynamic_report", side_effect=denied):
             out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
         self.assertTrue(err, out)
         self.assertEqual(out["detail"], "You may not view one of the kinds of record in this report.")
