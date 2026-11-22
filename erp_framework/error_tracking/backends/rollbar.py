@@ -18,6 +18,8 @@ class RollbarBackend(ErrorTrackingBackend):
     sdk_module = "rollbar"
     extra = "rollbar"
     browser_template = "erp_framework/error_tracking/rollbar.html"
+    browser_keys = ("client_token", "environment", "code_version")
+    browser_requires = ("client_token",)
 
     def init_server(self):
         if not self.options.get("access_token"):
@@ -37,11 +39,3 @@ class RollbarBackend(ErrorTrackingBackend):
         got_request_exception.connect(
             report_request_exception, dispatch_uid="erp_framework.error_tracking.rollbar"
         )
-
-    def browser_config(self, request):
-        if not self.options.get("client_token"):
-            return None
-        return {
-            key: self.options.get(key, "")
-            for key in ("client_token", "environment", "code_version")
-        }

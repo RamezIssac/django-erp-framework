@@ -12,9 +12,5 @@ class ERPFrameworkConfig(AppConfig):
         from . import checks  # noqa
         from .error_tracking import get_backend
 
-        try:
-            backend = get_backend()
-        except ImportError:
-            return  # reported by the erp_framework.E011 system check
-        if backend:
+        if backend := get_backend():
             backend.init_server()

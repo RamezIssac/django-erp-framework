@@ -28,15 +28,15 @@ def check_crequest(app_configs=None, **kwargs):
 
 @register()
 def check_error_tracking(app_configs=None, **kwargs):
-    from erp_framework.error_tracking import get_backend
+    from erp_framework.error_tracking import BUILTIN_BACKENDS, get_backend
 
     try:
-        backend = get_backend()
+        backend = get_backend(fail_silently=False)
     except ImportError as error:
         return [
             Error(
                 f"Error tracking backend cannot be loaded: {error}",
-                hint="Use sentry, rollbar, newrelic, datadog, external or a dotted path to a backend class.",
+                hint=f"Use {', '.join(BUILTIN_BACKENDS)} or a dotted path to a backend class.",
                 obj="ERP_FRAMEWORK_SETTINGS['error_tracking']",
                 id="erp_framework.E011",
             )

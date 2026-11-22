@@ -1,7 +1,7 @@
-from .agent import AgentBackend
+from .base import ErrorTrackingBackend
 
 
-class NewRelicBackend(AgentBackend):
+class NewRelicBackend(ErrorTrackingBackend):
     """New Relic. The agent is configured by newrelic.ini or NEW_RELIC_* env vars.
     Option: browser_timing_header (render the browser agent header when auto-injection is off)."""
 

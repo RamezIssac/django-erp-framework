@@ -7,6 +7,8 @@ class SentryBackend(ErrorTrackingBackend):
     sdk_module = "sentry_sdk"
     extra = "sentry"
     browser_template = "erp_framework/error_tracking/sentry.html"
+    browser_keys = ("dsn", "environment", "release")
+    browser_requires = ("dsn",)
 
     def init_server(self):
         if not self.options.get("dsn"):
@@ -27,8 +29,3 @@ class SentryBackend(ErrorTrackingBackend):
         )
         # The dev server's access log repeats every 500 as a second issue.
         ignore_logger("django.channels.server")
-
-    def browser_config(self, request):
-        if not self.options.get("dsn"):
-            return None
-        return {key: self.options.get(key, "") for key in ("dsn", "environment", "release")}

@@ -12,14 +12,19 @@ BUILTIN_BACKENDS = {
 }
 
 
-def get_backend():
+def get_backend(fail_silently=True):
     """The configured backend instance, or None when error tracking is off.
 
-    Raises ImportError when `backend` names neither a built-in nor an importable class.
+    A `backend` that cannot be imported gives None, or ImportError (check E011) with fail_silently=False.
     """
     config = getattr(settings, "ERP_FRAMEWORK_SETTINGS", {}).get("error_tracking") or {}
     name = config.get("backend")
     if not name:
         return None
-    backend_class = import_string(BUILTIN_BACKENDS.get(name, name))
+    try:
+        backend_class = import_string(BUILTIN_BACKENDS.get(name, name))
+    except ImportError:
+        if fail_silently:
+            return None
+        raise
     return backend_class(config.get("options") or {})

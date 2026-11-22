@@ -5,7 +5,7 @@
     DD_RUM.init({
         applicationId: "{{ config.application_id|escapejs }}",
         clientToken: "{{ config.client_token|escapejs }}",
-        site: "{{ config.site|escapejs }}",
+        site: "{{ config.site|default:"datadoghq.com"|escapejs }}",
         service: "{{ config.service|escapejs }}" || undefined,
         env: "{{ config.env|escapejs }}" || undefined,
         version: "{{ config.version|escapejs }}" || undefined,
