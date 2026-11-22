@@ -16,8 +16,8 @@ coverage
 pyquery
 # The report JSON response is columnar since 1.5.0; tests rely on
 # ReportGenerator.columns_to_rows() shipped by that release.
-# The MCP report tools need the headless runner, compact output and dynamic report,
-# merged into feature/dynamic_dashboard; pinned to that commit.
-django-slick-reporting @ git+https://github.com/RamezIssac/django-slick-reporting.git@56527ccd37efc46a8d12df6eae687d20decf1cd5
+# The MCP report tools need the headless runner, compact output, dynamic report, total_columns and
+# run(max_rows=...) (django-slick-reporting PR 133); pinned to that commit.
+django-slick-reporting @ git+https://github.com/RamezIssac/django-slick-reporting.git@4969598e3ffedc55145367e7d35959fa21cae305
 # resolve_entities, excluded_models and the business-wording defaults (id/label keys, get_instructions, get_language) are unreleased; pinned to that commit.
 django-admin-api-mcp @ git+https://github.com/RamezIssac/django-admin-api.git@59c738ff2194e4f75cfd57a45fd6a63201108340

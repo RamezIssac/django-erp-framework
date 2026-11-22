@@ -41,7 +41,7 @@ from slick_reporting.views import ReportViewBase
 from erp_framework.sites import erp_admin_site
 
 HAS_REPORT_TOOLS = (
-    hasattr(ReportViewBase, "run")
+    hasattr(ReportViewBase, "run_max_rows")
     and hasattr(slick_helpers, "compact_response")
     and find_spec("slick_reporting.dynamic_report") is not None
 )

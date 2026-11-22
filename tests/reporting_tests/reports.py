@@ -186,6 +186,8 @@ class ClientDetailedStatement(ListReportView):
 
     group_by = None
     columns = ["slug", "date", "type", "product__name", "quantity", "price", "value"]
+    total_columns = ["value"]
+    summary_report = "client.balances"
 
 
 @register_report_view
