@@ -45,8 +45,8 @@ def describe(obj):
 def public_surface(obj, surface):
     """Map dotted path to description for every public member under obj, recursing into modules and classes."""
     for name, member in obj.members.items():
-        skipped_module = not member.is_alias and member.is_module and (name in SKIPPED_MODULES or name.startswith("test"))
-        if name.startswith("_") or skipped_module:
+        is_module = not member.is_alias and member.is_module
+        if name.startswith("_") or (is_module and (name in SKIPPED_MODULES or name.startswith("test"))):
             continue
         if obj.is_module and not member.is_public:
             continue
