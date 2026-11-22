@@ -8,22 +8,16 @@ does)::
         report_max_rows = 100
 
 The tools are ``list_reports``, ``describe_report``, ``run_report``, ``list_dynamic_report_models``
-and ``run_dynamic_report``. ``run_report``'s description carries a catalog of the reports the user may
-run, sized to fit ``report_tool_description_max_chars``. Reports run through django-slick-reporting's
-headless runner and come back as compact rows plus server-side totals, with ``help`` lines naming the
-next call when rows are cut or none match. A report class may declare:
-
-- ``total_columns`` (django-slick-reporting): the columns ``totals`` covers. A list report builds at most
-  ``max_rows`` rows and counts and totals in the database. Run without ``max_rows`` over more than
-  ``report_max_rows`` rows, it returns its totals and first ``report_summary_rows`` rows.
-- ``summary_report``: the code (or class) of the report that aggregates its rows, named in ``help``.
-
-This module requires django-admin-api-mcp and django-slick-reporting's headless runner, compact output
-and dynamic report; erp_framework itself does not.
+and ``run_dynamic_report``; docs/source/topics/api.rst ("Reports over MCP") describes them. ``run_report``'s
+description carries a catalog of the reports the user may run, and results carry ``help`` lines naming
+the next call when rows are cut or none match (``total_columns`` and ``summary_report`` on a report class
+shape them; see "Row policy and help lines" in the docs). This module requires django-admin-api-mcp
+and django-slick-reporting; erp_framework itself does not.
 """
 
 import copy
 import difflib
+import json
 
 from django import forms
 from django.apps import apps
@@ -40,20 +34,24 @@ from django.utils.translation import gettext
 from admin_api import scopes
 from admin_api.changelist import get_columns
 from admin_api.detail import detail_fields
-from admin_api.errors import ApiError, NotFound, PermissionDeniedError
+from admin_api.custom_views import InvalidParams
+from admin_api.errors import NotFound, PermissionDeniedError
 from admin_api.jsonschema import form_object_schema
 from admin_api.mcp.resolve import is_excluded
 from admin_api.mcp.sites import DEFAULT_INSTRUCTIONS
+from admin_api.mcp.handlers import READ as READ_ONLY
 from admin_api.mcp.tools import ToolSpec, obj
 from slick_reporting.dynamic_report import (
     DYNAMIC_REPORT_SPEC_SCHEMA,
     FILTER_LOOKUPS,
+    REPORTABLE_METHODS,
+    TIME_SERIES_DELTAS,
     describe_dynamic_report_models,
     run_dynamic_report,
 )
 from slick_reporting.fields import ComputationField, FirstBalanceField
 from slick_reporting.generator import ReportGenerator
-from slick_reporting.helpers import compact_response
+from slick_reporting.helpers import compact_response, get_field_from_query_text
 from slick_reporting.registry import field_registry
 from slick_reporting.views import SlickReportingListViewMixin
 
@@ -93,13 +91,13 @@ RUN_REPORT_DESCRIPTION = (
     "true, row_count, date_window and, when rows are cut or none match, 'help' with the next call."
 )
 
-READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
 SPEC_GUIDE = (
-    "kind 'aggregate' computes columns per group_by value, 'list' returns matching rows. columns are field "
-    "paths or {method, field} aggregations; optional: date_field with start_date/end_date, "
-    "time_series_pattern with time_series_columns, crosstab_field with crosstab_ids and crosstab_columns, "
-    "ORM-style filters."
+    "kind 'aggregate' (default) computes columns per group_by value, 'list' returns matching rows. columns are "
+    f"field paths or {{method, field, name}} aggregations, method one of {', '.join(sorted(REPORTABLE_METHODS))} "
+    "(Count on the primary key, e.g. 'id', counts rows); optional: date_field with start_date/end_date, "
+    f"time_series_pattern ({', '.join(sorted(TIME_SERIES_DELTAS))}) with time_series_columns, "
+    "crosstab_field with crosstab_ids and crosstab_columns, filters {'<field path>__<lookup>': value}."
 )
 SPEC_EXAMPLE = {
     "report_model": "store.SalesLine",
@@ -108,6 +106,17 @@ SPEC_EXAMPLE = {
     "date_field": "date",
     "start_date": "2026-03-01",
     "end_date": "2026-03-31",
+}
+RUN_DYNAMIC_REPORT_DESCRIPTION = (
+    "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
+    f"the same shape as run_report. Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
+)
+# Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
+DYNAMIC_CATALOG_HEADERS = {
+    "fields": "Kinds of record you may report on (report_model (name): fields; # number, @ date, > relation to):",
+    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields; "
+    "list_dynamic_report_models has the rest):",
+    "models": "Kinds of record you may report on (list_dynamic_report_models has their fields):",
 }
 
 # list_reports fields: the defaults route a question to a run, the others come with 'fields'.
@@ -120,11 +129,6 @@ REPORT_ARG = {
     "(e.g. 'client.balances'). "
     "Tell the user the report's title, not its code.",
 }
-
-
-class InvalidParams(ApiError):
-    status = 400
-    code = "invalid_params"
 
 
 class ReportToolsMixin:
@@ -190,11 +194,16 @@ class ReportToolsMixin:
             if not reports or len(reports) > self.report_catalog_max:
                 return ""
             entries = [report_entry(self, request, report_class, CATALOG_ENTRY_FIELDS) for report_class in reports]
-        for detail, header in CATALOG_HEADERS.items():
-            catalog = "\n".join([header, *(catalog_line(entry, detail) for entry in entries)])
-            if len(catalog) <= room:
-                return catalog
-        return ""
+        return fit_catalog(CATALOG_HEADERS, catalog_line, entries, room)
+
+    def get_dynamic_report_catalog(self, request, room: int) -> str:
+        """The kinds of record and fields ``request``'s user may put in a dynamic report spec, at the richest
+        ``DYNAMIC_CATALOG_HEADERS`` level that fits in ``room`` characters; empty without a user, models or fit."""
+        if not getattr(getattr(request, "user", None), "is_authenticated", False):
+            return ""
+        with self.translation_override(request):
+            models = list_dynamic_report_models(self, request, {})["models"]
+        return fit_catalog(DYNAMIC_CATALOG_HEADERS, dynamic_catalog_line, models, room) if models else ""
 
     # --- registry ------------------------------------------------------------------------------
     def get_reports(self, request, code=None) -> list:
@@ -220,12 +229,19 @@ class ReportToolsMixin:
     def get_tools(self, request=None) -> list:
         return super().get_tools(request) + self.get_report_tools(request)
 
+    def get_tool(self, name: str, request=None):
+        """Look a tool up by name without building the per-user catalogs of the report tool descriptions."""
+        tools = self.get_report_tools() if name in REPORT_TOOL_NAMES else super().get_tools(request)
+        return next((tool for tool in tools if tool.name == name), None)
+
     def get_view_tools(self, request=None, *, reserved=()) -> list:
         return super().get_view_tools(request, reserved={*reserved, *REPORT_TOOL_NAMES})
 
     def get_report_tools(self, request=None) -> list:
         room = self.report_tool_description_max_chars - len(RUN_REPORT_DESCRIPTION) - 2
-        catalog = self.get_report_catalog(request, room) if request is not None else ""
+        catalog = self.get_report_catalog(request, room)
+        dynamic_room = self.report_tool_description_max_chars - len(RUN_DYNAMIC_REPORT_DESCRIPTION) - 2
+        dynamic_catalog = self.get_dynamic_report_catalog(request, dynamic_room)
         max_rows = {
             "type": "integer",
             "minimum": 1,
@@ -297,9 +313,9 @@ class ReportToolsMixin:
             ToolSpec(
                 name="run_dynamic_report",
                 title="Create and run a report",
-                description="Build an ad-hoc report from a spec and run it, when no registered report answers "
-                "the question. list_dynamic_report_models gives the kinds of record, their fields and the spec "
-                "grammar. Returns the same shape as run_report.",
+                description=f"{RUN_DYNAMIC_REPORT_DESCRIPTION}\n\n{dynamic_catalog}"
+                if dynamic_catalog
+                else f"{RUN_DYNAMIC_REPORT_DESCRIPTION} list_dynamic_report_models gives the kinds of record.",
                 input_schema=obj(
                     {
                         "spec": {"type": "object", "description": "The report spec ('spec_schema')."},
@@ -324,7 +340,7 @@ def report_kind(report_class) -> str:
 
 
 def model_label(model) -> str | None:
-    return f"{model._meta.app_label}.{model._meta.model_name}" if model is not None else None
+    return model._meta.label_lower if model is not None else None
 
 
 def model_name(model) -> str | None:
@@ -356,13 +372,21 @@ def computation_classes(column):
             pending.extend(klass._get_required_classes())
 
 
-def is_balance_report(report_class) -> bool:
-    columns = [
+def all_columns(report_class) -> list:
+    """The report's columns, time series columns and crosstab columns."""
+    return [
         *(report_class.columns or []),
         *(report_class.time_series_columns or []),
         *(report_class.crosstab_columns or []),
     ]
-    return any(issubclass(klass, FirstBalanceField) for column in columns for klass in computation_classes(column))
+
+
+def is_balance_report(report_class) -> bool:
+    return any(
+        issubclass(klass, FirstBalanceField)
+        for column in all_columns(report_class)
+        for klass in computation_classes(column)
+    )
 
 
 def record_params(site, view) -> dict:
@@ -419,11 +443,7 @@ def parse_columns(report_class, columns) -> list | None:
 
 def column_labels(report_class) -> list:
     """The labels of the report's columns, time series columns and crosstab columns."""
-    columns = [
-        *(report_class.columns or []),
-        *(report_class.time_series_columns or []),
-        *(report_class.crosstab_columns or []),
-    ]
+    columns = all_columns(report_class)
     parsed = parse_columns(report_class, columns)
     if parsed is None:
         return [column_name(column) for column in columns]
@@ -470,6 +490,29 @@ def catalog_line(entry, detail="questions") -> str:
     if detail == "questions" and entry["balance"]:
         parts.append("balance")
     return " | ".join(parts)
+
+
+def dynamic_catalog_line(entry, detail) -> str:
+    """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``."""
+    line = f"{entry['identifier']} ({entry['verbose_name']})"
+    if detail == "models":
+        return line
+    names = []
+    for field in entry["fields"]:
+        relation = f">{field['related_model']}" if field["is_relation"] else ""
+        mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
+        if detail == "fields" or mark:
+            names.append(field["name"] + mark)
+    return f"{line}: {', '.join(names)}" if names else line
+
+
+def fit_catalog(headers, line, entries, room) -> str:
+    """The first of ``headers`` (richest first) whose catalog of ``line(entry, detail)`` fits in ``room``, else ""."""
+    for detail, header in headers.items():
+        catalog = "\n".join([header, *(line(entry, detail) for entry in entries)])
+        if len(catalog) <= room:
+            return catalog
+    return ""
 
 
 def _max_rows(site, args) -> int:
@@ -582,11 +625,8 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
     if result["row_count"] == 0:
         window = result["date_window"]
         lines = [gettext("No rows match.")]
-        if report_class.date_field and window["start"]:
-            lines.append(
-                gettext("Widen start_date and end_date (now %(start)s to %(end)s) in params.")
-                % {"start": window["start"][:10], "end": (window["end"] or "")[:10]}
-            )
+        if window["start"] or window["end"]:
+            lines.append(gettext("Widen start_date and end_date in params (now: %(window)s).") % {"window": window["label"]})
         picked = [name for name in params if name in record_params(site, report_view(request, report_class))]
         if picked:
             lines.append(gettext("Or drop the %(names)s filter.") % {"names": ", ".join(picked)})
@@ -697,7 +737,7 @@ class AdminScope:
                 *names,
                 *model_admin.get_readonly_fields(request),
                 *(column.name for column in get_columns(model_admin, request) if column.kind == "field"),
-                model._meta.pk.name,
+                *(field.name for field in model._meta.concrete_fields if field.primary_key),
             }
             self._visible[model] = shown - set(model_admin.get_exclude(request) or ())
         return self._visible[model]
@@ -742,10 +782,11 @@ class AdminScope:
         errors = {}
         for key in ("date_field", "group_by", "crosstab_field"):
             self.check_path(report_model, spec.get(key), key, errors)
-        group_by_field = _field_or_none(report_model, spec.get("group_by"))
-        column_prefix = ""
-        if spec.get("kind") != "list" and getattr(group_by_field, "related_model", None) is not None:
-            column_prefix = f"{spec['group_by']}__"
+        try:
+            group_by_model = get_field_from_query_text(spec.get("group_by"), report_model).related_model
+        except (AttributeError, FieldDoesNotExist):
+            group_by_model = None
+        column_prefix = f"{spec['group_by']}__" if spec.get("kind") != "list" and group_by_model else ""
         for column in _as_list(spec.get("columns")):
             if isinstance(column, str) and column not in field_registry.get_all_report_fields_names():
                 self.check_path(report_model, f"{column_prefix}{column}", "columns", errors)
@@ -766,20 +807,6 @@ class AdminScope:
 
 def _as_list(value) -> list:
     return value if isinstance(value, list) else []
-
-
-def _field_or_none(model, path):
-    if not isinstance(path, str) or not path:
-        return None
-    for part in path.split("__"):
-        try:
-            field = model._meta.get_field(part)
-        except FieldDoesNotExist:
-            return None
-        model = field.related_model
-        if model is None:
-            break
-    return field
 
 
 def list_dynamic_report_models(site, request, args) -> dict:

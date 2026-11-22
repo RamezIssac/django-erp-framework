@@ -97,6 +97,10 @@ class Order(models.Model):
     client = models.ForeignKey(Client, null=True, on_delete=models.CASCADE)
 
 
+class RushOrder(Order):
+    fee = models.DecimalField(max_digits=19, decimal_places=2, default=0)
+
+
 class OrderLine(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
