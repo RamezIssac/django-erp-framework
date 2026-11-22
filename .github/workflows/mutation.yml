@@ -48,6 +48,8 @@ jobs:
             echo "## Mutation testing on the changed lines"
             echo "Mutants: ${total:-0}, killed: ${killed:-0}, survived: ${survived:-0}, timeout: ${timeout:-0}, suspicious: ${suspicious:-0}, skipped: ${skipped:-0}"
             if [ "${survived:-0}" -gt 0 ]; then
+              echo
+              python -c "import sqlite3; [print(f'- mutant {i}: {f}:{n + 1}') for i, f, n in sqlite3.connect('.mutmut-cache').execute(\"SELECT m.id, f.filename, l.line_number FROM Mutant m JOIN Line l ON m.line = l.id JOIN SourceFile f ON l.sourcefile = f.id WHERE m.status = 'bad_survived'\")]"
               echo '```diff'
               mutmut show all | sed -n '/^---- /,$p'
               echo '```'
