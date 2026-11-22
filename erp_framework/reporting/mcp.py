@@ -31,6 +31,7 @@ from django.core.exceptions import (
     PermissionDenied,
     ValidationError,
 )
+from django.utils.text import camel_case_to_spaces
 from django.utils.translation import gettext
 
 from admin_api import scopes
@@ -67,8 +68,8 @@ REPORT_TOOL_NAMES = frozenset(
 REPORT_INSTRUCTIONS = """
 7. Reports: run_report's description lists the reports you may run (else call list_reports). Run one \
 with run_report, passing resolve_entities IDs as lists: {'client_id': [5]}; when none fits, \
-run_dynamic_report. For a top N, pass order_by ('-key' for highest first) and max_rows. Name reports by \
-title, columns by label.
+run_dynamic_report. For a top N or 'which X' question, run a report grouped by X with order_by ('-key' \
+for highest first) and a small max_rows, not detail rows to rank yourself. Name reports by title, columns by label.
 Note: run the report for a kind of record ('sales by client'), not resolve_entities or describe_model, \
 because it groups by it.
 Note: answer totals and balances with a report, not summed list_objects rows, because hand sums hide \
@@ -77,22 +78,21 @@ what the report leaves out."""
 # Catalog detail levels, richest first: run_report's description uses the first that fits.
 # {dates} is the default date range most reports share; a line names its own only when it differs.
 CATALOG_HEADERS = {
-    "questions": "Reports you may run, dates {dates} (code: question | shape | params | order_by key=label | "
+    "questions": "Reports you may run, dates {dates} (code: question|shape|params|order_by key=label|"
     "balance = includes all before start_date):",
-    "short": "Reports you may run, dates {dates} (code: question | shape | params | order_by keys):",
-    "params": "Reports you may run, dates {dates} (code | shape | params | order_by keys; list_reports has the "
-    "questions):",
+    "short": "Reports you may run, dates {dates} (code: question|shape|params|order_by keys):",
+    "params": "Reports you may run, dates {dates} (code|shape|params|order_by keys; list_reports has the questions):",
     "codes": "Reports you may run (codes; list_reports has questions, params and order_by keys):",
 }
 
 RUN_REPORT_DESCRIPTION = (
     "Run a registered report. The reports below (or list_reports) show each report's shape, params, order_by "
-    "keys and default dates: run one directly; describe_report only adds its columns. Everything but "
-    "'report' is optional: 'params' takes the listed params as lists of IDs (omitted: every record) plus "
-    "start_date and end_date as YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first "
-    "(omitted: the report's own order); with max_rows it gives a top N. Returns 'columns', positional "
-    "'rows', 'totals' computed over all rows even when 'truncated' is true, row_count, date_window and, "
-    "when rows are cut or none match, 'help' with the next call."
+    "keys and dates: run one directly; describe_report only adds columns. Everything but 'report' is "
+    "optional: 'params' takes the listed params as lists of IDs (omitted: every record) plus start_date and "
+    "end_date as YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first (omitted: the report's "
+    "own order). A top N or 'which X' is the report by X with order_by and max_rows N. Returns 'columns', "
+    "positional 'rows', 'totals' over all rows even when 'truncated', row_count, date_window and, when rows "
+    "are cut or none match, 'help'."
 )
 
 SPEC_SCHEMA = {k: v for k, v in DYNAMIC_REPORT_SPEC_SCHEMA.items() if k != "$schema"}
@@ -116,17 +116,20 @@ SPEC_EXAMPLE = {
     "time_series_columns": [SALES],
 }
 RUN_DYNAMIC_REPORT_DESCRIPTION = (
-    "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
-    "the same shape as run_report; with group_by, each row starts with its group's label. Next to spec, order_by "
-    "takes a column name ('-name' for highest first); with max_rows it gives a top N. "
+    "Run an ad-hoc report spec when no registered report fits. Returns the same shape as run_report; with "
+    "group_by, each row starts with its group's label. order_by takes a column name, '-name' for highest "
+    "first. A top N or 'which X' is an aggregate by X with order_by and max_rows N, not a list. "
     f"Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
 )
 # Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
 DYNAMIC_CATALOG_HEADERS = {
-    "fields": "Kinds of record you may report on (report_model (name): fields; # number, @ date, > relation to):",
-    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields; "
-    "list_dynamic_report_models has the rest):",
-    "models": "Kinds of record you may report on (list_dynamic_report_models has their fields):",
+    "fields": "Kinds of record you may report on (report_model (name): fields|description; # number, @ date, "
+    "> relation to):",
+    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields"
+    "|description; list_dynamic_report_models has the rest):",
+    "models": "Kinds of record you may report on (report_model (name)|description; list_dynamic_report_models "
+    "has their fields):",
+    "names": "Kinds of record you may report on (list_dynamic_report_models has their fields and descriptions):",
 }
 
 # list_reports fields: the defaults route a question to a run, the others come with 'fields'.
@@ -532,7 +535,7 @@ def catalog_line(entry, detail="questions") -> str:
         parts = [f"{entry['report']}: {' '.join(text.split())}"]
     parts.append(entry["shape"])
     if entry["params"]:
-        parts.append("params " + ", ".join(entry["params"]))
+        parts.append(", ".join(entry["params"]))
     if entry["order_by"]:
         keys = entry["order_by"].items() if detail == "questions" else ((key, None) for key in entry["order_by"])
         parts.append("order_by " + ", ".join(key if label is None else f"{key}={label}" for key, label in keys))
@@ -540,21 +543,27 @@ def catalog_line(entry, detail="questions") -> str:
         parts.append("balance")
     if entry["dates"]:
         parts.append(f"dates {entry['dates']}")
-    return " | ".join(parts)
+    return "|".join(parts)
 
 
 def dynamic_catalog_line(entry, detail) -> str:
-    """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``."""
-    line = f"{entry['identifier']} ({entry['verbose_name']})"
-    if detail == "models":
+    """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``;
+    the name only when it is not the model's own name in words."""
+    line = entry["identifier"]
+    if entry["verbose_name"].lower() != camel_case_to_spaces(line.rpartition(".")[2]):
+        line += f" ({entry['verbose_name']})"
+    if detail == "names":
         return line
     names = []
-    for field in entry["fields"]:
-        relation = f">{field['related_model']}" if field["is_relation"] else ""
-        mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
-        if detail == "fields" or mark:
-            names.append(field["name"] + mark)
-    return f"{line}: {', '.join(names)}" if names else line
+    if detail in ("fields", "reportable"):
+        for field in entry["fields"]:
+            relation = f">{field['related_model']}" if field["is_relation"] else ""
+            mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
+            if detail == "fields" or mark:
+                names.append(field["name"] + mark)
+    line = f"{line}: {', '.join(names)}" if names else line
+    description = entry.get("description")
+    return f"{line}|{' '.join(description.split())}" if description else line
 
 
 def fit_catalog(headers, line, entries, room) -> str:
@@ -670,9 +679,26 @@ def params_help(view, code, params, error: InvalidParams) -> list:
     return lines
 
 
-def run_report_help(site, request, report_class, result, params, order_by) -> list:
-    """The next calls when none match or the default ``max_rows`` cut the rows, from the report's order_by
-    keys, params and ``summary_report``."""
+def cut_help(site, result, args, lines) -> list:
+    """``help`` for cut rows: the row count, ``lines``, then ``max_rows`` when the default cut them; none for a
+    top N asked with order_by and max_rows."""
+    by_default = "max_rows" not in args
+    if args.get("order_by") and not by_default:
+        return []
+    counts = {"shown": len(result["rows"]), "count": result["row_count"]}
+    if result["totals"]:
+        shown = gettext("%(shown)s of %(count)s rows shown; totals cover all %(count)s.") % counts
+    else:
+        shown = gettext("%(shown)s of %(count)s rows shown.") % counts
+    cap = site.report_max_rows_cap
+    if by_default and counts["shown"] < cap:
+        lines = [*lines, gettext("For more rows pass max_rows (up to %(cap)s).") % {"cap": cap}]
+    return [shown, *lines]
+
+
+def run_report_help(site, request, report_class, result, params, args) -> list:
+    """The next calls when none match or rows are cut, from the report's order_by keys, params and
+    ``summary_report``."""
     if result["row_count"] == 0:
         window = result["date_window"]
         lines = [gettext("No rows match.")]
@@ -687,7 +713,7 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
     code = report_class.get_report_code()
     lines = []
     keys = order_columns(report_class)
-    if keys and not order_by:
+    if keys and not args.get("order_by"):
         lines.append(
             gettext("For a top N pass order_by='-%(key)s' and max_rows=<n> (order_by keys: %(keys)s).")
             % {"key": next(iter(keys)), "keys": ", ".join(keys)}
@@ -709,9 +735,13 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
             gettext("For totals run %(code)s (%(title)s).")
             % {"code": summary, "title": summary_class.get_report_title()}
         )
-    if len(result["rows"]) < site.report_max_rows_cap:
-        lines.append(gettext("For more rows pass max_rows (up to %(cap)s).") % {"cap": site.report_max_rows_cap})
-    return lines
+    if not keys and summary_class is None:
+        lines.append(
+            gettext("For a top N or totals per group run_dynamic_report on %(model)s with kind 'aggregate', group_by, "
+                    "order_by and max_rows=<n>.")
+            % {"model": report_class.get_report_model()._meta.label}
+        )
+    return cut_help(site, result, args, lines)
 
 
 def check_order_by(order_by, keys, retry=None) -> None:
@@ -765,10 +795,10 @@ def run_report(site, request, args) -> dict:
         error.extra["help"] = params_help(view, code, params, error)
         raise error from exc
     result = compact_response(full_response, max_rows=max_rows)
-    cut_by_default = result["truncated"] and "max_rows" not in args
-    if cut_by_default and report_kind(report_class) == "list" and getattr(report_class, "total_columns", None):
+    summary_first = report_kind(report_class) == "list" and getattr(report_class, "total_columns", None)
+    if result["truncated"] and "max_rows" not in args and summary_first:
         result["rows"] = result["rows"][: site.report_summary_rows]
-    help_lines = run_report_help(site, request, report_class, {**result, "truncated": cut_by_default}, params, order_by)
+    help_lines = run_report_help(site, request, report_class, result, params, args)
     return {
         "report": code,
         "title": str(report_class.get_report_title()),
@@ -876,8 +906,12 @@ def list_dynamic_report_models(site, request, args) -> dict:
         request, allowed_models=list(admins), excluded_models=site.excluded_models
     )
     for entry in catalog:
-        visible = scope.visible_fields(apps.get_model(entry["identifier"]))
+        model = apps.get_model(entry["identifier"])
+        visible = scope.visible_fields(model)
         entry["fields"] = [field for field in entry["fields"] if field["name"] in visible]
+        description = site.get_model_description(admins[model], request)
+        if description:
+            entry["description"] = description
     return {"models": catalog, "spec_schema": SPEC_SCHEMA, "spec_guide": SPEC_GUIDE, "spec_example": SPEC_EXAMPLE}
 
 
@@ -918,7 +952,30 @@ def dynamic_report(site, request, args) -> dict:
             (empty if value in (None, "") else filled).append(index)
         order = sorted(filled, key=values.__getitem__, reverse=descending) + empty
         full_response["data"] = {name: [column[index] for index in order] for name, column in data.items()}
-    return compact_response(full_response, max_rows=max_rows)
+    result = compact_response(full_response, max_rows=max_rows)
+    help_lines = dynamic_report_help(site, spec, result, args)
+    return {**result, "help": help_lines} if help_lines else result
+
+
+def dynamic_report_help(site, spec, result, args) -> list:
+    """``help`` for cut rows: a top N by the first number column (an aggregate for a list)."""
+    if not result["truncated"]:
+        return []
+    lines = []
+    number = next((c["name"] for c in result["columns"] if c["type"] == "number"), None)
+    if spec.get("kind") == "list":
+        column = number or "<number field>"
+        lines.append(
+            gettext(
+                "For a top N or totals per group use kind 'aggregate' with group_by and the column "
+                "{'method': 'Sum', 'field': '%(column)s', 'name': '%(column)s'}, then order_by='-%(column)s' "
+                "and max_rows=<n>."
+            )
+            % {"column": column}
+        )
+    elif number and not args.get("order_by"):
+        lines.append(gettext("For a top N pass order_by='-%(name)s' and max_rows=<n>.") % {"name": number})
+    return cut_help(site, result, args, lines)
 
 
 def corrected_spec_help(spec, keys) -> str:
