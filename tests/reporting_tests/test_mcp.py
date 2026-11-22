@@ -574,6 +574,51 @@ class RowPolicyTests(BaseTestData, TestCase):
         self.assertEqual(out["error"], "invalid_params")
         self.assertIn("'fields' takes any of: title, description", out["help"][0])
 
+    def test_row_policy_defaults(self):
+        from erp_framework.api import erp_mcp_site
+
+        self.assertEqual((erp_mcp_site.report_max_rows, erp_mcp_site.report_summary_rows), (50, 10))
+
+    def test_unknown_list_field_names_the_choices(self):
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import DEFAULT_ENTRY_FIELDS, ENTRY_FIELDS
+
+        extra = [name for name in ENTRY_FIELDS if name not in DEFAULT_ENTRY_FIELDS]
+        schema = {t.name: t.input_schema for t in erp_mcp_site.get_tools()}["list_reports"]
+        self.assertEqual(schema["properties"]["fields"]["items"], {"enum": extra})
+        out, err = self.call("list_reports", {"fields": ["nope"]})
+        self.assertEqual(out["detail"], "Unknown fields ['nope'].")
+        self.assertEqual(out["help"], [f"'fields' takes any of: {', '.join(extra)}."])
+
+    def test_unmatched_param_lists_the_report_params(self):
+        out, err = self.call("run_report", {"report": "client.balances", "params": {"zzzzzz": [1]}})
+        self.assertTrue(err)
+        self.assertEqual(out["help"], ["Parameters of this report: client_id, product_id."])
+
+    def test_empty_result_names_every_filter(self):
+        out = self.run_report(
+            "client.clientdetailedstatement", {"client_id": [self.clientIdle.pk], "product_id": [self.product1.pk]}
+        )
+        self.assertEqual(out["help"], ["No rows match.", "Or drop the client_id, product_id filter."])
+
+    def test_truncated_help_follows_the_base_model_params_and_cap(self):
+        out = self.small_site(report_max_rows=1)("run_report", {"report": "product.productclientsalesmatrix"})
+        self.assertIn("For one record pass params {'product_id': [<id>]} with an ID from resolve_entities.", out["help"])
+        clients = [self.client1.pk, self.client2.pk]
+        out = self.small_site(report_max_rows=1)("run_report", {"report": "client.balances", "params": {"client_id": clients}})
+        self.assertFalse([line for line in out["help"] if line.startswith("For one record")])
+        out = self.small_site(report_max_rows=2, report_max_rows_cap=2)("run_report", {"report": "client.balances"})
+        self.assertFalse([line for line in out["help"] if line.startswith("For more rows")])
+
+    def test_summary_report_as_a_class_and_never_itself(self):
+        call = self.small_site(report_max_rows=2, report_summary_rows=1)
+        with mock.patch.object(ClientDetailedStatement, "summary_report", ClientTotalBalance):
+            out = call("run_report", {"report": "client.clientdetailedstatement"})
+        self.assertIn("For totals run client.balances (Clients Balances).", out["help"])
+        with mock.patch.object(ClientDetailedStatement, "summary_report", "client.clientdetailedstatement"):
+            out = call("run_report", {"report": "client.clientdetailedstatement"})
+        self.assertFalse([line for line in out["help"] if line.startswith("For totals")])
+
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
 @override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
@@ -1085,6 +1130,22 @@ class EntityListRowsTests(BaseTestData, TestCase):
         list_display = erp_admin_site._registry[Client].get_list_display(request)
         self.assertIn("get_enhanced_obj_title", list_display)
         self.assertNotIn("name", list_display)
+
+    def test_spec_grammar_and_example(self):
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import SPEC_EXAMPLE, SPEC_GUIDE
+
+        out, err = self.call("list_dynamic_report_models")
+        self.assertEqual((out["spec_guide"], out["spec_example"]), (SPEC_GUIDE, SPEC_EXAMPLE))
+        self.assertIsInstance(SPEC_GUIDE, str)
+        spec = {**SPEC_EXAMPLE, "report_model": "reporting_tests.SimpleSales", "start_date": f"{year}-01-01", "end_date": f"{year}-12-31"}
+        out, err = self.call("run_dynamic_report", {"spec": spec})
+        self.assertFalse(err, out)
+        self.assertEqual([c["name"] for c in out["columns"]], ["name", "sales"])
+        example = {**SPEC_EXAMPLE, "report_model": "reporting_tests.SimpleSales"}
+        self.assertFalse(self.call("run_dynamic_report", {"spec": example})[1])
+        schema = {t.name: t.input_schema for t in erp_mcp_site.get_tools()}["run_dynamic_report"]
+        self.assertIn("description", schema["properties"]["spec"])
 
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
