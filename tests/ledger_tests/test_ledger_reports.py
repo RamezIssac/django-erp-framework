@@ -106,6 +106,9 @@ class LedgerReportTests(TestCase):
             for r in report.get_report_data()
         }
 
+    def test_views_exist_after_a_fresh_migrate(self):
+        self.assertEqual(ledger_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+
     def test_customer_balance_includes_payments_and_services(self):
         # Acme: service invoice 300, payment 250. Northwind: sales 100 + 300, return 20, payment 250.
         totals = self.debit_credit(CustomerLedger, Customer)

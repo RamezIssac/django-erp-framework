@@ -8,6 +8,8 @@ from erp_framework.ledgers import LedgerModel, build_ledger_sql, ledger_sources
 from .models import (
     Customer,
     CustomerLedger,
+    CustomerPayment,
+    Movement,
     TreasuryLedger,
     TreasuryMovement,
 )
@@ -63,19 +65,34 @@ WHERE 1 = 0""",
 }
 
 
+def backend_connection(backend):
+    return import_module(f"django.db.backends.{backend}.base").DatabaseWrapper({})
+
+
 class LedgerSqlGoldenTests(SimpleTestCase):
-    def test_vendors(self):
-        for vendor, backend in [("postgresql", "postgresql"), ("sqlite", "sqlite3")]:
-            base = import_module(f"django.db.backends.{backend}.base")
-            connection = base.DatabaseWrapper({})
-            with self.subTest(vendor):
-                self.assertEqual(
-                    build_ledger_sql(CustomerLedger, connection), CUSTOMER_LEDGER_SQL
-                )
-                self.assertEqual(
-                    build_ledger_sql(CustomerLedger, connection, []),
-                    EMPTY_CUSTOMER_LEDGER_SQL[vendor],
-                )
+    def test_postgresql(self):
+        self.assertEqual(
+            build_ledger_sql(CustomerLedger, backend_connection("postgresql")),
+            CUSTOMER_LEDGER_SQL,
+        )
+
+    def test_sqlite(self):
+        self.assertEqual(
+            build_ledger_sql(CustomerLedger, backend_connection("sqlite3")),
+            CUSTOMER_LEDGER_SQL,
+        )
+
+    def test_postgresql_without_sources_has_typed_columns(self):
+        self.assertEqual(
+            build_ledger_sql(CustomerLedger, backend_connection("postgresql"), []),
+            EMPTY_CUSTOMER_LEDGER_SQL["postgresql"],
+        )
+
+    def test_sqlite_without_sources(self):
+        self.assertEqual(
+            build_ledger_sql(CustomerLedger, backend_connection("sqlite3"), []),
+            EMPTY_CUSTOMER_LEDGER_SQL["sqlite"],
+        )
 
     def test_unsupported_vendor(self):
         with self.assertRaises(NotImplementedError):
@@ -84,6 +101,7 @@ class LedgerSqlGoldenTests(SimpleTestCase):
 
 class LedgerModelTests(SimpleTestCase):
     def test_one_source_per_table(self):
+        self.assertEqual(ledger_sources(CustomerLedger), [CustomerPayment, Movement])
         self.assertEqual(ledger_sources(TreasuryLedger), [TreasuryMovement])
 
     def test_factory_output(self):
