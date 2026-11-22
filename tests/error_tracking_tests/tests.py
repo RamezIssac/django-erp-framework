@@ -213,6 +213,17 @@ class RollbarBackendTest(TestCase):
 
 
 class AgentBackendsTest(TestCase):
+    def test_no_warning_when_agent_is_running(self):
+        cases = {
+            "newrelic": {"newrelic.config": {"_configuration_done": True}},
+            "datadog": {"ddtrace.bootstrap.sitecustomize": {}},
+        }
+        for name, spec in cases.items():
+            with self.subTest(backend=name), mock.patch.dict(
+                sys.modules, fake_modules(spec)
+            ), error_tracking(name, {}):
+                self.assertEqual(check_error_tracking(), [])
+
     def test_check_warns_when_agent_is_not_running(self):
         cases = {
             "newrelic": {"newrelic.agent": {}, "newrelic.config": {"_configuration_done": False}},
