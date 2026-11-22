@@ -4,12 +4,17 @@ All notable changes to this project are/will be documented in this file.
 ## [Unreleased]
 ### Added
 - `erp_framework.reporting.mcp.ReportToolsMixin`, mixed into `ERPMcpSite`: read-only MCP tools `list_reports`, `describe_report`, `run_report`, `list_dynamic_report_models` and `run_dynamic_report`, scoped by `report_access_function`, token scopes and each model admin's `get_queryset(request)` and shown fields. They need django-slick-reporting's headless runner, `compact_response` and `dynamic_report`; without them `ERPMcpSite` publishes the admin tools only. See the API docs, "Reports over MCP".
-- The report tools' server instructions send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's `x-related-model`.
+- The report tools' server instructions send foreign-key report parameters to `resolve_entities` with `models` set to the parameter's model (`params` in `list_reports`, `x-related-model` in `describe_report`).
 - `run_dynamic_report` and `list_dynamic_report_models` honour the MCP site's `excluded_models` (also passed to slick as `excluded_models`).
 - `list_objects` rows of entity admins carry `name`: `EntityAdmin.get_list_display` swaps `get_enhanced_obj_title` for `name` on API and MCP requests.
 - `list_reports` and `describe_report` return `base_model_name` (and `report_model_name`), the verbose names next to the model paths; `list_dynamic_report_models` entries already carry `verbose_name`.
 - The report tools' instructions ask the agent to name reports by title, columns by label, kinds of record by name and records by label.
+- `list_reports` entries carry `params` (each parameter that picks records mapped to its model), `balance` (a column adds everything before `start_date`), `columns` (the column labels) and `question` (`report_question`, a 5 to 8 word question for the catalog, else the title; hook `get_report_question`). Parameters whose model is not exposed through MCP, or is in the site's `excluded_models`, are left out of `params` and of `describe_report`'s `params_schema`.
+- `run_report`'s description ends with a catalog of the reports the user may run (`get_report_catalog(request, room)`), at most `report_catalog_max` (40) lines, at the richest detail level that keeps the description within `report_tool_description_max_chars` (4096).
+- `run_report` reads a single ID for a list-of-IDs parameter as a one-item list.
+- `run_report` takes `order_by`: one of the report's computed column keys (`list_reports` `order_by`, e.g. `-__balance__` for highest first), passed to slick as `default_order_by`; with `max_rows` it gives a top N. List reports and other keys are refused with the accepted keys. The catalog lines carry the keys (with labels at the description level).
 - Report tool messages use verbose names and no model paths: a hidden field reads "Field 'Value' of Sales is not available.", and permission refusals carry a plain `detail` ("You may not view this report.").
+- The report instructions are one routing item: run a report listed in `run_report`'s description with `resolve_entities` IDs, else `run_dynamic_report`; answer totals and balances with a report, not summed `list_objects` rows.
 
 ## [1.8.0] - 2026-11-19
 ### Security

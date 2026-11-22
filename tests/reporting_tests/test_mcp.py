@@ -51,7 +51,7 @@ class ReportToolsTests(BaseTestData, TestCase):
             self.assertTrue(tools[name].annotations["readOnlyHint"], name)
             self.assertFalse(tools[name].writes, name)
 
-    def test_list_reports_exposes_every_registered_report(self):
+    def test_list_reports_entry_carries_params_and_balance(self):
         out, err = self.call("list_reports")
         self.assertFalse(err, out)
         reports = {r["report"]: r for r in out["reports"]}
@@ -61,11 +61,24 @@ class ReportToolsTests(BaseTestData, TestCase):
                 "report": "client.balances",
                 "title": "Clients Balances",
                 "description": "Clients Balances",
+                "question": "Clients Balances",
                 "base_model": "reporting_tests.client",
                 "base_model_name": "Client",
                 "kind": "group",
                 "date_filter": False,
+                "params": {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
+                "balance": True,
+                "columns": ["Identifier slug", "Name", "Closing Total", "Sum of value"],
+                "order_by": {"__balance__": "Closing Total", "__total__": "Sum of value"},
             },
+        )
+        self.assertFalse(reports["client.clientdetailedstatement"]["balance"])
+        self.assertEqual(reports["client.clientdetailedstatement"]["order_by"], {})
+        self.assertTrue(reports["product.productsalesmonthlyseries"]["balance"])
+        # owner_id and lastmod_user_id pick users, a model resolve_entities skips (excluded_models)
+        self.assertEqual(
+            reports["client.client_sales_of_products"]["params"],
+            {"client_id": "reporting_tests.client", "product_id": "reporting_tests.product"},
         )
         self.assertEqual(reports["product.productclientsalesmatrix"]["kind"], "crosstab")
         self.assertEqual(reports["client.clientsalesmonthlyseries"]["kind"], "series")
@@ -153,14 +166,19 @@ class ReportToolsTests(BaseTestData, TestCase):
             out = self.run_report("client.balances", {"client_id": [self.client1.pk]})
         self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
 
-    def test_instructions_send_report_params_to_resolve_entities(self):
+    def test_instructions_route_questions_to_reports(self):
         from erp_framework.api import erp_mcp_site
 
         instructions = erp_mcp_site.instructions
-        self.assertIn("get them from resolve_entities with 'models' set to the parameter's", instructions)
+        self.assertIn("7. Reports: run_report's description lists the reports you may run", instructions)
+        self.assertIn("passing resolve_entities IDs as lists", instructions)
+        self.assertIn("when none fits, run_dynamic_report", instructions)
+        self.assertIn("Note: run the report for a kind of record ('sales by client')", instructions)
+        self.assertIn("Note: answer totals and balances with a report, not summed list_objects rows", instructions)
         self.assertNotIn("look them up with list_objects", instructions)
-        for item in ("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8."):
+        for item in ("1.", "2.", "3.", "4.", "5.", "6.", "7."):
             self.assertEqual(instructions.count(f"\n{item} "), 1, item)
+        self.assertNotIn("\n8. ", instructions)
         self.assertNotIn("primary key", instructions)
 
     def test_resolved_id_runs_the_report_within_the_admin_scope(self):
@@ -176,6 +194,33 @@ class ReportToolsTests(BaseTestData, TestCase):
 
             report = self.run_report("client.balances", {"client_id": [objects["candidates"][0]["id"]]})
         self.assertEqual([row[1] for row in report["rows"]], ["Client 1"])
+
+    def test_order_by_and_max_rows_give_a_top_n(self):
+        balance = self.column_names(self.run_report("client.balances")).index("__balance__")
+        full = self.run_report("client.balances")["rows"]
+        by_balance = sorted(full, key=lambda row: Decimal(row[balance]), reverse=True)
+        top = self.run_report("client.balances", order_by="-__balance__", max_rows=2)
+        self.assertEqual(top["rows"], by_balance[:2])
+        self.assertTrue(top["truncated"])
+        self.assertEqual(top["row_count"], len(full))
+        lowest = self.run_report("client.balances", order_by="__balance__", max_rows=1)
+        self.assertEqual(lowest["rows"], by_balance[-1:])
+
+    def test_order_by_is_checked_against_the_report_keys(self):
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-name"})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "invalid_params")
+        self.assertEqual(
+            out["fields"]["order_by"][0]["message"],
+            "Sort by one of: __balance__, __total__; prefix '-' for highest first.",
+        )
+        out, err = self.call("run_report", {"report": "client.clientdetailedstatement", "order_by": "value"})
+        self.assertTrue(err)
+        self.assertEqual(out["fields"]["order_by"][0]["message"], "This report cannot be sorted.")
+
+    def test_single_id_runs_like_a_list(self):
+        out = self.run_report("client.balances", {"client_id": self.client1.pk})
+        self.assertEqual([row[1] for row in out["rows"]], ["Client 1"])
 
     def test_unknown_report_is_not_found(self):
         out, err = self.call("run_report", {"report": "client.nope"})
@@ -240,8 +285,10 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertIn("description", schemas["describe_report"]["properties"]["report"])
         run = schemas["run_report"]
         self.assertEqual(run["required"], ["report"])
-        self.assertEqual(set(run["properties"]), {"report", "params", "max_rows"})
+        self.assertEqual(set(run["properties"]), {"report", "params", "order_by", "max_rows"})
         self.assertEqual(run["properties"]["params"]["type"], "object")
+        self.assertEqual(run["properties"]["order_by"]["type"], "string")
+        self.assertIn("description", run["properties"]["order_by"])
         self.assertIn("description", run["properties"]["params"])
         self.assertEqual({k: run["properties"]["max_rows"][k] for k in max_rows}, max_rows)
         self.assertIn("description", run["properties"]["max_rows"])
@@ -374,6 +421,204 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertEqual(error.extra["fields"], {"start_date": [{"message": "Bad date.", "code": "invalid"}]})
         self.assertEqual(error.extra["non_field_errors"], ["Whole form."])
         self.assertNotIn("non_field_errors", _validation_error(ValidationError({"f": ["x"]}), "Invalid.").extra)
+
+
+@unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
+@override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
+class ReportRoutingTests(BaseTestData, TestCase):
+    call = ReportToolsTests.call
+
+    def test_hidden_base_model_hides_its_reports_and_params(self):
+        with mock.patch.object(ProductAdmin, "mcp_enabled", False, create=True):
+            out, err = self.call("list_reports")
+            self.assertFalse(err, out)
+            reports = {r["report"]: r for r in out["reports"]}
+            self.assertTrue(reports)
+            self.assertFalse([code for code in reports if code.startswith("product.")])
+            self.assertEqual(reports["client.balances"]["params"], {"client_id": "reporting_tests.client"})
+            out, err = self.call("describe_report", {"report": "client.balances"})
+            self.assertFalse(err, out)
+            self.assertNotIn("product_id", out["params_schema"]["properties"])
+            self.assertIn("client_id", out["params_schema"]["properties"])
+            out, err = self.call("run_report", {"report": "product.productsalesmonthlyseries"})
+        self.assertTrue(err)
+        self.assertEqual(out["error"], "not_found")
+
+    def run_report_description(self, site=None, user=None):
+        from erp_framework.api import erp_mcp_site
+
+        request = RequestFactory().post("/mcp/")
+        request.user = user or self.user
+        return next(t for t in (site or erp_mcp_site).get_tools(request) if t.name == "run_report").description
+
+    def catalog(self, description):
+        """The catalog lines in a run_report description, or None without a catalog."""
+        _, _, catalog = description.partition("\n\nReports you may run")
+        return catalog.splitlines()[1:] if catalog else None
+
+    def test_run_report_description_lists_the_users_reports(self):
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
+
+        description = self.run_report_description()
+        self.assertTrue(description.startswith(RUN_REPORT_DESCRIPTION + "\n\nReports you may run (code: question |"))
+        self.assertLessEqual(len(description), 4096)
+        self.assertIn("call describe_report only for a parameter it does not list", description)
+        self.assertIn("Everything but 'report' is optional", description)
+        self.assertIn("(omitted: the report's own order)", description)
+        lines = self.catalog(description)
+        self.assertEqual(len(lines), len(self.call("list_reports")[0]["reports"]))
+        self.assertIn(
+            "client.balances: Clients Balances | params client_id, product_id | "
+            "order_by __balance__=Closing Total, __total__=Sum of value | balance",
+            lines,
+        )
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        self.assertEqual(erp_mcp_site.get_instructions(request), erp_mcp_site.instructions)
+        self.assertNotIn("Reports you may run", erp_mcp_site.instructions)
+
+    def test_short_question_is_report_question_else_title(self):
+        with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
+            reports = {r["report"]: r for r in self.call("list_reports")[0]["reports"]}
+        self.assertEqual(reports["client.balances"]["question"], "Who owes us money?")
+        self.assertEqual(reports["client.clientdetailedstatement"]["question"], "Client statement")
+
+    def test_catalog_drops_detail_to_fit(self):
+        from erp_framework.api import erp_mcp_site
+
+        budget = len(self.run_report_description()) - 1
+        with mock.patch.object(ClientTotalBalance, "report_question", "Who owes us money?", create=True):
+            for header, line in (
+                (
+                    "Reports you may run (code: question | params | order_by keys):",
+                    "client.balances: Who owes us money? | params client_id, product_id "
+                    "| order_by __balance__, __total__",
+                ),
+                (
+                    "Reports you may run (code | params | order_by keys;",
+                    "client.balances | params client_id, product_id | order_by __balance__, __total__",
+                ),
+                ("Reports you may run (codes;", "client.balances"),
+            ):
+                with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", budget):
+                    description = self.run_report_description()
+                self.assertIn("\n\n" + header, description)
+                self.assertLessEqual(len(description), budget)
+                self.assertIn(line, self.catalog(description))
+                budget = len(description) - 1
+
+    def test_two_dozen_reports_fit_a_tool_description(self):
+        from erp_framework.api import erp_mcp_site
+
+        # 24 reports shaped like a downstream services ERP's: 32-char codes, one or two params
+        entries = [
+            {
+                "report": f"service.service-sales-summary-{n:03d}"[:32],
+                "description": "Who are our top clients for services, by net sales in the period?",
+                "question": "Top clients by sales this year?",
+                "params": {"client_id": "x", "service_id": "x"} if n % 2 else {"client_id": "x"},
+                "order_by": {"value__sum": "Net sales"},
+                "balance": True,
+            }
+            for n in range(24)
+        ]
+        reports = [ClientTotalBalance] * 24
+        with mock.patch.object(type(erp_mcp_site), "get_reports", lambda site, request, code=None: reports), \
+                mock.patch("erp_framework.reporting.mcp.report_entry", side_effect=entries):
+            description = self.run_report_description()
+        self.assertLessEqual(len(description), 4096)
+        self.assertIn("\n\nReports you may run (code: question | params | order_by keys):", description)
+        lines = self.catalog(description)
+        self.assertEqual(len(lines), 24)
+        expected_end = ": Top clients by sales this year? | params client_id | order_by value__sum"
+        self.assertTrue(lines[0].endswith(expected_end), lines[0])
+
+    def test_catalog_lists_only_reports_the_user_may_run(self):
+        UserReportPermission.objects.create(
+            user=self.limited_user, report_code=ClientTotalBalance.get_report_code(), view=True
+        )
+        lines = self.catalog(self.run_report_description(user=self.limited_user))
+        self.assertEqual(
+            lines,
+            [
+                "client.balances: Clients Balances | params client_id, product_id | "
+                "order_by __balance__=Closing Total, __total__=Sum of value | balance"
+            ],
+        )
+
+    def test_catalog_is_left_out_when_it_does_not_fit_or_without_a_user(self):
+        from django.contrib.auth.models import AnonymousUser
+
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
+
+        reports = self.call("list_reports")[0]["reports"]
+        with mock.patch.object(type(erp_mcp_site), "report_catalog_max", len(reports) - 1):
+            self.assertEqual(self.run_report_description(), RUN_REPORT_DESCRIPTION)
+        budget = len(RUN_REPORT_DESCRIPTION) + 50
+        with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", budget):
+            self.assertEqual(self.run_report_description(), RUN_REPORT_DESCRIPTION)
+        self.assertEqual(self.run_report_description(user=AnonymousUser()), RUN_REPORT_DESCRIPTION)
+        tools = {tool.name: tool for tool in erp_mcp_site.get_tools()}
+        self.assertEqual(tools["run_report"].description, RUN_REPORT_DESCRIPTION)
+
+    def test_catalog_kept_at_exact_fit_and_report_limit(self):
+        from erp_framework.api import erp_mcp_site
+
+        self.assertEqual((erp_mcp_site.report_catalog_max, erp_mcp_site.report_tool_description_max_chars), (40, 4096))
+        description = self.run_report_description()
+        reports = self.call("list_reports")[0]["reports"]
+        with mock.patch.object(type(erp_mcp_site), "report_tool_description_max_chars", len(description)), \
+                mock.patch.object(type(erp_mcp_site), "report_catalog_max", len(reports)):
+            self.assertEqual(self.run_report_description(), description)
+
+    def test_catalog_needs_a_request_user(self):
+        from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import RUN_REPORT_DESCRIPTION
+
+        tools = {tool.name: tool for tool in erp_mcp_site.get_tools(RequestFactory().post("/mcp/"))}
+        self.assertEqual(tools["run_report"].description, RUN_REPORT_DESCRIPTION)
+
+    def test_order_by_error_shape(self):
+        out, err = self.call("run_report", {"report": "client.balances", "order_by": "-name"})
+        self.assertEqual(out["detail"], "Invalid report parameters.")
+        self.assertEqual(
+            out["fields"],
+            {"order_by": [{"message": "Sort by one of: __balance__, __total__; prefix '-' for highest first.", "code": "invalid"}]},
+        )
+
+    def test_required_params_follow_the_shown_params(self):
+        from erp_framework.reporting import mcp
+
+        form_object_schema = mcp.form_object_schema
+
+        def all_required(form_class, **kwargs):
+            return {**form_object_schema(form_class, **kwargs), "required": ["client_id", "product_id"]}
+
+        def required():
+            out, err = self.call("describe_report", {"report": "client.balances"})
+            self.assertFalse(err, out)
+            return out["params_schema"]["required"]
+
+        self.assertEqual(required(), [])
+        with mock.patch.object(mcp, "form_object_schema", all_required):
+            self.assertEqual(required(), ["client_id", "product_id"])
+            with mock.patch.object(ProductAdmin, "mcp_enabled", False, create=True):
+                self.assertEqual(required(), ["client_id"])
+
+    def test_balance_and_labels_read_every_column_shape(self):
+        from erp_framework.reporting.mcp import column_labels, computation_classes, is_balance_report
+
+        columns = {"columns": [("slug", {}), ("__balance__", {"verbose_name": "Balance"})], "time_series_columns": None}
+        self.assertTrue(is_balance_report(type("TupleColumns", (ClientTotalBalance,), columns)))
+        self.assertEqual(list(computation_classes(int)), [])
+        custom_groups = type(
+            "CustomGroups",
+            (ClientTotalBalance,),
+            {"group_by": None, "group_by_custom_querysets": [SimpleSales.objects.all()], "columns": ["__total__"]},
+        )
+        self.assertEqual(column_labels(custom_groups), ["Sum of value"])
 
 
 SALES_BY_CLIENT = {
@@ -706,8 +951,7 @@ class ReportWordingTests(BaseTestData, TestCase):
         from erp_framework.api import erp_mcp_site
 
         instructions = erp_mcp_site.instructions
-        self.assertIn("name each record by its label", instructions)
-        self.assertIn("Name a report by its 'title'", instructions)
+        self.assertIn("Name reports by title, columns by label.", instructions)
 
     def test_hidden_field_message_uses_verbose_names(self):
         hidden = ("type", "client", "value")
