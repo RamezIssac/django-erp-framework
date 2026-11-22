@@ -132,12 +132,9 @@ publishes the admin tools only.
 - ``run_dynamic_report``: builds and runs an ad-hoc report from django-slick-reporting's JSON
   report spec (``slick_reporting.dynamic_report.DYNAMIC_REPORT_SPEC_SCHEMA``) and returns the
   same shape as ``run_report``. The spec may only read the MCP-exposed models the user may view,
-  never the user model. ``get_dynamic_report_models(request)`` returns the readable models as a
-  ``{model: model_admin}`` dict. Each model admin's ``get_queryset(request)`` goes to slick as
-  ``base_querysets``: it limits the report model's rows and the rows reached through each relation
-  the spec traverses (rows with an empty relation are kept). A field path may only use the fields
-  the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
-  ``get_exclude(request)``); ``list_dynamic_report_models`` lists only those fields.
+  never the user model (``get_dynamic_report_models(request)``). Rows follow each model admin's
+  ``get_queryset(request)``, and field paths may only use the fields the admin shows (change form,
+  readonly and ``list_display`` fields and the primary key, minus ``get_exclude(request)``).
 
 A report is listed and runnable when ``report_access_function(request, "view", report)`` passes
 and the token scopes allow ``view`` on its base model. Every registered report is exposed by

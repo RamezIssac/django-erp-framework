@@ -17,23 +17,24 @@ from .reports import ClientTotalBalance
 from .tests import BaseTestData, year
 
 HAS_ADMIN_API = importlib.util.find_spec("admin_api") is not None
+PRODUCT_TOKEN = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
 
 
 @unittest.skipUnless(HAS_ADMIN_API, "needs django-admin-api-mcp")
 @override_settings(ROOT_URLCONF="reporting_tests.urls", USE_TZ=False)
 class ReportToolsTests(BaseTestData, TestCase):
-    def call(self, name, arguments=None, user=None, token=None):
+    def call(self, name, arguments=None, user=None, token=None, site=None):
         from erp_framework.api import erp_mcp_site
 
         request = RequestFactory().post("/mcp/")
         request.user = user or self.user
         if token is not None:
             request.api_token = token
-        result = erp_mcp_site.call_tool(request, name, arguments or {})
+        result = (site or erp_mcp_site).call_tool(request, name, arguments or {})
         return result.data, result.is_error
 
-    def run_report(self, report, params=None, **kwargs):
-        out, err = self.call("run_report", {"report": report, "params": params or {}, **kwargs})
+    def run_report(self, report, params=None, site=None, **kwargs):
+        out, err = self.call("run_report", {"report": report, "params": params or {}, **kwargs}, site=site)
         self.assertFalse(err, out)
         return out
 
@@ -42,9 +43,10 @@ class ReportToolsTests(BaseTestData, TestCase):
 
     def test_tools_are_listed_read_only(self):
         from erp_framework.api import erp_mcp_site
+        from erp_framework.reporting.mcp import REPORT_TOOL_NAMES
 
         tools = {t.name: t for t in erp_mcp_site.get_tools()}
-        for name in ("list_reports", "describe_report", "run_report", "run_dynamic_report"):
+        for name in REPORT_TOOL_NAMES:
             self.assertTrue(tools[name].annotations["readOnlyHint"], name)
             self.assertFalse(tools[name].writes, name)
 
@@ -134,13 +136,9 @@ class ReportToolsTests(BaseTestData, TestCase):
         class OneRowSite(ERPMcpSite):
             report_max_rows_cap = 1
 
-        site = OneRowSite(erp_api_site, name="one_row_mcp")
-        request = RequestFactory().post("/mcp/")
-        request.user = self.user
-        result = site.call_tool(request, "run_report", {"report": "client.balances", "max_rows": 10_000})
-        self.assertFalse(result.is_error, result.data)
-        self.assertEqual(len(result.data["rows"]), 1)
-        self.assertTrue(result.data["truncated"])
+        out = self.run_report("client.balances", max_rows=10_000, site=OneRowSite(erp_api_site, name="one_row_mcp"))
+        self.assertEqual(len(out["rows"]), 1)
+        self.assertTrue(out["truncated"])
 
     def test_foreign_key_param_hidden_by_the_admin_is_refused(self):
         one_client = Client.objects.filter(pk=self.client1.pk)
@@ -181,16 +179,12 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertTrue(all(r["base_model"] == "reporting_tests.client" for r in out["reports"]))
 
     def test_token_scope_narrows_reports(self):
-        token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
-        out, err = self.call("list_reports", token=token)
+        out, err = self.call("list_reports", token=PRODUCT_TOKEN)
         self.assertFalse(err, out)
         self.assertTrue(out["reports"])
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]))
-
-    def test_token_scope_checks_report_model_without_base_model(self):
-        token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
-        with mock.patch.object(ClientTotalBalance, "base_model", None):
-            out, err = self.call("list_reports", token=token)
+        with mock.patch.object(ClientTotalBalance, "base_model", None):  # scope-checked on report_model
+            out, err = self.call("list_reports", token=PRODUCT_TOKEN)
         self.assertFalse(err, out)
         self.assertTrue(all(r["base_model"] == "reporting_tests.product" for r in out["reports"]), out["reports"])
 
@@ -201,12 +195,9 @@ class ReportToolsTests(BaseTestData, TestCase):
             def is_report_exposed(self, report_class):
                 return report_class.get_base_model_name() == "product"
 
-        site = ProductOnlySite(erp_api_site, name="product_only_mcp")
-        request = RequestFactory().post("/mcp/")
-        request.user = self.user
-        result = site.call_tool(request, "list_reports", {})
-        self.assertFalse(result.is_error, result.data)
-        self.assertTrue(all(r["report"].startswith("product.") for r in result.data["reports"]))
+        out, err = self.call("list_reports", site=ProductOnlySite(erp_api_site, name="product_only_mcp"))
+        self.assertFalse(err, out)
+        self.assertTrue(all(r["report"].startswith("product.") for r in out["reports"]))
 
 
 SALES_BY_CLIENT = {
@@ -293,11 +284,10 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertNotIn("client", relations)
 
     def test_token_scope_narrows_dynamic_report_models(self):
-        token = type("Token", (), {"scopes": ["reporting_tests.product:view"], "prefix": "t"})()
-        out, err = self.call("list_dynamic_report_models", token=token)
+        out, err = self.call("list_dynamic_report_models", token=PRODUCT_TOKEN)
         self.assertFalse(err, out)
         self.assertEqual({m["identifier"] for m in out["models"]}, {"reporting_tests.Product"})
-        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, token=token)
+        out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT}, token=PRODUCT_TOKEN)
         self.assertTrue(err)
         self.assertEqual(out["fields"]["report_model"][0]["code"], "model_not_allowed")
 
