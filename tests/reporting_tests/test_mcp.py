@@ -662,7 +662,16 @@ class RowPolicyTests(BaseTestData, TestCase):
 
     def test_row_count_line_without_totals(self):
         out = self.small_site(report_max_rows=2)("run_report", {"report": "client.clientdatedstatement"})
-        self.assertEqual(out["help"][0], f"2 of {out['row_count']} rows shown.")
+        self.assertEqual(
+            out["help"],
+            [
+                f"2 of {out['row_count']} rows shown.",
+                "For one record pass params {'client_id': [<id>]} with an ID from resolve_entities.",
+                "For a top N or totals per group run_dynamic_report on reporting_tests.SimpleSales with kind "
+                "'aggregate', group_by, order_by and max_rows=<n>.",
+                "For more rows pass max_rows (up to 1000).",
+            ],
+        )
 
     def test_truncated_dynamic_report_names_the_row_count_and_top_n(self):
         call = self.small_site(report_max_rows=1)

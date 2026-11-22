@@ -735,6 +735,12 @@ def run_report_help(site, request, report_class, result, params, args) -> list:
             gettext("For totals run %(code)s (%(title)s).")
             % {"code": summary, "title": summary_class.get_report_title()}
         )
+    if not keys and summary_class is None:
+        lines.append(
+            gettext("For a top N or totals per group run_dynamic_report on %(model)s with kind 'aggregate', group_by, "
+                    "order_by and max_rows=<n>.")
+            % {"model": report_class.get_report_model()._meta.label}
+        )
     return cut_help(site, result, args, lines)
 
 

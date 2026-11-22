@@ -237,7 +237,8 @@ An explicit ``max_rows`` returns that many rows, up to the cap.
 top N asked with ``order_by`` and ``max_rows``. On a cut, the first line gives the rows shown and the
 row count (``2 of 4094 rows shown; totals cover all 4094.``), then the lines name ``order_by`` and
 ``max_rows`` for a top N (reports with ``order_by`` keys, when no ``order_by`` was given), a ``params``
-filter for one record, the ``summary_report`` and, when the default ``max_rows`` cut the rows,
+filter for one record, the ``summary_report`` (else, without ``order_by`` keys, a ``run_dynamic_report``
+aggregate on the report model) and, when the default ``max_rows`` cut the rows,
 ``max_rows`` for more rows. With no rows, they name the date window to widen and the record filters to drop. Errors carry
 ``help`` too: the closest report code for an unknown one, and the corrected ``run_report`` call for an
 unknown parameter, a bad ID or an unknown ``order_by`` key.
