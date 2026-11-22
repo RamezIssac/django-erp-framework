@@ -157,6 +157,10 @@ publishes the admin tools only.
   the admin shows (change form, readonly and ``list_display`` fields and the primary key, minus
   ``get_exclude(request)``). On a multi-table inheritance child the parent's primary key (``id``)
   counts as the primary key, so ``{"method": "Count", "field": "id"}`` counts its rows.
+  ``order_by``, next to ``spec``, sorts the rows by a result column (``-name`` for highest first, empty
+  cells last); with ``max_rows`` it gives a top N. An ``unknown_field`` error carries a ``help`` line:
+  the spec with each name in ``time_series_columns`` or ``crosstab_columns`` replaced by the ``columns``
+  aggregation of that name, else a ``Sum`` of that field.
   Its description, built per request by ``get_dynamic_report_catalog(request, room)``, carries the spec
   grammar (``spec_guide``: kinds, aggregation methods, time series patterns), ``spec_example`` and one
   line per model the user may read: ``label (name): field, number#, date@, relation>label`` when that
