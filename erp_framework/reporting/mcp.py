@@ -97,19 +97,24 @@ SPEC_GUIDE = (
     f"field paths or {{method, field, name}} aggregations, method one of {', '.join(sorted(REPORTABLE_METHODS))} "
     "(Count on the primary key, e.g. 'id', counts rows); optional: date_field with start_date/end_date, "
     f"time_series_pattern ({', '.join(sorted(TIME_SERIES_DELTAS))}) with time_series_columns, "
-    "crosstab_field with crosstab_ids and crosstab_columns, filters {'<field path>__<lookup>': value}."
+    "crosstab_field with crosstab_columns (both lists of {method, field, name}), "
+    "filters {'<field path>__<lookup>': value}."
 )
+SALES = {"method": "Sum", "field": "value", "name": "sales"}
 SPEC_EXAMPLE = {
     "report_model": "store.SalesLine",
     "group_by": "client",
-    "columns": ["name", {"method": "Sum", "field": "value", "name": "sales"}],
+    "columns": ["name", SALES],
     "date_field": "date",
-    "start_date": "2026-03-01",
+    "start_date": "2026-01-01",
     "end_date": "2026-03-31",
+    "time_series_pattern": "monthly",
+    "time_series_columns": [SALES],
 }
 RUN_DYNAMIC_REPORT_DESCRIPTION = (
     "Build an ad-hoc report from a spec and run it, when no registered report answers the question. Returns "
-    f"the same shape as run_report. Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
+    "the same shape as run_report. Next to spec, order_by takes a column name ('-name' for highest first); "
+    f"with max_rows it gives a top N. Spec: {SPEC_GUIDE} Example: {json.dumps(SPEC_EXAMPLE)}"
 )
 # Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
 DYNAMIC_CATALOG_HEADERS = {
@@ -319,6 +324,10 @@ class ReportToolsMixin:
                 input_schema=obj(
                     {
                         "spec": {"type": "object", "description": "The report spec ('spec_schema')."},
+                        "order_by": {
+                            "type": "string",
+                            "description": "A column name of the result, e.g. '-sales' for highest first.",
+                        },
                         "max_rows": max_rows,
                     },
                     required=["spec"],
@@ -663,6 +672,23 @@ def run_report_help(site, request, report_class, result, params, order_by) -> li
     return lines
 
 
+def check_order_by(order_by, keys, retry=None) -> None:
+    """Raise ``InvalidParams`` unless ``order_by`` is one of ``keys``, '-' prefixed for highest first; its
+    ``help`` is ``retry(key)`` with the closest key, given ``retry``."""
+    if isinstance(order_by, str) and order_by.removeprefix("-") in keys:
+        return
+    message = (
+        gettext("Sort by one of: %(keys)s; prefix '-' for highest first.") % {"keys": ", ".join(keys)}
+        if keys
+        else gettext("This report cannot be sorted.")
+    )
+    error = InvalidParams("Invalid report parameters.", fields={"order_by": [{"message": message, "code": "invalid"}]})
+    if retry:
+        closest = difflib.get_close_matches(str(order_by).removeprefix("-"), keys, n=1, cutoff=0)
+        error.extra["help"] = [retry(f"-{closest[0]}" if closest else None)]
+    raise error
+
+
 def run_report(site, request, args) -> dict:
     report_class = site.get_report(request, _report_code(args))
     code = report_class.get_report_code()
@@ -683,17 +709,9 @@ def run_report(site, request, args) -> dict:
         raise
     order_by = args.get("order_by") or ""
     if order_by:
-        keys = order_columns(report_class)
-        if not isinstance(order_by, str) or order_by.removeprefix("-") not in keys:
-            message = (
-                gettext("Sort by one of: %(keys)s; prefix '-' for highest first.") % {"keys": ", ".join(keys)}
-                if keys
-                else gettext("This report cannot be sorted.")
-            )
-            error = {"message": message, "code": "invalid"}
-            closest = difflib.get_close_matches(str(order_by).removeprefix("-"), keys, n=1, cutoff=0) if keys else []
-            retry = [fixed_call(code, order_by=f"-{closest[0]}")] if closest else [fixed_call(code)]
-            raise InvalidParams("Invalid report parameters.", fields={"order_by": [error]}, help=retry)
+        check_order_by(
+            order_by, order_columns(report_class), lambda key: fixed_call(code, **({"order_by": key} if key else {}))
+        )
     try:
         full_response = report_class.run(
             request, params, max_rows=max_rows, **({"default_order_by": order_by} if order_by else {})
@@ -842,5 +860,37 @@ def dynamic_report(site, request, args) -> dict:
     except PermissionDenied as exc:
         raise PermissionDeniedError(gettext("You may not view one of the kinds of record in this report.")) from exc
     except ValidationError as exc:
-        raise _validation_error(exc, "Invalid report spec.") from exc
+        error = _validation_error(exc, "Invalid report spec.")
+        fields = error.extra.get("fields", {})
+        unknown = [key for key, errors in fields.items() if any(e["code"] == "unknown_field" for e in errors)]
+        if unknown:
+            error.extra["help"] = [corrected_spec_help(spec, unknown)]
+        raise error from exc
+    order_by = args.get("order_by")
+    if order_by:
+        check_order_by(order_by, [c["name"] for c in full_response["columns"] if c.get("visible", True) is not False])
+        data, descending = full_response["data"], order_by.startswith("-")
+        values = data[order_by.removeprefix("-")]
+        filled, empty = [], []
+        for index, value in enumerate(values):
+            (empty if value in (None, "") else filled).append(index)
+        order = sorted(filled, key=values.__getitem__, reverse=descending) + empty
+        full_response["data"] = {name: [column[index] for index in order] for name, column in data.items()}
     return compact_response(full_response, max_rows=max_rows)
+
+
+def corrected_spec_help(spec, keys) -> str:
+    """``help`` for ``unknown_field`` errors on ``keys``: the spec with each name in time_series_columns or
+    crosstab_columns swapped for the ``columns`` aggregation of that name, else a Sum of that field."""
+    named = {column.get("name"): column for column in _as_list(spec.get("columns")) if isinstance(column, dict)}
+    fixed = dict(spec)
+    for key in {"time_series_columns", "crosstab_columns"}.intersection(keys):
+        fixed[key] = [
+            named.get(column, {"method": "Sum", "field": column, "name": column})
+            if isinstance(column, str) and column not in field_registry.get_all_report_fields_names()
+            else column
+            for column in _as_list(spec[key])
+        ]
+    if fixed == spec:
+        return gettext("list_dynamic_report_models gives the fields of each kind of record.")
+    return f"run_dynamic_report(spec={json.dumps(fixed)})"

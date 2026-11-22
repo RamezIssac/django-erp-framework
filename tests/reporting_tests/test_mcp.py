@@ -1,6 +1,7 @@
 """MCP report tools (erp_framework.reporting.mcp) over the registered test reports."""
 
 import importlib.util
+import json
 import sys
 import unittest
 from decimal import Decimal
@@ -879,6 +880,63 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertEqual(len(out["rows"]), 2)
         self.assertTrue(out["truncated"])
 
+    def test_order_by_with_max_rows_gives_a_top_n(self):
+        everything, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT})
+        rows = sorted(everything["rows"], key=lambda row: Decimal(row[1]))
+        for order_by, expected in (("-sales", rows[::-1][:2]), ("sales", rows[:2])):
+            with self.subTest(order_by=order_by):
+                out, err = self.call("run_dynamic_report", {"spec": SALES_BY_CLIENT, "order_by": order_by, "max_rows": 2})
+                self.assertFalse(err, out)
+                self.assertEqual(out["rows"], expected)
+                self.assertEqual((out["totals"], out["truncated"]), (everything["totals"], True))
+
+    def test_order_by_puts_empty_cells_last(self):
+        from erp_framework.api import erp_mcp_site
+
+        spec = {"report_model": "reporting_tests.SimpleSales", "kind": "list", "columns": ["slug", "value"]}
+        hidden = {"name": "pk", "verbose_name": "pk", "type": "number", "visible": False}
+        empty_first = {
+            "columns": [{"name": "slug", "verbose_name": "slug", "type": "text"}, hidden],
+            "data": {"slug": [None, "", "b", "a", "c"], "pk": [1, 2, 3, 4, 5]},
+        }
+        with mock.patch("erp_framework.reporting.mcp.run_dynamic_report", return_value=empty_first):
+            for order_by, expected in (("slug", ["a", "b", "c", None, None]), ("-slug", ["c", "b", "a", None, None])):
+                with self.subTest(order_by=order_by):
+                    out, err = self.call("run_dynamic_report", {"spec": spec, "order_by": order_by})
+                    self.assertEqual([row[0] for row in out["rows"]], expected)
+            out, err = self.call("run_dynamic_report", {"spec": spec, "order_by": "pk"})
+            self.assertEqual(out["fields"]["order_by"][0]["message"], "Sort by one of: slug; prefix '-' for highest first.")
+        out, err = self.call("run_dynamic_report", {"spec": spec, "order_by": "-value"})
+        self.assertEqual([Decimal(row[1]) for row in out["rows"]], sorted(SimpleSales.objects.values_list("value", flat=True), reverse=True))
+        for order_by in ("-nope", 5):
+            with self.subTest(order_by=order_by):
+                out, err = self.call("run_dynamic_report", {"spec": spec, "order_by": order_by})
+                self.assertEqual(out["fields"]["order_by"][0]["message"], "Sort by one of: slug, value; prefix '-' for highest first.")
+        tools = {t.name: t for t in erp_mcp_site.get_tools()}
+        order_by = {"type": "string", "description": "A column name of the result, e.g. '-sales' for highest first."}
+        self.assertEqual(tools["run_dynamic_report"].input_schema["properties"]["order_by"], order_by)
+
+    def test_unknown_field_error_carries_the_corrected_spec(self):
+        series = {**SALES_BY_CLIENT, "date_field": "date", "start_date": f"{year}-01-01", "end_date": f"{year}-02-28", "time_series_pattern": "monthly"}
+        sales = SALES_BY_CLIENT["columns"][1]
+        value = {"method": "Sum", "field": "value", "name": "value"}
+        crosstab = {**SALES_BY_CLIENT, "crosstab_field": "product", "crosstab_ids": [self.product1.pk]}
+        for spec, key, given, fixed in (
+            (series, "time_series_columns", ["sales"], [sales]),
+            (series, "time_series_columns", ["value", "__total__"], [value, "__total__"]),
+            (crosstab, "crosstab_columns", ["sales"], [sales]),
+        ):
+            with self.subTest(key=key, given=given):
+                out, err = self.call("run_dynamic_report", {"spec": {**spec, key: given}})
+                self.assertEqual(out["fields"][key][0]["code"], "unknown_field")
+                corrected = {**spec, key: fixed}
+                self.assertEqual(out["help"], [f"run_dynamic_report(spec={json.dumps(corrected)})"])
+                self.assertFalse(self.call("run_dynamic_report", {"spec": corrected})[1])
+        out, err = self.call("run_dynamic_report", {"spec": {**SALES_BY_CLIENT, "group_by": "nope", "crosstab_columns": "sales"}})
+        self.assertEqual(out["help"], ["list_dynamic_report_models gives the fields of each kind of record."])
+        out, err = self.call("run_dynamic_report", {"spec": {**SALES_BY_CLIENT, "kind": 5}})
+        self.assertNotIn("help", out)
+
     def test_bad_spec_is_invalid_params(self):
         spec = {**SALES_BY_CLIENT, "columns": [{"method": "Sum", "field": "no_such_field"}]}
         out, err = self.call("run_dynamic_report", {"spec": spec})
@@ -911,6 +969,17 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         description = self.dynamic_description()
         self.assertTrue(description.startswith(RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\nKinds of record you may report on (report_model (name): fields;"))
         self.assertIn(SPEC_GUIDE, description)
+        self.assertIn(
+            "Next to spec, order_by takes a column name ('-name' for highest first); with max_rows it gives a top N. "
+            "Spec: kind 'aggregate'",
+            description,
+        )
+        self.assertIn(
+            "crosstab_field with crosstab_columns (both lists of {method, field, name}), filters "
+            "{'<field path>__<lookup>': value}. Example: {",
+            description,
+        )
+        self.assertIn('"time_series_pattern": "monthly", "time_series_columns": [{"method": "Sum", "field": "value", "name": "sales"}]}', description)
         self.assertIn('Example: {"report_model": "store.SalesLine", "group_by": "client"', description)
         self.assertIn("method one of Avg, Count, Max, Min, Sum", description)
         self.assertIn("(annually, bi-weekly, daily, monthly, quarterly, semiannually, weekly)", description)
@@ -1237,7 +1306,9 @@ class EntityListRowsTests(BaseTestData, TestCase):
         spec = {**SPEC_EXAMPLE, "report_model": "reporting_tests.SimpleSales", "start_date": f"{year}-01-01", "end_date": f"{year}-12-31"}
         out, err = self.call("run_dynamic_report", {"spec": spec})
         self.assertFalse(err, out)
-        self.assertEqual([c["name"] for c in out["columns"]], ["name", "sales"])
+        names = [c["name"] for c in out["columns"]]
+        self.assertEqual((names[:2], len(names), names[2][:7]), (["name", "sales"], 14, "salesTS"))
+        self.assertEqual([Decimal(row[1]) for row in out["rows"]], [sum(map(Decimal, row[2:])) for row in out["rows"]])
         example = {**SPEC_EXAMPLE, "report_model": "reporting_tests.SimpleSales"}
         self.assertFalse(self.call("run_dynamic_report", {"spec": example})[1])
         schema = {t.name: t.input_schema for t in erp_mcp_site.get_tools()}["run_dynamic_report"]

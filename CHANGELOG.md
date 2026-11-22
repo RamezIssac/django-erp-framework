@@ -19,6 +19,8 @@ All notable changes to this project are/will be documented in this file.
 - `run_dynamic_report`'s description carries the spec grammar (aggregation methods, time series patterns), the spec example and the models and fields the user may read (`get_dynamic_report_catalog(request, room)`), at the richest detail level that fits `report_tool_description_max_chars`: a dynamic question needs no discovery call.
 - `run_report` takes `order_by`: one of the report's computed column keys (`list_reports` `order_by`, e.g. `-__balance__` for highest first), passed to slick as `default_order_by`; with `max_rows` it gives a top N. List reports and other keys are refused with the accepted keys. The catalog lines carry the keys (with labels at the description level).
 - Report tool messages use verbose names and no model paths: a hidden field reads "Field 'Value' of Sales is not available.", and permission refusals carry a plain `detail` ("You may not view this report.").
+- `run_dynamic_report` takes `order_by`: a result column name, `-name` for highest first, empty cells last; with `max_rows` it gives a top N. Its description states it, and its spec example is a monthly time series with `time_series_columns` given as `{method, field, name}` objects.
+- A `run_dynamic_report` `unknown_field` error carries `help` with the corrected call: each name in `time_series_columns` or `crosstab_columns` becomes the `columns` aggregation of that name, else a `Sum` of that field.
 - The report instructions are one routing item: run a report listed in `run_report`'s description with `resolve_entities` IDs, else `run_dynamic_report`; answer totals and balances with a report, not summed `list_objects` rows.
 
 ### Fixed
