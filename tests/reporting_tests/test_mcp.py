@@ -760,16 +760,17 @@ class ReportRoutingTests(BaseTestData, TestCase):
         bases = ("client", "treasury", "expense", "service", "servicecategory")
         entries = [
             {
-                "report": f"{bases[n % 5]}.{bases[n % 5]}-{('total', 'sales-monthly', 'detailed-statement')[n % 3]}",
+                "report": f"{base}.{base}-{('total', 'sales-monthly', 'detailed-statement')[n % 3]}",
                 "description": "Which clients bought the most services in the period, net of credit notes?",
                 "question": "How much did each client buy per month?",
-                "shape": ("list", f"by {bases[n % 5]} monthly", f"by {bases[n % 5]}")[n % 3],
-                "params": dict.fromkeys(("treasury_id", "expense_id", "liability_id")[: 1 + (n % 4 == 0) * 2]),
-                "order_by": dict.fromkeys(("total_value", "__balance__")[: n % 2 * 2]),
+                "shape": ("list", f"by {base} monthly", f"by {base}")[n % 3],
+                "params": dict.fromkeys(("treasury_id", "expense_id", "liability_id") if n % 4 == 0 else ("treasury_id",)),
+                "order_by": dict.fromkeys(("total_value", "__balance__") if n % 2 else ()),
                 "balance": True,
                 "dates": "1900-01-01 to today" if n == 7 else "2026-01-01 to today",
             }
             for n in range(27)
+            for base in [bases[n % 5]]
         ]
         reports = [ClientTotalBalance] * 27
         with mock.patch.object(type(erp_mcp_site), "get_reports", lambda site, request, code=None: reports), \
@@ -1013,14 +1014,10 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         return {tool.name: tool for tool in site.get_tools(request)}["run_dynamic_report"].description
 
     def test_dynamic_spec_and_catalog_in_the_tool_description(self):
-        from erp_framework.reporting.mcp import RUN_DYNAMIC_REPORT_DESCRIPTION, SPEC_GUIDE
+        from erp_framework.reporting.mcp import DYNAMIC_CATALOG_HEADERS, RUN_DYNAMIC_REPORT_DESCRIPTION, SPEC_GUIDE
 
         description = self.dynamic_description()
-        self.assertTrue(
-            description.startswith(
-                RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\nKinds of record you may report on (report_model (name): fields | description;"
-            )
-        )
+        self.assertTrue(description.startswith(RUN_DYNAMIC_REPORT_DESCRIPTION + "\n\n" + DYNAMIC_CATALOG_HEADERS["fields"]))
         self.assertIn(SPEC_GUIDE, description)
         self.assertIn(
             "Returns the same shape as run_report; with group_by, each row starts with its group's label. Next to spec, "
@@ -1038,22 +1035,18 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertIn("(annually, bi-weekly, daily, monthly, quarterly, semiannually, weekly)", description)
         sales = "\nreporting_tests.SimpleSales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.Client, product>reporting_tests.Product"
         self.assertIn(sales, description)
-        self.assertIn("\nreporting_tests.Client: id#, slug, name, notes\n", description)
         self.assertLessEqual(len(description), 4096)
         with mock.patch.object(SimpleSalesAdmin, "get_exclude", lambda admin, request, obj=None: ("value", "client")):
             hidden = self.dynamic_description()
         self.assertIn("reporting_tests.SimpleSales (Sale): id#, slug, date@, quantity#, price#, product>reporting_tests.Product", hidden.splitlines())
 
     def test_dynamic_catalog_carries_each_model_description(self):
-        from erp_framework.reporting.mcp import DYNAMIC_CATALOG_HEADERS
-
         with mock.patch.object(SimpleSalesAdmin, "mcp_description", SALES_DESCRIPTION, create=True):
             description = self.dynamic_description()
             models = {entry["identifier"]: entry for entry in self.call("list_dynamic_report_models")[0]["models"]}
-        self.assertIn("\n" + DYNAMIC_CATALOG_HEADERS["fields"] + "\n", description)
         self.assertIn(
             "reporting_tests.SimpleSales (Sale): id#, slug, date@, value#, quantity#, price#, client>reporting_tests.Client, "
-            "product>reporting_tests.Product | A sale to a client. Credit notes are sales too: totals over sales include them.",
+            "product>reporting_tests.Product|A sale to a client. Credit notes are sales too: totals over sales include them.",
             description.splitlines(),
         )
         self.assertIn("\nreporting_tests.Client: id#, slug, name, notes\n", description)
@@ -1079,13 +1072,13 @@ class DynamicReportToolTests(BaseTestData, TestCase):
         self.assertIn("reporting_tests.Journal: id#, date@, value#", lines)
         self.assertIn(
             "reporting_tests.SimpleSales (Sale): id#, date@, value#, quantity#, price#, client>reporting_tests.Client, "
-            f"product>reporting_tests.Product | {sales}",
+            f"product>reporting_tests.Product|{sales}",
             lines,
         )
         lines = models.splitlines()
         self.assertIn(DYNAMIC_CATALOG_HEADERS["models"], lines)
         self.assertIn("reporting_tests.Client", lines)
-        self.assertIn(f"reporting_tests.SimpleSales (Sale) | {sales}", lines)
+        self.assertIn(f"reporting_tests.SimpleSales (Sale)|{sales}", lines)
         lines = names.splitlines()
         self.assertIn(DYNAMIC_CATALOG_HEADERS["names"], lines)
         self.assertIn("reporting_tests.SimpleSales (Sale)", lines)

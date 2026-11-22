@@ -123,11 +123,11 @@ RUN_DYNAMIC_REPORT_DESCRIPTION = (
 )
 # Dynamic catalog detail levels, richest first: run_dynamic_report's description uses the first that fits.
 DYNAMIC_CATALOG_HEADERS = {
-    "fields": "Kinds of record you may report on (report_model (name): fields | description; # number, @ date, "
+    "fields": "Kinds of record you may report on (report_model (name): fields|description; # number, @ date, "
     "> relation to):",
-    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields "
-    "| description; list_dynamic_report_models has the rest):",
-    "models": "Kinds of record you may report on (report_model (name) | description; list_dynamic_report_models "
+    "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields"
+    "|description; list_dynamic_report_models has the rest):",
+    "models": "Kinds of record you may report on (report_model (name)|description; list_dynamic_report_models "
     "has their fields):",
     "names": "Kinds of record you may report on (list_dynamic_report_models has their fields and descriptions):",
 }
@@ -555,14 +555,15 @@ def dynamic_catalog_line(entry, detail) -> str:
     if detail == "names":
         return line
     names = []
-    for field in entry["fields"] if detail != "models" else ():
-        relation = f">{field['related_model']}" if field["is_relation"] else ""
-        mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
-        if detail == "fields" or mark:
-            names.append(field["name"] + mark)
+    if detail in ("fields", "reportable"):
+        for field in entry["fields"]:
+            relation = f">{field['related_model']}" if field["is_relation"] else ""
+            mark = "#" if field["is_numeric"] else "@" if field["is_date"] else relation
+            if detail == "fields" or mark:
+                names.append(field["name"] + mark)
     line = f"{line}: {', '.join(names)}" if names else line
     description = entry.get("description")
-    return f"{line} | {' '.join(description.split())}" if description else line
+    return f"{line}|{' '.join(description.split())}" if description else line
 
 
 def fit_catalog(headers, line, entries, room) -> str:

@@ -166,7 +166,7 @@ publishes the admin tools only.
   aggregation of that name, else a ``Sum`` of that field.
   Its description, built per request by ``get_dynamic_report_catalog(request, room)``, carries the spec
   grammar (``spec_guide``: kinds, aggregation methods, time series patterns), ``spec_example`` and one
-  line per model the user may read: ``label (name): field, number#, date@, relation>label | description``
+  line per model the user may read: ``label (name): field, number#, date@, relation>label|description``
   when that fits in ``report_tool_description_max_chars``, else only the number, date and relation
   fields, else the labels and descriptions, else the labels alone, else the agent calls
   ``list_dynamic_report_models``. The description is the site's ``get_model_description`` (the admin's
