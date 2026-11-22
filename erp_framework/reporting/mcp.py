@@ -312,13 +312,21 @@ def computation_classes(column):
             pending.extend(klass._get_required_classes())
 
 
-def is_balance_report(report_class) -> bool:
-    columns = [
+def all_columns(report_class) -> list:
+    """The report's columns, time series columns and crosstab columns."""
+    return [
         *(report_class.columns or []),
         *(report_class.time_series_columns or []),
         *(report_class.crosstab_columns or []),
     ]
-    return any(issubclass(klass, FirstBalanceField) for column in columns for klass in computation_classes(column))
+
+
+def is_balance_report(report_class) -> bool:
+    return any(
+        issubclass(klass, FirstBalanceField)
+        for column in all_columns(report_class)
+        for klass in computation_classes(column)
+    )
 
 
 def record_params(site, view) -> dict:
@@ -388,11 +396,7 @@ def parse_columns(report_class, columns) -> list | None:
 
 def column_labels(report_class) -> list:
     """The labels of the report's columns, time series columns and crosstab columns."""
-    columns = [
-        *(report_class.columns or []),
-        *(report_class.time_series_columns or []),
-        *(report_class.crosstab_columns or []),
-    ]
+    columns = all_columns(report_class)
     parsed = parse_columns(report_class, columns)
     if parsed is None:
         return [column_name(column) for column in columns]

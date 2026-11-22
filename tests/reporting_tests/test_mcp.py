@@ -173,6 +173,7 @@ class ReportToolsTests(BaseTestData, TestCase):
         self.assertIn("7. Reports: run_report's description lists the reports you may run", instructions)
         self.assertIn("passing resolve_entities IDs as lists", instructions)
         self.assertIn("when none fits, run_dynamic_report", instructions)
+        self.assertIn("Name reports by title, columns by label.", instructions)
         self.assertIn("Note: run the report for a kind of record ('sales by client')", instructions)
         self.assertIn("Note: answer totals and balances with a report, not summed list_objects rows", instructions)
         self.assertNotIn("look them up with list_objects", instructions)
@@ -277,11 +278,6 @@ class ReportToolsTests(BaseTestData, TestCase):
 class ReportRoutingTests(BaseTestData, TestCase):
     call = ReportToolsTests.call
 
-    def request(self, user=None):
-        request = RequestFactory().post("/mcp/")
-        request.user = user or self.user
-        return request
-
     def test_hidden_base_model_hides_its_reports_and_params(self):
         with mock.patch.object(ProductAdmin, "mcp_enabled", False, create=True):
             out, err = self.call("list_reports")
@@ -301,8 +297,9 @@ class ReportRoutingTests(BaseTestData, TestCase):
     def run_report_description(self, site=None, user=None):
         from erp_framework.api import erp_mcp_site
 
-        site = site or erp_mcp_site
-        return next(t for t in site.get_tools(self.request(user)) if t.name == "run_report").description
+        request = RequestFactory().post("/mcp/")
+        request.user = user or self.user
+        return next(t for t in (site or erp_mcp_site).get_tools(request) if t.name == "run_report").description
 
     def catalog(self, description):
         """The catalog lines in a run_report description, or None without a catalog."""
@@ -326,7 +323,9 @@ class ReportRoutingTests(BaseTestData, TestCase):
             "order_by __balance__=Closing Total, __total__=Sum of value | balance",
             lines,
         )
-        self.assertEqual(erp_mcp_site.get_instructions(self.request()), erp_mcp_site.instructions)
+        request = RequestFactory().post("/mcp/")
+        request.user = self.user
+        self.assertEqual(erp_mcp_site.get_instructions(request), erp_mcp_site.instructions)
         self.assertNotIn("Reports you may run", erp_mcp_site.instructions)
 
     def test_short_question_is_report_question_else_title(self):
@@ -359,7 +358,7 @@ class ReportRoutingTests(BaseTestData, TestCase):
                 self.assertIn(line, self.catalog(description))
                 budget = len(description) - 1
 
-    def test_pilot_sized_catalog_fits_a_tool_description(self):
+    def test_two_dozen_reports_fit_a_tool_description(self):
         from erp_framework.api import erp_mcp_site
 
         # 24 reports shaped like a downstream services ERP's: 32-char codes, one or two params
@@ -645,12 +644,6 @@ class ReportWordingTests(BaseTestData, TestCase):
         text = str(out.get("detail", "")) + str(out.get("fields", ""))
         for word in technical:
             self.assertNotIn(word, text)
-
-    def test_instructions_ask_for_labels_and_titles(self):
-        from erp_framework.api import erp_mcp_site
-
-        instructions = erp_mcp_site.instructions
-        self.assertIn("Name reports by title, columns by label.", instructions)
 
     def test_hidden_field_message_uses_verbose_names(self):
         hidden = ("type", "client", "value")

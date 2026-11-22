@@ -169,11 +169,8 @@ run, when there are at most ``report_catalog_max`` (40) of them. The whole descr
 calls ``list_reports``. The description says the listed params and ``order_by`` keys are complete and
 optional, with their defaults, and to call ``describe_report`` only for a parameter a line does not list.
 
-Claude Code 2.1.330 cuts server instructions at 4,096 characters and keeps a tool description up to
-4,096 characters, or 16,384 once the tool is loaded through tool search
-(``CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`` overrides both). Each tool description has its own budget,
-and the instructions keep only the routing rules. A question such as "how much does this client owe"
-then takes two calls: ``resolve_entities`` and ``run_report``.
+Claude Code keeps 4,096 characters of server instructions and of each tool description (16,384 once
+the tool is loaded through tool search). The instructions keep only the routing rules.
 
 Narrow the reports, or change the row limits, in a subclass:
 
