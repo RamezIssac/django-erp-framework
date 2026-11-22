@@ -7,7 +7,7 @@ All notable changes to this project are/will be documented in this file.
 - `EntityAdmin.get_actions()` accepts Django 6.1's `action_location` argument.
 
 ### Fixed
-- `erp_framework.reporting` sets `default_auto_field = BigAutoField` to match its migrations: projects on `DEFAULT_AUTO_FIELD = AutoField` no longer get a pending migration for `GroupReportPermission.id`.
+- `erp_framework.reporting` sets `default_auto_field = BigAutoField` to match its migrations: projects on `DEFAULT_AUTO_FIELD = AutoField` no longer get a pending migration for `GroupReportPermission.id` and `UserReportPermission.id`.
 
 ## [1.8.0] - 2026-11-19
 ### Security
