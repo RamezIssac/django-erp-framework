@@ -690,7 +690,7 @@ class AdminScope:
                 *names,
                 *model_admin.get_readonly_fields(request),
                 *(column.name for column in get_columns(model_admin, request) if column.kind == "field"),
-                model._meta.pk.name,
+                *(field.name for field in model._meta.concrete_fields if field.primary_key),
             }
             self._visible[model] = shown - set(model_admin.get_exclude(request) or ())
         return self._visible[model]

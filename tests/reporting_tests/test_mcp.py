@@ -13,7 +13,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from erp_framework.reporting.models import UserReportPermission
 
 from .admin import ClientAdmin, ProductAdmin, SimpleSalesAdmin
-from .models import Client, Product, SimpleSales
+from .models import Client, Product, RushOrder, SimpleSales
 from .reports import ClientDetailedStatement, ClientTotalBalance
 from .tests import BaseTestData, year
 
@@ -1046,6 +1046,21 @@ class DynamicReportToolTests(BaseTestData, TestCase):
                 out, err = self.call("run_dynamic_report", {"spec": spec})
                 self.assertTrue(err, out)
                 self.assertEqual(out["fields"], {"columns": [{"message": message, "code": "hidden_field"}]})
+
+    def test_count_on_the_parent_pk_of_a_multi_table_child(self):
+        RushOrder.objects.create(date_placed=f"{year}-01-02", client=self.client1, fee=5)
+        RushOrder.objects.create(date_placed=f"{year}-01-03", client=self.client1, fee=7)
+        spec = {
+            "report_model": "reporting_tests.RushOrder",
+            "group_by": "client",
+            "columns": ["name", {"method": "Count", "field": "id", "name": "orders"}],
+        }
+        out, err = self.call("run_dynamic_report", {"spec": spec})
+        self.assertFalse(err, out)
+        self.assertEqual(out["rows"], [["Client 1", "2"]])
+        out, err = self.call("list_dynamic_report_models")
+        fields = {m["identifier"]: m["fields"] for m in out["models"]}["reporting_tests.RushOrder"]
+        self.assertIn("id", [f["name"] for f in fields])
 
     def test_non_string_field_path_is_invalid_not_a_crash(self):
         spec = {"report_model": "reporting_tests.SimpleSales", "group_by": 5, "columns": ["value"]}
