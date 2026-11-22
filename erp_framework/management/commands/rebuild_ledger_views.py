@@ -25,10 +25,8 @@ class Command(BaseCommand):
         connection = connections[database]
         if sql:
             for ledger in ledger_models():
-                present, _missing = present_sources(ledger, connection)
-                self.stdout.write(
-                    build_ledger_sql(ledger, connection.vendor, present) + ";\n"
-                )
+                present = present_sources(ledger, connection)[0]
+                self.stdout.write(build_ledger_sql(ledger, connection, present) + ";\n")
             return
         drop_ledger_views(database)
         created = create_ledger_views(database, verbosity=verbosity, stdout=self.stdout)

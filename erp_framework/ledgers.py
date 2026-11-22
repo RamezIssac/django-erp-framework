@@ -15,24 +15,6 @@ from .doc_types import entity_foreign_key, transaction_models
 LEDGER_PREFIX = "erp_ledger_"
 SUPPORTED_VENDORS = ("postgresql", "sqlite")
 
-# Postgres types for the typed NULL row of a ledger view with no source table.
-_POSTGRES_TYPES = {
-    "AutoField": "integer",
-    "BigAutoField": "bigint",
-    "SmallAutoField": "smallint",
-    "IntegerField": "integer",
-    "BigIntegerField": "bigint",
-    "SmallIntegerField": "smallint",
-    "PositiveIntegerField": "integer",
-    "PositiveBigIntegerField": "bigint",
-    "UUIDField": "uuid",
-    "TextField": "text",
-    "DateTimeField": "timestamp with time zone",
-    "CharField": "varchar(%(max_length)s)",
-    "SlugField": "varchar(%(max_length)s)",
-    "DecimalField": "numeric(%(max_digits)s, %(decimal_places)s)",
-}
-
 
 class LedgerModel(models.Model):
     """Columns shared by every ledger; ``ledger_model()`` adds the entity foreign key."""
@@ -50,14 +32,11 @@ class LedgerModel(models.Model):
     )
     object_id = models.TextField()
 
-    ledger_entity = None
-    ledger_field = None
-
     class Meta:
         abstract = True
 
 
-def ledger_model(entity, field_name=None, *, name=None, db_table=None, app_label=None):
+def ledger_model(entity, field_name=None):
     """
     Return an unmanaged model over the ledger view of ``entity`` with the FK ``field_name``
     (default: the entity's model name). Assign it in a models module.
@@ -65,12 +44,9 @@ def ledger_model(entity, field_name=None, *, name=None, db_table=None, app_label
     field_name = field_name or entity._meta.model_name
     meta = {
         "managed": False,
-        "db_table": db_table
-        or f"{LEDGER_PREFIX}{entity._meta.app_label}_{entity._meta.model_name}",
+        "db_table": f"{LEDGER_PREFIX}{entity._meta.app_label}_{entity._meta.model_name}",
         "default_permissions": ("view",),
     }
-    if app_label:
-        meta["app_label"] = app_label
     attrs = {
         "__module__": sys._getframe(1).f_globals.get("__name__", "__main__"),
         "Meta": type("Meta", (), meta),
@@ -84,7 +60,7 @@ def ledger_model(entity, field_name=None, *, name=None, db_table=None, app_label
             verbose_name=entity._meta.verbose_name,
         ),
     }
-    return type(name or f"{entity.__name__}Ledger", (LedgerModel,), attrs)
+    return type(f"{entity.__name__}Ledger", (LedgerModel,), attrs)
 
 
 def ledger_models():
@@ -161,20 +137,19 @@ def _source_select(ledger, owner, index):
     return f"{sql}\nWHERE {fk} IS NOT NULL", required
 
 
-def _empty_select(ledger, vendor):
+def _empty_select(ledger, connection):
     columns = []
     for field in ledger._meta.concrete_fields:
         expression = "NULL"
-        if vendor == "postgresql":
-            target = field.target_field if field.is_relation else field
-            sql_type = _POSTGRES_TYPES.get(target.get_internal_type(), "text")
-            expression = f"CAST(NULL AS {sql_type % target.__dict__})"
+        if connection.vendor == "postgresql":
+            expression = f"CAST(NULL AS {field.cast_db_type(connection)})"
         columns.append(f"{expression} AS {_quote(field.column)}")
     return "SELECT " + ",\n       ".join(columns) + "\nWHERE 1 = 0"
 
 
-def build_ledger_sql(ledger, vendor, sources=None):
-    """Return the CREATE VIEW statement of ``ledger`` for ``vendor`` over ``sources`` (default: all)."""
+def build_ledger_sql(ledger, connection, sources=None):
+    """Return the CREATE VIEW statement of ``ledger`` for ``connection`` over ``sources`` (default: all)."""
+    vendor = connection.vendor
     if vendor not in SUPPORTED_VENDORS:
         raise NotImplementedError(
             f"Ledger views support {', '.join(SUPPORTED_VENDORS)}, not {vendor}."
@@ -182,7 +157,7 @@ def build_ledger_sql(ledger, vendor, sources=None):
     if sources is None:
         sources = ledger_sources(ledger)
     selects = [_source_select(ledger, owner, i)[0] for i, owner in enumerate(sources)]
-    body = "\nUNION ALL\n".join(selects or [_empty_select(ledger, vendor)])
+    body = "\nUNION ALL\n".join(selects or [_empty_select(ledger, connection)])
     return f"CREATE VIEW {_quote(ledger._meta.db_table)} AS\n{body}"
 
 
@@ -235,12 +210,9 @@ def create_ledger_views(using=DEFAULT_DB_ALIAS, verbosity=1, stdout=None):
     """
     stdout = stdout or sys.stdout
     connection = connections[using]
-    ledgers = ledger_models()
-    if not ledgers:
-        return []
-    views, tables = _views_and_tables(connection)
+    tables = _views_and_tables(connection)[1]
     created = []
-    for ledger in ledgers:
+    for ledger in ledger_models():
         meta = ledger._meta
         if not router.allow_migrate(using, meta.app_label, model_name=meta.model_name):
             continue
@@ -248,9 +220,8 @@ def create_ledger_views(using=DEFAULT_DB_ALIAS, verbosity=1, stdout=None):
             continue
         present, missing = present_sources(ledger, connection, tables)
         with connection.cursor() as cursor:
-            if meta.db_table in views:
-                cursor.execute(f"DROP VIEW {_quote(meta.db_table)}")
-            cursor.execute(build_ledger_sql(ledger, connection.vendor, present))
+            cursor.execute(f"DROP VIEW IF EXISTS {_quote(meta.db_table)}")
+            cursor.execute(build_ledger_sql(ledger, connection, present))
         created.append((meta.db_table, present, missing))
         if verbosity >= 2:
             stdout.write(
