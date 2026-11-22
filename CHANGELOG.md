@@ -2,6 +2,13 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+- Added pluggable error tracking, configured by `ERP_FRAMEWORK_SETTINGS["error_tracking"]` (`backend`, `options`):
+  built-in `sentry` (also GlitchTip), `rollbar`, `newrelic`, `datadog`, `external` (project snippet only), or a dotted
+  path to an `ErrorTrackingBackend` subclass. The framework starts the server SDK in `ready()` (New Relic and Datadog
+  agents start before Django) and renders the browser snippet on every ERP admin page, the login page and the in-app
+  docs. SDKs are imported lazily; system checks report a missing SDK or agent. Optional extras `[sentry]`, `[rollbar]`,
+  `[newrelic]`, `[datadog]`. Privacy defaults: no PII, request bodies or local variables. The default `login_template`
+  is now `erp_framework/login.html` (extends `admin/login.html`).
 
 ## [1.8.0] - 2026-11-19
 ### Security

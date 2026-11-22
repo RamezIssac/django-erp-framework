@@ -10,3 +10,7 @@ class ERPFrameworkConfig(AppConfig):
     def ready(self):
         super().ready()
         from . import checks  # noqa
+        from .error_tracking import get_backend
+
+        if backend := get_backend():
+            backend.init_server()

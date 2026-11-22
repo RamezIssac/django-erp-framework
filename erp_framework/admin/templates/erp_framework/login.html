@@ -1,0 +1,6 @@
+{% extends "admin/login.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {% include "erp_framework/error_tracking.html" %}
+{% endblock %}

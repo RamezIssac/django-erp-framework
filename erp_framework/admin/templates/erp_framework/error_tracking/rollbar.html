@@ -1,0 +1,15 @@
+<script>
+    window._rollbarConfig = {
+        accessToken: "{{ config.client_token|escapejs }}",
+        captureUncaught: true,
+        captureUnhandledRejections: true,
+        captureIp: false,
+        payload: {
+            environment: "{{ config.environment|escapejs }}" || undefined,
+            client: {javascript: {code_version: "{{ config.code_version|escapejs }}" || undefined}},
+        },
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/rollbar@4.2.1/dist/rollbar.min.js"
+        integrity="sha384-4KifVJRUkQO8E70M+vKdgOE3r1Dn3xBAIExZpECbNR3dZ1oFN+S8M4seaQu2HMCE"
+        crossorigin="anonymous"></script>

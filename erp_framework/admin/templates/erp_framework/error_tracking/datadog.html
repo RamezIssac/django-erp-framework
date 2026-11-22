@@ -1,0 +1,17 @@
+<script src="https://cdn.jsdelivr.net/npm/@datadog/browser-rum@7.18.0/bundle/datadog-rum.js"
+        integrity="sha384-NQoQOPaNVUH3AhdL20QIt9khGWdvEFzLe+gM27zbDFbG58bn7zObE0RuGAZ7RjQV"
+        crossorigin="anonymous"></script>
+<script>
+    DD_RUM.init({
+        applicationId: "{{ config.application_id|escapejs }}",
+        clientToken: "{{ config.client_token|escapejs }}",
+        site: "{{ config.site|default:"datadoghq.com"|escapejs }}",
+        service: "{{ config.service|escapejs }}" || undefined,
+        env: "{{ config.env|escapejs }}" || undefined,
+        version: "{{ config.version|escapejs }}" || undefined,
+        sessionSampleRate: 100,
+        sessionReplaySampleRate: 0,
+        trackUserInteractions: false,
+        defaultPrivacyLevel: "mask",
+    });
+</script>

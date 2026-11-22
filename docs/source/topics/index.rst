@@ -15,5 +15,6 @@ Topics
    customizing_print
    permissions
    in_app_docs
+   error_tracking
    themeing
    roadmap
