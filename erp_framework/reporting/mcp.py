@@ -31,7 +31,6 @@ from django.core.exceptions import (
     PermissionDenied,
     ValidationError,
 )
-from django.utils.text import camel_case_to_spaces
 from django.utils.translation import gettext
 
 from admin_api import scopes
@@ -76,20 +75,20 @@ Note: answer totals and balances with a report, not summed list_objects rows, be
 what the report leaves out."""
 
 # Catalog detail levels, richest first: run_report's description uses the first that fits.
-# {dates} is the default date range most reports share; a line names its own only when it differs.
+# {dates} is DEFAULT_DATES with the date range most reports share; a line names its own only when it differs.
 CATALOG_HEADERS = {
-    "questions": "Reports you may run, dates {dates} (code: question|shape|params|order_by key=label|"
-    "balance = includes all before start_date):",
-    "short": "Reports you may run, dates {dates} (code: question|shape|params|order_by keys):",
-    "params": "Reports you may run, dates {dates} (code|shape|params|order_by keys; list_reports has the questions):",
+    "questions": "Reports you may run (code: question|shape|params|order_by key=label|"
+    "balance = includes all before start_date).{dates}",
+    "short": "Reports you may run (code: question|shape|params|order_by keys).{dates}",
+    "params": "Reports you may run (code|shape|params|order_by keys; list_reports has the questions).{dates}",
     "codes": "Reports you may run (codes; list_reports has questions, params and order_by keys):",
 }
+DEFAULT_DATES = " Without start_date/end_date a report covers {dates}; any other window works."
 
 RUN_REPORT_DESCRIPTION = (
-    "Run a registered report. The reports below (or list_reports) show each report's shape, params, order_by "
-    "keys and dates: run one directly; describe_report only adds columns. Everything but 'report' is "
-    "optional: 'params' takes the listed params as lists of IDs (omitted: every record) plus start_date and "
-    "end_date as YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first (omitted: the report's "
+    "Run a report listed below (or by list_reports) directly; describe_report only adds columns. 'params' "
+    "takes the listed params as lists of IDs (omitted: every record) plus start_date and end_date as "
+    "YYYY-MM-DD; 'order_by' takes one listed key, '-key' for highest first (omitted: the report's "
     "own order). A top N or 'which X' is the report by X with order_by and max_rows N. Returns 'columns', "
     "positional 'rows', 'totals' over all rows even when 'truncated', row_count, date_window and, when rows "
     "are cut or none match, 'help'."
@@ -106,7 +105,7 @@ SPEC_GUIDE = (
 )
 SALES = {"method": "Sum", "field": "value", "name": "sales"}
 SPEC_EXAMPLE = {
-    "report_model": "store.SalesLine",
+    "report_model": "store.salesline",
     "group_by": "client",
     "columns": ["name", SALES],
     "date_field": "date",
@@ -126,7 +125,7 @@ DYNAMIC_CATALOG_HEADERS = {
     "fields": "Kinds of record you may report on (report_model (name): fields|description; # number, @ date, "
     "> relation to):",
     "reportable": "Kinds of record you may report on (report_model (name): number #, date @ and relation > fields"
-    "|description; list_dynamic_report_models has the rest):",
+    "|description):",
     "models": "Kinds of record you may report on (report_model (name)|description; list_dynamic_report_models "
     "has their fields):",
     "names": "Kinds of record you may report on (list_dynamic_report_models has their fields and descriptions):",
@@ -210,7 +209,8 @@ class ReportToolsMixin:
         dates = statistics.mode(entry["dates"] for entry in entries)
         for entry in entries:
             entry["dates"] = None if entry["dates"] == dates else entry["dates"]
-        headers = {detail: header.format(dates=dates) for detail, header in CATALOG_HEADERS.items()}
+        window = "" if dates == "all" else DEFAULT_DATES.format(dates=dates)
+        headers = {detail: header.format(dates=window) for detail, header in CATALOG_HEADERS.items()}
         return fit_catalog(headers, catalog_line, entries, room)
 
     def get_dynamic_report_catalog(self, request, room: int) -> str:
@@ -442,11 +442,11 @@ def report_view(request, report_class):
 
 
 def report_shape(report_class) -> str:
-    """The catalog's shape of the report's rows: 'list', else 'by <group_by>', 'x <crosstab_field>' and the
-    time series pattern."""
+    """The catalog's shape of the report's rows: 'list', else 'by <group_by>' in words ('by service category'),
+    'x <crosstab_field>' and the time series pattern."""
     kind = report_kind(report_class)
     parts = [
-        f"by {report_class.group_by}" if report_class.group_by else "",
+        f"by {report_class.group_by.replace('__', ' ')}" if report_class.group_by else "",
         f"x {report_class.crosstab_field}" if report_class.crosstab_field else "",
         str(report_class.time_series_pattern or ("series" if kind == "series" else "")),
     ]
@@ -539,6 +539,8 @@ def catalog_line(entry, detail="questions") -> str:
     if entry["order_by"]:
         keys = entry["order_by"].items() if detail == "questions" else ((key, None) for key in entry["order_by"])
         parts.append("order_by " + ", ".join(key if label is None else f"{key}={label}" for key, label in keys))
+    elif entry["shape"] != "list":
+        parts.append("no order_by")
     if detail == "questions" and entry["balance"]:
         parts.append("balance")
     if entry["dates"]:
@@ -550,7 +552,7 @@ def dynamic_catalog_line(entry, detail) -> str:
     """A kind of record's line in run_dynamic_report's description at ``detail``, one of ``DYNAMIC_CATALOG_HEADERS``;
     the name only when it is not the model's own name in words."""
     line = entry["identifier"]
-    if entry["verbose_name"].lower() != camel_case_to_spaces(line.rpartition(".")[2]):
+    if entry["verbose_name"].replace(" ", "").lower() != line.rpartition(".")[2]:
         line += f" ({entry['verbose_name']})"
     if detail == "names":
         return line
@@ -739,9 +741,14 @@ def run_report_help(site, request, report_class, result, params, args) -> list:
         lines.append(
             gettext("For a top N or totals per group run_dynamic_report on %(model)s with kind 'aggregate', group_by, "
                     "order_by and max_rows=<n>.")
-            % {"model": report_class.get_report_model()._meta.label}
+            % {"model": model_label(report_class.get_report_model())}
         )
     return cut_help(site, result, args, lines)
+
+
+def drop_period_order(args, series) -> dict:
+    """``args`` without an order_by of 'period' on a time series: its period columns already run oldest first."""
+    return {**args, "order_by": None} if series and str(args.get("order_by")).strip("_") == "period" else args
 
 
 def check_order_by(order_by, keys, retry=None) -> None:
@@ -764,6 +771,7 @@ def check_order_by(order_by, keys, retry=None) -> None:
 def run_report(site, request, args) -> dict:
     report_class = site.get_report(request, _report_code(args))
     code = report_class.get_report_code()
+    args = drop_period_order(args, report_kind(report_class) == "series")
     params = args.get("params") or {}
     if not isinstance(params, dict):
         raise InvalidParams("'params' must be an object.")
@@ -907,8 +915,12 @@ def list_dynamic_report_models(site, request, args) -> dict:
     )
     for entry in catalog:
         model = apps.get_model(entry["identifier"])
+        entry["identifier"] = model_label(model)
         visible = scope.visible_fields(model)
         entry["fields"] = [field for field in entry["fields"] if field["name"] in visible]
+        for field in entry["fields"]:
+            if field.get("related_model"):
+                field["related_model"] = field["related_model"].lower()
         description = site.get_model_description(admins[model], request)
         if description:
             entry["description"] = description
@@ -919,6 +931,7 @@ def dynamic_report(site, request, args) -> dict:
     spec = args.get("spec")
     if not isinstance(spec, dict):
         raise InvalidParams("'spec' must be an object.")
+    args = drop_period_order(args, bool(spec.get("time_series_pattern")))
     max_rows = _max_rows(site, args)
     admins = site.get_dynamic_report_models(request)
     if not admins:
