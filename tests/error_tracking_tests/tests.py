@@ -5,6 +5,7 @@ from unittest import mock
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.core import checks
 from django.core.signals import got_request_exception
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase, override_settings
@@ -12,6 +13,7 @@ from django.urls import reverse
 
 from erp_framework.checks import check_error_tracking
 from erp_framework.error_tracking import get_backend
+from erp_framework.error_tracking.backends.base import ErrorTrackingBackend
 from erp_framework.sites import erp_admin_site
 
 from .backends import RecordingBackend
@@ -47,6 +49,7 @@ def start_server():
 
 BACKENDS = {
     "sentry": {
+        "class": "SentryBackend",
         "sdk": "sentry_sdk",
         "modules": lambda: {
             "sentry_sdk": {"init": mock.Mock()},
@@ -57,6 +60,7 @@ BACKENDS = {
         "snippet": "https://browser.sentry-cdn.com/11.14.0/bundle.min.js",
     },
     "rollbar": {
+        "class": "RollbarBackend",
         "sdk": "rollbar",
         "modules": lambda: {"rollbar": {"init": mock.Mock(), "report_exc_info": mock.Mock()}},
         "options": {"access_token": "server-token", "client_token": "client-token"},
@@ -64,6 +68,7 @@ BACKENDS = {
         "snippet": "https://cdn.jsdelivr.net/npm/rollbar@4.2.1/dist/rollbar.min.js",
     },
     "newrelic": {
+        "class": "NewRelicBackend",
         "sdk": "newrelic",
         "modules": lambda: {
             "newrelic.agent": {
@@ -76,6 +81,7 @@ BACKENDS = {
         "snippet": "<script>NREUM-test</script>",
     },
     "datadog": {
+        "class": "DatadogBackend",
         "sdk": "ddtrace",
         "modules": lambda: {"ddtrace.bootstrap.sitecustomize": {}},
         "options": {"application_id": "app-id", "client_token": "rum-token"},
@@ -129,6 +135,19 @@ class BuiltinBackendsTest(TestCase):
                 start_server()
             self.assertEqual(ids, ["erp_framework.E010"])
 
+    def test_missing_sdk_message_names_the_extra_to_install(self):
+        for name, backend, modules in self.for_each_backend():
+            with error_tracking(name, backend["options"]), mock.patch.dict(
+                sys.modules, {backend["sdk"]: None}
+            ):
+                (message,) = check_error_tracking()
+            self.assertEqual(
+                message.msg,
+                f"Error tracking backend {backend['class']} needs {backend['sdk']}, which is not installed.",
+            )
+            self.assertEqual(message.hint, f"pip install django-erp-framework[{name}]")
+            self.assertEqual(message.obj, "ERP_FRAMEWORK_SETTINGS['error_tracking']")
+
     def test_check_passes_with_sdk_installed(self):
         for name, backend, modules in self.for_each_backend():
             with error_tracking(name, backend["options"]):
@@ -137,6 +156,9 @@ class BuiltinBackendsTest(TestCase):
 
 @override_settings(ROOT_URLCONF="error_tracking_tests.urls")
 class ErrorTrackingOffTest(TestCase):
+    def test_check_is_registered_with_django(self):
+        self.assertIn(check_error_tracking, checks.registry.registry.get_checks())
+
     @override_settings(ERP_FRAMEWORK_SETTINGS={})
     def test_no_backend_means_nothing_rendered_or_checked(self):
         self.assertIsNone(get_backend())
@@ -164,6 +186,23 @@ class SentryBackendTest(TestCase):
         modules["sentry_sdk.integrations.logging"].ignore_logger.assert_called_once_with(
             "django.channels.server"
         )
+
+    def test_local_variables_are_opt_in(self):
+        modules = fake_modules(BACKENDS["sentry"]["modules"]())
+        with mock.patch.dict(sys.modules, modules), error_tracking(
+            "sentry", {"dsn": "https://k@h/1", "include_local_variables": True}
+        ):
+            start_server()
+        self.assertIs(modules["sentry_sdk"].init.call_args.kwargs["include_local_variables"], True)
+
+    def test_browser_config_passes_dsn_environment_and_release(self):
+        options = {"dsn": "https://k@h/1", "environment": "staging", "release": "app@1", "secret": "s"}
+        with error_tracking("sentry", options):
+            self.assertEqual(get_backend().browser_config(None), {k: options[k] for k in ("dsn", "environment", "release")})
+        with error_tracking("sentry", {"dsn": "https://k@h/1"}):
+            self.assertEqual(
+                get_backend().browser_config(None), {"dsn": "https://k@h/1", "environment": "", "release": ""}
+            )
 
     @override_settings(ROOT_URLCONF="error_tracking_tests.urls")
     def test_erp_base_site_renders_snippet_once(self):
@@ -204,6 +243,24 @@ class RollbarBackendTest(TestCase):
         self.assertIs(exc_info[0], ValueError)
         self.assertIs(reported_request, request)
 
+    def test_server_sdk_options_and_defaults(self):
+        modules = fake_modules(BACKENDS["rollbar"]["modules"]())
+        options = {"access_token": "t", "code_version": "abc123", "include_local_variables": True}
+        with mock.patch.dict(sys.modules, modules), error_tracking("rollbar", options):
+            start_server()
+        kwargs = modules["rollbar"].init.call_args.kwargs
+        self.assertEqual(kwargs["environment"], "production")
+        self.assertEqual(kwargs["code_version"], "abc123")
+        self.assertEqual(kwargs["locals"], {"enabled": True})
+        self.assertTrue(got_request_exception.disconnect(dispatch_uid="erp_framework.error_tracking.rollbar"))
+
+    def test_browser_config_passes_client_token_environment_and_code_version(self):
+        options = {"access_token": "server", "client_token": "c", "environment": "e", "code_version": "v"}
+        with error_tracking("rollbar", options):
+            self.assertEqual(
+                get_backend().browser_config(None), {"client_token": "c", "environment": "e", "code_version": "v"}
+            )
+
     @override_settings(ROOT_URLCONF="error_tracking_tests.urls")
     def test_browser_gets_the_client_token_only(self):
         with error_tracking("rollbar", BACKENDS["rollbar"]["options"]):
@@ -223,6 +280,37 @@ class AgentBackendsTest(TestCase):
                 sys.modules, fake_modules(spec)
             ), error_tracking(name, {}):
                 self.assertEqual(check_error_tracking(), [])
+
+    def test_warning_names_how_to_start_the_agent(self):
+        hints = {
+            "newrelic": "Start the process with `newrelic-admin run-program`, or call "
+            "newrelic.agent.initialize() at the top of wsgi.py / asgi.py.",
+            "datadog": "Start the process with `ddtrace-run`, or `import ddtrace.auto` at the top of wsgi.py / asgi.py.",
+        }
+        cases = {"newrelic": {"newrelic.config": {}}, "datadog": {"ddtrace": {}}}
+        for name, spec in cases.items():
+            with self.subTest(backend=name), mock.patch.dict(
+                sys.modules, fake_modules(spec)
+            ), error_tracking(name, {}):
+                (message,) = check_error_tracking()
+            self.assertEqual(
+                message.msg,
+                f"Error tracking backend {BACKENDS[name]['class']}: the agent is not running in this process.",
+            )
+            self.assertEqual(message.hint, hints[name])
+            self.assertEqual(message.obj, "ERP_FRAMEWORK_SETTINGS['error_tracking']")
+
+    def test_newrelic_without_its_config_module_is_not_running(self):
+        modules = fake_modules({"newrelic": {}})
+        modules["newrelic.config"] = None
+        with mock.patch.dict(sys.modules, modules), error_tracking("newrelic", {}):
+            self.assertEqual([message.id for message in check_error_tracking()], ["erp_framework.W010"])
+
+    def test_datadog_browser_config_passes_rum_keys(self):
+        keys = ("application_id", "client_token", "site", "service", "env", "version")
+        options = {key: f"{key}-value" for key in keys} | {"api_key": "server-only"}
+        with error_tracking("datadog", options):
+            self.assertEqual(get_backend().browser_config(None), {key: f"{key}-value" for key in keys})
 
     def test_check_warns_when_agent_is_not_running(self):
         cases = {
@@ -256,9 +344,19 @@ class CustomBackendsTest(TestCase):
 
     def test_external_mode_without_template_fails_check(self):
         with error_tracking("external", {}):
-            self.assertEqual(
-                [message.id for message in check_error_tracking()], ["erp_framework.E012"]
-            )
+            (message,) = check_error_tracking()
+        self.assertEqual(message.id, "erp_framework.E012")
+        self.assertEqual(message.msg, "The external error tracking backend needs a `template` option.")
+        self.assertEqual(message.obj, "ERP_FRAMEWORK_SETTINGS['error_tracking']")
+
+    def test_unknown_backend_check_names_the_builtin_backends(self):
+        with error_tracking("no.such.Backend", {}):
+            (message,) = check_error_tracking()
+        self.assertEqual(message.msg, "Error tracking backend cannot be loaded: No module named 'no'")
+        self.assertEqual(
+            message.hint, "Use sentry, rollbar, newrelic, datadog, external or a dotted path to a backend class."
+        )
+        self.assertEqual(message.obj, "ERP_FRAMEWORK_SETTINGS['error_tracking']")
 
     def test_unknown_backend_fails_check_and_does_not_break_pages(self):
         with error_tracking("no.such.Backend", {}):
@@ -267,3 +365,25 @@ class CustomBackendsTest(TestCase):
             response = self.client.get(reverse("erp_framework:login"))
         self.assertEqual(ids, ["erp_framework.E011"])
         self.assertEqual(response.status_code, 200)
+
+
+class BaseBackendDefaultsTest(TestCase):
+    """A subclass that overrides nothing needs no SDK, starts no agent and renders nothing."""
+
+    def test_bare_subclass_passes_checks_and_renders_nothing(self):
+        backend = type("Bare", (ErrorTrackingBackend,), {})({"key": "v"})
+        self.assertEqual(backend.check(), [])
+        self.assertIsNone(backend.browser_context(None))
+
+    def test_start_hint_alone_does_not_warn(self):
+        backend = type("Hinted", (ErrorTrackingBackend,), {"start_hint": "run it"})({})
+        self.assertEqual(backend.check(), [])
+
+    def test_stopped_agent_without_start_hint_does_not_warn(self):
+        backend = type("Stopped", (ErrorTrackingBackend,), {"agent_started": lambda self: False})({})
+        self.assertEqual(backend.check(), [])
+
+    def test_browser_keys_without_requires_or_template(self):
+        attrs = {"browser_keys": ("key",)}
+        self.assertEqual(type("Keys", (ErrorTrackingBackend,), attrs)({"key": "v"}).browser_config(None), {"key": "v"})
+        self.assertIsNone(type("Keys", (ErrorTrackingBackend,), attrs)({"key": "v"}).browser_context(None))
