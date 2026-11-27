@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="CustomerLedger",
+            name="CustomerMovements",
             fields=[
                 ("id", models.TextField(primary_key=True, serialize=False)),
                 ("date", models.DateTimeField(verbose_name="Date")),
@@ -32,13 +32,13 @@ class Migration(migrations.Migration):
                 ("object_id", models.TextField()),
             ],
             options={
-                "db_table": "erp_ledger_ledger_tests_customer",
+                "db_table": "erp_movements_movements_tests_customer",
                 "managed": False,
                 "default_permissions": ("view",),
             },
         ),
         migrations.CreateModel(
-            name="TreasuryLedger",
+            name="TreasuryMovements",
             fields=[
                 ("id", models.TextField(primary_key=True, serialize=False)),
                 ("date", models.DateTimeField(verbose_name="Date")),
@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                 ("object_id", models.TextField()),
             ],
             options={
-                "db_table": "erp_ledger_ledger_tests_treasury",
+                "db_table": "erp_movements_movements_tests_treasury",
                 "managed": False,
                 "default_permissions": ("view",),
             },
@@ -267,14 +267,14 @@ class Migration(migrations.Migration):
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to="ledger_tests.treasurymovement",
+                        to="movements_tests.treasurymovement",
                     ),
                 ),
             ],
             options={
                 "abstract": False,
             },
-            bases=("ledger_tests.treasurymovement",),
+            bases=("movements_tests.treasurymovement",),
         ),
         migrations.CreateModel(
             name="CashOut",
@@ -287,14 +287,14 @@ class Migration(migrations.Migration):
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to="ledger_tests.treasurymovement",
+                        to="movements_tests.treasurymovement",
                     ),
                 ),
             ],
             options={
                 "abstract": False,
             },
-            bases=("ledger_tests.treasurymovement",),
+            bases=("movements_tests.treasurymovement",),
         ),
         migrations.CreateModel(
             name="Customer",
@@ -379,14 +379,14 @@ class Migration(migrations.Migration):
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to="ledger_tests.movement",
+                        to="movements_tests.movement",
                     ),
                 ),
             ],
             options={
                 "abstract": False,
             },
-            bases=("ledger_tests.movement",),
+            bases=("movements_tests.movement",),
         ),
         migrations.CreateModel(
             name="SaleReturn",
@@ -399,20 +399,20 @@ class Migration(migrations.Migration):
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to="ledger_tests.movement",
+                        to="movements_tests.movement",
                     ),
                 ),
             ],
             options={
                 "abstract": False,
             },
-            bases=("ledger_tests.movement",),
+            bases=("movements_tests.movement",),
         ),
         migrations.AddField(
             model_name="treasurymovement",
             name="treasury",
             field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="ledger_tests.treasury"
+                on_delete=django.db.models.deletion.CASCADE, to="movements_tests.treasury"
             ),
         ),
         migrations.CreateModel(
@@ -426,14 +426,14 @@ class Migration(migrations.Migration):
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to="ledger_tests.sale",
+                        to="movements_tests.sale",
                     ),
                 ),
             ],
             options={
                 "abstract": False,
             },
-            bases=("ledger_tests.sale",),
+            bases=("movements_tests.sale",),
         ),
         migrations.CreateModel(
             name="SaleLine",
@@ -492,7 +492,7 @@ class Migration(migrations.Migration):
                     "sale",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        to="ledger_tests.sale",
+                        to="movements_tests.sale",
                     ),
                 ),
             ],

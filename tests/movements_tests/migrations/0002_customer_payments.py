@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("ledger_tests", "0001_initial"),
+        ("movements_tests", "0001_initial"),
     ]
 
     operations = [
@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to="ledger_tests.customer",
+                to="movements_tests.customer",
             ),
         ),
         migrations.CreateModel(
@@ -32,20 +32,20 @@ class Migration(migrations.Migration):
                         parent_link=True,
                         primary_key=True,
                         serialize=False,
-                        to="ledger_tests.cashin",
+                        to="movements_tests.cashin",
                     ),
                 ),
                 (
                     "customer",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        to="ledger_tests.customer",
+                        to="movements_tests.customer",
                     ),
                 ),
             ],
             options={
                 "abstract": False,
             },
-            bases=("ledger_tests.cashin",),
+            bases=("movements_tests.cashin",),
         ),
     ]
