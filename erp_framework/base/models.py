@@ -185,6 +185,9 @@ class EntityModel(ERPMixin, RAModel):
 class TransactionModel(EntityModel):
     name = None
 
+    # {"<fk field name>": PLUS | MINUS | None}, merged along the MRO; see erp_framework.doc_types
+    doc_type_effects = {}
+
     slug = models.SlugField(
         _("Slug"), max_length=50, db_index=True, validators=[], blank=True
     )

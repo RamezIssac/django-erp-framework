@@ -7,7 +7,7 @@ from erp_framework.base.models import (
     QuantitativeTransactionItemModel,
     TransactionItemModel,
 )
-from erp_framework.doc_types import DocType, doc_type_registry
+from erp_framework.doc_types import MINUS, PLUS
 
 from django.utils.translation import gettext_lazy as _
 
@@ -30,6 +30,8 @@ class SimpleSales(QuantitativeTransactionItemModel):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
+    doc_type_effects = {"client": PLUS, "product": MINUS}
+
     @classmethod
     def get_doc_type(cls):
         return "sales"
@@ -39,15 +41,10 @@ class SimpleSales(QuantitativeTransactionItemModel):
         verbose_name_plural = _("Sales")
 
 
-@doc_type_registry.register
-class SaleDocType(DocType):
-    name = "sales"
-    plus_list = [Client]
-    minus_list = [Product]
-
-
 class Invoice(TransactionModel):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
+
+    doc_type_effects = {"client": PLUS}
 
     @classmethod
     def get_doc_type(cls):
@@ -59,6 +56,8 @@ class InvoiceLine(QuantitativeTransactionItemModel):
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
+
+    doc_type_effects = {"client": PLUS, "product": MINUS}
 
     @classmethod
     def get_doc_type(cls):
@@ -77,6 +76,8 @@ class JournalItem(TransactionItemModel):
     journal = models.ForeignKey(Journal, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     data = models.CharField(max_length=100, null=True, blank=True)
+
+    doc_type_effects = {"client": PLUS}
 
     @classmethod
     def get_doc_type(cls):

@@ -34,6 +34,13 @@ class ReportView(ReportViewBase):
     template_name = "erp_framework/report.html"
     with_type = True
 
+    def __init_subclass__(cls, **kwargs):
+        # A report on a movements model belongs to the entity's reports (menu, URL namespace, permission).
+        super().__init_subclass__(**kwargs)
+        entity = getattr(cls.base_model or cls.report_model, "movements_entity", None)
+        if entity is not None:
+            cls.base_model = entity
+
     def get_base_template(self):
         """
         Returns the base template for the report.

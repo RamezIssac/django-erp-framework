@@ -2,9 +2,20 @@
 All notable changes to this project are/will be documented in this file.
 
 ## [Unreleased]
+### Added
+- `TransactionModel.doc_type_effects = {"<fk field>": PLUS | MINUS | None}`: how a transaction class moves each entity it points to, inherited and merged along the MRO. `erp_framework.doc_types.for_entity(entity, field_name=None)` returns the `DocTypes(plus, minus)` lists for reports; `get_effects(model)` returns one class's merged declaration.
+- System checks: `erp_framework.W001` (transaction FK to an entity with no declared effect), `E004` (declaration is not a dict or names a non-FK), `E005` (effect is not `PLUS`, `MINUS` or `None`), `E006` (one document type with opposite signs for the same entity).
+- Movements views: `erp_framework.movements.entity_movements(entity, name=None, include_numeric=False, columns=None, exclude=None, sources=None)` returns an unmanaged model `name` (default `<Entity>Movements`) over the view `erp_movements_<app>_<name>` of the calling app, a UNION ALL of the source tables (default: every transaction table with a foreign key to the entity, MTI parents joined), with the entity FK for `group_by`. `include_numeric` adds every numeric source field except `exclude`; `columns` adds named fields, as a list or as `{column: {source: field}}`; a source without the field gives a typed NULL. Several movements models per entity work side by side. The SQL is generated from model metadata for PostgreSQL and SQLite.
+- System checks for movements models: `erp_framework.E007` (column not numeric on a source, or on no source), `E008` (one column with different types on two sources), `E009` (mapping names a model that is not a source), `E010` (declared source without the entity FK, or two declared sources sharing rows).
+- A report whose `report_model` (or `base_model`) is a movements model gets the entity as `base_model`: it shows in the entity's reports group with the entity's URL namespace and view permission.
+- `pre_migrate` drops every `erp_movements_*` view and `post_migrate` recreates them; migrations alter source tables with movements views present on both vendors. Sources not migrated yet are left out and reported. `manage.py rebuild_movement_views [--database] [--sql]` rebuilds or prints them.
+
 ### Changed
 - `EntityAdmin` no longer sets `list_select_related = True` (deprecated in Django 6.1). The changelist joins the foreign keys named in `list_display`; set `list_select_related` on a subclass whose callables read `owner` or `lastmod_user`.
 - `EntityAdmin.get_actions()` accepts Django 6.1's `action_location` argument.
+
+### Removed
+- `erp_framework.doc_types.DocType`, `DocTypeRegistry` and `doc_type_registry`. Nothing read the registry, and registering a `DocType` raised. Effects are declared with `doc_type_effects` on the transaction class.
 
 ### Fixed
 - `erp_framework.reporting` sets `default_auto_field = BigAutoField` to match its migrations: projects on `DEFAULT_AUTO_FIELD = AutoField` no longer get a pending migration for `GroupReportPermission.id` and `UserReportPermission.id`.
