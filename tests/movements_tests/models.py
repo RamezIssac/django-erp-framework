@@ -22,6 +22,8 @@ class Movement(TransactionModel):
     customer = models.ForeignKey(
         Customer, null=True, blank=True, on_delete=models.CASCADE
     )
+    discount = models.DecimalField(max_digits=19, decimal_places=2, default=0)
+    quantity = models.IntegerField(default=0)
 
     doc_type_effects = {"customer": None}
 
@@ -44,6 +46,7 @@ class SaleLine(TransactionItemModel):
 
 class TreasuryMovement(TransactionModel):
     treasury = models.ForeignKey(Treasury, on_delete=models.CASCADE)
+    discount = models.DecimalField(max_digits=19, decimal_places=2, default=0)
 
     doc_type_effects = {"treasury": None}
 
@@ -66,5 +69,5 @@ class CustomerPayment(CashIn):
     doc_type_effects = {"customer": MINUS}
 
 
-CustomerMovements = entity_movements(Customer)
+CustomerMovements = entity_movements(Customer, extra_columns=["discount", "quantity"])
 TreasuryMovements = entity_movements(Treasury)

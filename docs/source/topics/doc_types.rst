@@ -104,6 +104,8 @@ System checks:
 - ``erp_framework.E004``: ``doc_type_effects`` is not a dict, or names a field that is not a foreign key.
 - ``erp_framework.E005``: an effect is not ``PLUS``, ``MINUS`` or ``None``.
 - ``erp_framework.E006``: one document type is ``PLUS`` for an entity in one class and ``MINUS`` in another.
+- ``erp_framework.E007``: an ``extra_columns`` name is not numeric on a source that has it, or is a
+  field of no source.
 
 
 Movements views
@@ -123,6 +125,17 @@ transaction table with a foreign key to the entity, plus an unmanaged model to q
 Run ``makemigrations``: it records an unmanaged ``CreateModel`` and no SQL. The view is named
 ``erp_movements_<app>_<entity>`` and has the columns ``id`` (text, ``<app>.<model>-<pk>``), ``date``,
 ``slug``, ``type``, ``value``, ``<field>_id``, ``content_type_id`` and ``object_id`` of the source row.
+
+Other numeric columns are declared with ``extra_columns``:
+
+.. code-block:: python
+
+        CustomerMovements = entity_movements(Customer, extra_columns=["discount", "quantity"])
+
+Each name becomes a ``DecimalField(max_digits=19, decimal_places=2)`` of the model, as ``value``. A
+source supplies the column from its own field (MTI parents joined), cast to that type, or a typed
+``0`` when it has no such field. Reports aggregate it like ``value``, for example
+``ComputationField.create(Sum, "discount")``.
 
 A report targets the movements model like any model, with the doc types of the entity:
 
