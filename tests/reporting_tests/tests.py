@@ -159,6 +159,16 @@ class ReportTest(BaseTestData, TestCase):
         rows = get_rows(response.json())
         self.assertEqual(rows[0].get("__balance__"), 300, rows[0])
 
+    def test_report_page_shows_title_once(self):
+        self.client.login(username="super", password="secret")
+        response = self.client.get(
+            reverse("erp_framework:report", args=("client", "balances"))
+        )
+        self.assertEqual(response.status_code, 200)
+        page_titles = pq(response.content)("h2.page-title")
+        self.assertEqual(len(page_titles), 1)
+        self.assertEqual(page_titles.text(), "Clients Balances")
+
     def test_product_total_sales(self):
         self.client.login(username="super", password="secret")
         response = self.client.get(

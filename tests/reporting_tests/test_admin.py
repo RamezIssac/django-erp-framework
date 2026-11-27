@@ -3,6 +3,7 @@ from django.contrib.admin.models import LogEntry
 from django.test import RequestFactory
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from pyquery import PyQuery as pq
 from erp_framework.activity.admin import LogEntryAdmin
 from erp_framework.admin.admin import (
     EntityAdmin,
@@ -39,6 +40,21 @@ class TestAdminFunctionality(test.TestCase):
             reverse("erp_framework:reporting_tests_client_changelist")
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_reversion_pages_show_title(self):
+        self.client.login(username="admin", password="admin")
+        pages = {
+            "erp_framework:reporting_tests_client_recoverlist": ([], "Recover deleted Clients"),
+            "erp_framework:reporting_tests_client_history": (
+                [self.client1.pk],
+                "Change history: Client 1",
+            ),
+        }
+        for url_name, (args, title) in pages.items():
+            with self.subTest(url_name):
+                response = self.client.get(reverse(url_name, args=args))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(pq(response.content)("h2.page-title").text(), title)
 
 
 @test.override_settings(ROOT_URLCONF="reporting_tests.urls")
