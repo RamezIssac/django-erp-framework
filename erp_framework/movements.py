@@ -6,6 +6,7 @@ foreign key to it. The SQL is generated from model metadata and rebuilt on each 
 import sys
 
 from django.apps import apps
+from django.core.checks import Error
 from django.core.exceptions import FieldDoesNotExist
 from django.db import DEFAULT_DB_ALIAS, connections, models, router
 from django.utils.translation import gettext_lazy as _
@@ -15,6 +16,7 @@ from .doc_types import entity_foreign_key, transaction_models
 MOVEMENTS_PREFIX = "erp_movements_"
 LEGACY_PREFIX = "erp_ledger_"  # earlier name of these views, dropped by every migrate
 SUPPORTED_VENDORS = ("postgresql", "sqlite")
+NUMERIC_FIELDS = (models.IntegerField, models.DecimalField, models.FloatField)
 
 
 class MovementsModel(models.Model):
@@ -37,12 +39,17 @@ class MovementsModel(models.Model):
         abstract = True
 
 
-def entity_movements(entity, field_name=None):
+def entity_movements(entity, field_name=None, extra_columns=()):
     """
     Return an unmanaged model over the movements view of ``entity`` with the FK ``field_name``
-    (default: the entity's model name). Assign it in a models module.
+    (default: the entity's model name), plus one decimal column per name in ``extra_columns``.
+    Assign it in a models module.
     """
     field_name = field_name or entity._meta.model_name
+    taken = {f.name for f in MovementsModel._meta.fields} | {"content_type_id", field_name, f"{field_name}_id"}
+    clashes = [name for name in extra_columns if name in taken]
+    if clashes or len(set(extra_columns)) != len(extra_columns):
+        raise ValueError(f"extra_columns {list(extra_columns)} repeat a name or use one of {sorted(taken)}.")
     meta = {
         "managed": False,
         "db_table": f"{MOVEMENTS_PREFIX}{entity._meta.app_label}_{entity._meta.model_name}",
@@ -60,7 +67,10 @@ def entity_movements(entity, field_name=None):
             related_name="+",
             verbose_name=entity._meta.verbose_name,
         ),
+        "movements_extra_columns": tuple(extra_columns),
     }
+    for name in extra_columns:
+        attrs[name] = models.DecimalField(max_digits=19, decimal_places=2)
     return type(f"{entity.__name__}Movements", (MovementsModel,), attrs)
 
 
@@ -88,7 +98,14 @@ def _sql_str(value):
     return "'%s'" % value.replace("'", "''")
 
 
-def _source_select(movements_model, owner, index):
+def _field(model, name):
+    try:
+        return model._meta.get_field(name)
+    except FieldDoesNotExist:
+        return None
+
+
+def _source_select(movements_model, owner, index, connection):
     """Return the SELECT of one source table and the ``{table: {columns}}`` it reads."""
     alias = f"s{index}"
     meta = owner._meta
@@ -125,6 +142,10 @@ def _source_select(movements_model, owner, index):
         "content_type": ctype,
         "object_id": f"CAST({pk} AS TEXT)",
     }
+    for name in movements_model.movements_extra_columns:
+        source = column(name) if isinstance(_field(owner, name), NUMERIC_FIELDS) else "0"
+        db_type = movements_model._meta.get_field(name).cast_db_type(connection)
+        values[name] = f"CAST({source} AS {db_type})"
     projection = ",\n       ".join(
         f"{values[field.name]} AS {_quote(field.column)}"
         for field in movements_model._meta.concrete_fields
@@ -157,7 +178,10 @@ def build_movements_sql(movements_model, connection, sources=None):
         )
     if sources is None:
         sources = movement_sources(movements_model)
-    selects = [_source_select(movements_model, owner, i)[0] for i, owner in enumerate(sources)]
+    selects = [
+        _source_select(movements_model, owner, i, connection)[0]
+        for i, owner in enumerate(sources)
+    ]
     body = "\nUNION ALL\n".join(selects or [_empty_select(movements_model, connection)])
     return f"CREATE VIEW {_quote(movements_model._meta.db_table)} AS\n{body}"
 
@@ -177,7 +201,7 @@ def present_sources(movements_model, connection, tables=None):
     present, missing = [], []
     with connection.cursor() as cursor:
         for owner in movement_sources(movements_model):
-            required = _source_select(movements_model, owner, 0)[1]
+            required = _source_select(movements_model, owner, 0, connection)[1]
             for table in required.keys() & tables:
                 if table not in described:
                     description = connection.introspection.get_table_description(
@@ -190,6 +214,30 @@ def present_sources(movements_model, connection, tables=None):
             )
             (present if ok else missing).append(owner)
     return present, missing
+
+
+def check_extra_columns(checked_models):
+    """``erp_framework.E007``: an extra column must be numeric on every source that has it, and exist on one."""
+    errors = []
+    for model in checked_models:
+        sources = movement_sources(model)
+        for name in model.movements_extra_columns:
+            fields = [(source, _field(source, name)) for source in sources]
+            other = [s._meta.label for s, f in fields if f and not isinstance(f, NUMERIC_FIELDS)]
+            if other:
+                problem = f"is not numeric on {', '.join(other)}"
+            elif not any(f for _s, f in fields):
+                problem = "is not a field of any source"
+            else:
+                continue
+            errors.append(
+                Error(
+                    f"Extra column '{name}' of {model._meta.label} {problem}.",
+                    obj=model,
+                    id="erp_framework.E007",
+                )
+            )
+    return errors
 
 
 def drop_movement_views(using=DEFAULT_DB_ALIAS):

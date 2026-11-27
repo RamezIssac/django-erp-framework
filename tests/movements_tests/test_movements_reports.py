@@ -5,8 +5,9 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.test import TestCase
+from slick_reporting.fields import ComputationField
 from slick_reporting.generator import ReportGenerator
 
 from erp_framework import movements
@@ -68,20 +69,31 @@ class MovementsReportTests(TestCase):
         cls.north = Customer.objects.create(name="Northwind", **stamp)
         cls.till = Treasury.objects.create(name="Till", **stamp)
         ServiceInvoice.objects.create(
-            customer=cls.acme, value=300, date=at(datetime.date(2026, 10, 21)), **stamp
+            customer=cls.acme,
+            value=300,
+            discount=30,
+            quantity=2,
+            date=at(datetime.date(2026, 10, 21)),
+            **stamp,
         )
         CustomerPayment.objects.create(
             customer=cls.acme,
             treasury=cls.till,
             value=250,
+            discount=5,
             date=at(datetime.date(2026, 10, 22)),
             **stamp,
         )
         Sale.objects.create(
-            customer=cls.north, value=100, date=at(datetime.date(2025, 12, 1)), **stamp
+            customer=cls.north,
+            value=100,
+            discount=10,
+            quantity=1,
+            date=at(datetime.date(2025, 12, 1)),
+            **stamp,
         )
         Sale.objects.create(
-            customer=cls.north, value=300, date=at(datetime.date(2026, 2, 1)), **stamp
+            customer=cls.north, value=300, quantity=3, date=at(datetime.date(2026, 2, 1)), **stamp
         )
         SaleReturn.objects.create(
             customer=cls.north, value=20, date=at(datetime.date(2026, 2, 1)), **stamp
@@ -129,6 +141,23 @@ class MovementsReportTests(TestCase):
             {name: d - c for name, (d, c) in totals.items()},
             {"Acme": 50, "Northwind": 130},
         )
+
+    def test_extra_columns_sum_across_source_tables(self):
+        # Acme: invoice discount 30 + payment discount 5 (treasury table); the payment has no quantity.
+        report = ReportGenerator(
+            report_model=CustomerMovements,
+            group_by="customer",
+            date_field="date",
+            columns=[
+                "name",
+                ComputationField.create(Sum, "discount", name="discount_sum"),
+                ComputationField.create(Sum, "quantity", name="quantity_sum"),
+            ],
+            start_date=at(datetime.date(2025, 1, 1)),
+            end_date=at(datetime.date(2026, 11, 21)),
+        )
+        totals = {r["name"]: (r["discount_sum"], r["quantity_sum"]) for r in report.get_report_data()}
+        self.assertEqual(totals, {"Acme": (35, 2), "Northwind": (10, 4)})
 
     def test_single_table_report_misses_the_payments(self):
         totals = self.debit_credit(Movement, Customer)

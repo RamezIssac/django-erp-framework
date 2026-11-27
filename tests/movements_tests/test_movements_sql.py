@@ -3,8 +3,19 @@ from types import SimpleNamespace
 from unittest import mock
 
 from django.test import SimpleTestCase
+from django.test.utils import isolate_apps
 
-from erp_framework.movements import MovementsModel, _quote, _source_select, _sql_str, build_movements_sql, movement_sources
+from erp_framework.checks import movements_extra_columns_check
+from erp_framework.movements import (
+    MovementsModel,
+    _quote,
+    _source_select,
+    _sql_str,
+    build_movements_sql,
+    check_extra_columns,
+    entity_movements,
+    movement_sources,
+)
 
 from .models import (
     Customer,
@@ -24,7 +35,9 @@ SELECT 'movements_tests.customerpayment-' || CAST(s0."cashin_ptr_id" AS TEXT) AS
        s0p1."value" AS "value",
        (SELECT "id" FROM "django_content_type" WHERE "app_label" = 'movements_tests' AND "model" = 'customerpayment') AS "content_type_id",
        CAST(s0."cashin_ptr_id" AS TEXT) AS "object_id",
-       s0."customer_id" AS "customer_id"
+       s0."customer_id" AS "customer_id",
+       CAST(s0p1."discount" AS {numeric}) AS "discount",
+       CAST(0 AS {numeric}) AS "quantity"
 FROM "movements_tests_customerpayment" s0
 JOIN "movements_tests_treasurymovement" s0p1 ON s0p1."id" = s0."cashin_ptr_id"
 WHERE s0."customer_id" IS NOT NULL
@@ -36,9 +49,25 @@ SELECT 'movements_tests.movement-' || CAST(s1."id" AS TEXT) AS "id",
        s1."value" AS "value",
        (SELECT "id" FROM "django_content_type" WHERE "app_label" = 'movements_tests' AND "model" = 'movement') AS "content_type_id",
        CAST(s1."id" AS TEXT) AS "object_id",
-       s1."customer_id" AS "customer_id"
+       s1."customer_id" AS "customer_id",
+       CAST(s1."discount" AS {numeric}) AS "discount",
+       CAST(s1."quantity" AS {numeric}) AS "quantity"
 FROM "movements_tests_movement" s1
 WHERE s1."customer_id" IS NOT NULL"""
+NUMERIC = {"postgresql": "numeric(19, 2)", "sqlite3": "decimal"}
+
+TREASURY_MOVEMENTS_SQL = """\
+CREATE VIEW "erp_movements_movements_tests_treasury" AS
+SELECT 'movements_tests.treasurymovement-' || CAST(s0."id" AS TEXT) AS "id",
+       s0."date" AS "date",
+       s0."slug" AS "slug",
+       s0."type" AS "type",
+       s0."value" AS "value",
+       (SELECT "id" FROM "django_content_type" WHERE "app_label" = 'movements_tests' AND "model" = 'treasurymovement') AS "content_type_id",
+       CAST(s0."id" AS TEXT) AS "object_id",
+       s0."treasury_id" AS "treasury_id"
+FROM "movements_tests_treasurymovement" s0
+WHERE s0."treasury_id" IS NOT NULL"""
 
 EMPTY_CUSTOMER_MOVEMENTS_SQL = {
     "postgresql": """\
@@ -50,7 +79,9 @@ SELECT CAST(NULL AS text) AS "id",
        CAST(NULL AS numeric(19, 2)) AS "value",
        CAST(NULL AS integer) AS "content_type_id",
        CAST(NULL AS text) AS "object_id",
-       CAST(NULL AS bigint) AS "customer_id"
+       CAST(NULL AS bigint) AS "customer_id",
+       CAST(NULL AS numeric(19, 2)) AS "discount",
+       CAST(NULL AS numeric(19, 2)) AS "quantity"
 WHERE 1 = 0""",
     "sqlite": """\
 CREATE VIEW "erp_movements_movements_tests_customer" AS
@@ -61,7 +92,9 @@ SELECT NULL AS "id",
        NULL AS "value",
        NULL AS "content_type_id",
        NULL AS "object_id",
-       NULL AS "customer_id"
+       NULL AS "customer_id",
+       NULL AS "discount",
+       NULL AS "quantity"
 WHERE 1 = 0""",
 }
 
@@ -71,17 +104,21 @@ def backend_connection(backend):
 
 
 class MovementsSqlGoldenTests(SimpleTestCase):
-    def test_postgresql(self):
-        self.assertEqual(
-            build_movements_sql(CustomerMovements, backend_connection("postgresql")),
-            CUSTOMER_MOVEMENTS_SQL,
-        )
+    def test_extra_columns_come_from_each_source_or_a_typed_zero(self):
+        for backend in ("postgresql", "sqlite3"):
+            with self.subTest(backend=backend):
+                self.assertEqual(
+                    build_movements_sql(CustomerMovements, backend_connection(backend)),
+                    CUSTOMER_MOVEMENTS_SQL.format(numeric=NUMERIC[backend]),
+                )
 
-    def test_sqlite(self):
-        self.assertEqual(
-            build_movements_sql(CustomerMovements, backend_connection("sqlite3")),
-            CUSTOMER_MOVEMENTS_SQL,
-        )
+    def test_without_extra_columns(self):
+        for backend in ("postgresql", "sqlite3"):
+            with self.subTest(backend=backend):
+                self.assertEqual(
+                    build_movements_sql(TreasuryMovements, backend_connection(backend)),
+                    TREASURY_MOVEMENTS_SQL,
+                )
 
     def test_postgresql_without_sources_has_typed_columns(self):
         self.assertEqual(
@@ -111,7 +148,7 @@ class MovementsSqlGoldenTests(SimpleTestCase):
             return get_field("customer" if name == "polymorphic_ctype" else name)
 
         with mock.patch.object(Movement._meta, "get_field", with_ctype):
-            sql = _source_select(CustomerMovements, Movement, 0)[0]
+            sql = _source_select(CustomerMovements, Movement, 0, backend_connection("sqlite3"))[0]
         self.assertIn('s0."customer_id" AS "content_type_id"', sql)
         self.assertNotIn("django_content_type", sql)
 
@@ -131,3 +168,38 @@ class MovementsModelTests(SimpleTestCase):
         self.assertEqual(CustomerMovements.movements_field, "customer")
         labels = {name: str(meta.get_field(name).verbose_name) for name in ("date", "slug", "type", "value")}
         self.assertEqual(labels, {"date": "Date", "slug": "Slug", "type": "Type", "value": "Value"})
+        extras = {name: type(meta.get_field(name)).__name__ for name in CustomerMovements.movements_extra_columns}
+        self.assertEqual(extras, {"discount": "DecimalField", "quantity": "DecimalField"})
+
+    def test_extra_column_names_must_be_new_and_distinct(self):
+        for extra_columns in (["value"], ["customer_id"], ["discount", "discount"]):
+            with self.subTest(extra_columns=extra_columns), self.assertRaises(ValueError):
+                entity_movements(Customer, extra_columns=extra_columns)
+
+    @isolate_apps("movements_tests")
+    def test_extra_columns_check(self):
+        model = entity_movements(Customer, extra_columns=["quantity", "notes", "missing"])
+        self.assertEqual(
+            [(e.id, e.msg) for e in check_extra_columns([model])],
+            [
+                (
+                    "erp_framework.E007",
+                    "Extra column 'notes' of movements_tests.CustomerMovements is not numeric on "
+                    "movements_tests.CustomerPayment, movements_tests.Movement.",
+                ),
+                (
+                    "erp_framework.E007",
+                    "Extra column 'missing' of movements_tests.CustomerMovements is not a field of any source.",
+                ),
+            ],
+        )
+
+    def test_extra_columns_check_is_registered_and_follows_app_configs(self):
+        from django.apps import apps
+
+        with mock.patch.object(CustomerMovements, "movements_extra_columns", ("missing",)):
+            self.assertEqual(
+                [e.id for e in movements_extra_columns_check([apps.get_app_config("movements_tests")])],
+                ["erp_framework.E007"],
+            )
+            self.assertEqual(movements_extra_columns_check([apps.get_app_config("auth")]), [])
