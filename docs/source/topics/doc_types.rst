@@ -106,31 +106,31 @@ System checks:
 - ``erp_framework.E006``: one document type is ``PLUS`` for an entity in one class and ``MINUS`` in another.
 
 
-Ledger views
-------------
+Movements views
+---------------
 
 A report reads one ``report_model``, and doc type lists filter that one table: a customer payment
-stored in the treasury tables is out of their reach. A ledger is a database view that unions every
+stored in the treasury tables is out of their reach. A movements view is a database view that unions every
 transaction table with a foreign key to the entity, plus an unmanaged model to query it.
 
 .. code-block:: python
 
-        # models.py of the app that owns the ledger
-        from erp_framework.ledgers import ledger_model
+        # models.py of the app that owns the movements model
+        from erp_framework.movements import entity_movements
 
-        CustomerLedger = ledger_model(Customer)  # rows grouped by the "customer" foreign key
+        CustomerMovements = entity_movements(Customer)  # rows grouped by the "customer" foreign key
 
 Run ``makemigrations``: it records an unmanaged ``CreateModel`` and no SQL. The view is named
-``erp_ledger_<app>_<entity>`` and has the columns ``id`` (text, ``<app>.<model>-<pk>``), ``date``,
+``erp_movements_<app>_<entity>`` and has the columns ``id`` (text, ``<app>.<model>-<pk>``), ``date``,
 ``slug``, ``type``, ``value``, ``<field>_id``, ``content_type_id`` and ``object_id`` of the source row.
 
-A report targets the ledger like any model, with the doc types of the entity:
+A report targets the movements model like any model, with the doc types of the entity:
 
 .. code-block:: python
 
         class CustomerBalance(ReportView):
             base_model = Customer
-            report_model = CustomerLedger
+            report_model = CustomerMovements
             group_by = "customer"
             date_field = "date"
             doc_type_field_name = "type"
@@ -139,19 +139,19 @@ A report targets the ledger like any model, with the doc types of the entity:
 
 The SQL is generated from the models and rebuilt by ``migrate``:
 
-- ``pre_migrate`` drops every ``erp_ledger_*`` view. Migrations then alter the source tables on
-  Postgres and SQLite with ledgers present.
+- ``pre_migrate`` drops every ``erp_movements_*`` view. Migrations then alter the source tables on
+  Postgres and SQLite with movements views present.
 - ``post_migrate`` creates the views again from the current models. A source whose table or
   column is not migrated yet (a partial ``migrate <app>``) is left out and reported; the next full
   ``migrate`` adds it.
-- ``manage.py rebuild_ledger_views`` drops and recreates them; ``--sql`` prints the statements.
+- ``manage.py rebuild_movement_views`` drops and recreates them; ``--sql`` prints the statements.
 
 A new transaction class needs no report change. A subclass of a declared class inherits its
-effect. A new table with a foreign key to the entity joins the ledger at the ``migrate`` that
+effect. A new table with a foreign key to the entity joins the movements view at the ``migrate`` that
 creates it, and joins the report lists with one ``doc_type_effects`` line.
 
 Note: declare the effect on the new transaction class and not in the report lists, because
 ``for_entity()`` derives every report's lists from that one declaration.
 
-Ledger views support PostgreSQL and SQLite.
+Movements views support PostgreSQL and SQLite.
 

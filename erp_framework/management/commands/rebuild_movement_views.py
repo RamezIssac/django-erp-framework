@@ -1,17 +1,17 @@
 from django.core.management.base import BaseCommand
 from django.db import DEFAULT_DB_ALIAS, connections
 
-from erp_framework.ledgers import (
-    build_ledger_sql,
-    create_ledger_views,
-    drop_ledger_views,
-    ledger_models,
+from erp_framework.movements import (
+    build_movements_sql,
+    create_movement_views,
+    drop_movement_views,
+    movements_models,
     present_sources,
 )
 
 
 class Command(BaseCommand):
-    help = "Drop and recreate the ledger views from the current models."
+    help = "Drop and recreate the movements_model views from the current models."
 
     def add_arguments(self, parser):
         parser.add_argument("--database", default=DEFAULT_DB_ALIAS)
@@ -24,12 +24,12 @@ class Command(BaseCommand):
     def handle(self, *args, database, sql, verbosity, **options):
         connection = connections[database]
         if sql:
-            for ledger in ledger_models():
-                present = present_sources(ledger, connection)[0]
-                self.stdout.write(build_ledger_sql(ledger, connection, present) + ";\n")
+            for movements_model in movements_models():
+                present = present_sources(movements_model, connection)[0]
+                self.stdout.write(build_movements_sql(movements_model, connection, present) + ";\n")
             return
-        drop_ledger_views(database)
-        created = create_ledger_views(database, verbosity=verbosity, stdout=self.stdout)
+        drop_movement_views(database)
+        created = create_movement_views(database, verbosity=verbosity, stdout=self.stdout)
         if verbosity >= 1:
             for name, present, _missing in created:
                 self.stdout.write(

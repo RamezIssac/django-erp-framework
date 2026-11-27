@@ -6,7 +6,7 @@ from erp_framework.base.models import (
     TransactionModel,
 )
 from erp_framework.doc_types import MINUS, PLUS
-from erp_framework.ledgers import ledger_model
+from erp_framework.movements import entity_movements
 
 
 class Customer(EntityModel):
@@ -66,5 +66,5 @@ class CustomerPayment(CashIn):
     doc_type_effects = {"customer": MINUS}
 
 
-CustomerLedger = ledger_model(Customer)
-TreasuryLedger = ledger_model(Treasury)
+CustomerMovements = entity_movements(Customer)
+TreasuryMovements = entity_movements(Treasury)
