@@ -19,6 +19,7 @@ from erp_framework.movements import (
     create_movement_views_after_migrate,
     drop_movement_views,
     drop_movement_views_before_migrate,
+    movements_models,
     present_sources,
 )
 from erp_framework.management.commands.rebuild_movement_views import Command as RebuildCommand
@@ -37,7 +38,7 @@ from .models import (
     Treasury,
     TreasuryMovements,
 )
-from .test_movements_migrate import CUSTOMER_VIEW, TREASURY_VIEW, movement_views
+from .test_movements_migrate import ALL_VIEWS, CUSTOMER_VIEW, PROJECT_VIEW, TREASURY_VIEW, movement_views
 
 
 def at(day):
@@ -131,7 +132,7 @@ class MovementsReportTests(TestCase):
         }
 
     def test_views_exist_after_a_fresh_migrate(self):
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)
 
     def test_customer_balance_includes_payments_and_services(self):
         # Acme: service invoice 300, payment 250. Northwind: sales 100 + 300, return 20, payment 250.
@@ -142,7 +143,7 @@ class MovementsReportTests(TestCase):
             {"Acme": 50, "Northwind": 130},
         )
 
-    def test_extra_columns_sum_across_source_tables(self):
+    def test_numeric_columns_sum_across_source_tables(self):
         # Acme: invoice discount 30 + payment discount 5 (treasury table); the payment has no quantity.
         report = ReportGenerator(
             report_model=CustomerMovements,
@@ -204,9 +205,9 @@ class MovementsReportTests(TestCase):
             cursor.execute('CREATE VIEW "erp_movements_retired" AS SELECT 1 AS "id"')
         out = StringIO()
         call_command("rebuild_movement_views", stdout=out)
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)
         self.assertIn(
-            "Rebuilt erp_movements_movements_tests_customer over 2 source table(s).",
+            "Rebuilt erp_movements_movements_tests_customermovements over 2 source table(s).",
             out.getvalue(),
         )
         self.assertEqual(CustomerMovements.objects.count(), 6)
@@ -214,7 +215,7 @@ class MovementsReportTests(TestCase):
     def test_rebuild_command_reports_each_view_on_its_own_line(self):
         out = StringIO()
         call_command("rebuild_movement_views", stdout=out)
-        self.assertIn("Rebuilt erp_movements_movements_tests_treasury over 1 source table(s).", out.getvalue().splitlines())
+        self.assertIn("Rebuilt erp_movements_movements_tests_treasurymovements over 1 source table(s).", out.getvalue().splitlines())
         self.assertTrue(RebuildCommand.help)
 
     def test_rebuild_command_sql_is_each_view_over_its_present_sources(self):
@@ -222,7 +223,7 @@ class MovementsReportTests(TestCase):
         call_command("rebuild_movement_views", "--sql", stdout=out)
         expected = "".join(
             build_movements_sql(movements_model, connection, present_sources(movements_model, connection)[0]) + ";\n"
-            for movements_model in (CustomerMovements, TreasuryMovements)
+            for movements_model in movements_models()
         )
         self.assertEqual(out.getvalue(), expected)
         self.assertIn('FROM "movements_tests_movement"', expected)
@@ -230,7 +231,7 @@ class MovementsReportTests(TestCase):
     def test_drop_keeps_other_views(self):
         with connection.cursor() as cursor:
             cursor.execute('CREATE VIEW "reporting_snapshot" AS SELECT 1 AS "id"')
-        self.assertEqual(drop_movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(drop_movement_views(), ALL_VIEWS)
         self.assertIn("reporting_snapshot", movements._views_and_tables(connection)[0])
 
     def test_drop_removes_views_under_the_legacy_ledger_name(self):
@@ -238,7 +239,7 @@ class MovementsReportTests(TestCase):
             cursor.execute('CREATE VIEW "erp_ledger_movements_tests_customer" AS SELECT 1 AS "id"')
         self.assertEqual(
             drop_movement_views(),
-            ["erp_ledger_movements_tests_customer", CUSTOMER_VIEW, TREASURY_VIEW],
+            ["erp_ledger_movements_tests_customer", *ALL_VIEWS],
         )
         self.assertEqual(movements._views_and_tables(connection)[0] & {"erp_ledger_movements_tests_customer"}, set())
 
@@ -246,7 +247,7 @@ class MovementsReportTests(TestCase):
         for verbosity, lines in (
             (None, []),
             (1, []),
-            (2, [f"  Movements view {CUSTOMER_VIEW}: 2 source table(s)", f"  Movements view {TREASURY_VIEW}: 1 source table(s)"]),
+            (2, [f"  Movements view {PROJECT_VIEW}: 2 source table(s)", f"  Movements view {CUSTOMER_VIEW}: 2 source table(s)", f"  Movements view {TREASURY_VIEW}: 1 source table(s)"]),
         ):
             with self.subTest(verbosity=verbosity):
                 out = StringIO()
@@ -266,19 +267,19 @@ class MovementsReportTests(TestCase):
             views, tables = views_and_tables(connection)
             return views, tables - {Customer._meta.db_table}
 
-        for patch in (
-            mock.patch.object(movements.router, "allow_migrate", no_customer_movements),
-            mock.patch.object(movements, "_views_and_tables", no_customer_table),
+        for patch, expected in (
+            (mock.patch.object(movements.router, "allow_migrate", no_customer_movements), [PROJECT_VIEW, TREASURY_VIEW]),
+            (mock.patch.object(movements, "_views_and_tables", no_customer_table), [TREASURY_VIEW]),
         ):
             with self.subTest(patch=patch.attribute), patch:
                 created = create_movement_views(verbosity=0)
-                self.assertEqual([name for name, _present, _missing in created], [TREASURY_VIEW])
+                self.assertEqual([name for name, _present, _missing in created], expected)
 
     def test_migrate_receivers_run_once_per_command(self):
         configs = _migrated_app_configs()
         for sender, plan in ((configs[1], []), (configs[0], None)):
             drop_movement_views_before_migrate(sender, "default", plan=plan)
-            self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+            self.assertEqual(movement_views(), ALL_VIEWS)
         drop_movement_views_before_migrate(configs[0], "default", plan=[])
         self.assertEqual(movement_views(), [])
         out = StringIO()
@@ -286,7 +287,7 @@ class MovementsReportTests(TestCase):
             create_movement_views_after_migrate(sender, "default", plan=plan, stdout=out)
             self.assertEqual(movement_views(), [])
         create_movement_views_after_migrate(configs[-1], "default", plan=[], stdout=out)
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)
         self.assertEqual(out.getvalue(), "")
 
     def test_migrate_receivers_are_connected_once(self):
@@ -304,7 +305,7 @@ class MovementsReportTests(TestCase):
         out = StringIO()
         call_command("rebuild_movement_views", "--sql", stdout=out)
         self.assertIn(
-            'CREATE VIEW "erp_movements_movements_tests_treasury" AS', out.getvalue()
+            'CREATE VIEW "erp_movements_movements_tests_treasurymovements" AS', out.getvalue()
         )
 
     def test_migration_state_matches_the_factory(self):

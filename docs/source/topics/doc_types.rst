@@ -104,8 +104,13 @@ System checks:
 - ``erp_framework.E004``: ``doc_type_effects`` is not a dict, or names a field that is not a foreign key.
 - ``erp_framework.E005``: an effect is not ``PLUS``, ``MINUS`` or ``None``.
 - ``erp_framework.E006``: one document type is ``PLUS`` for an entity in one class and ``MINUS`` in another.
-- ``erp_framework.E007``: an ``extra_columns`` name is not numeric on a source that has it, or is a
-  field of no source.
+- ``erp_framework.E007``: a movements column is not numeric on a source that has it, or is a field
+  of no source.
+- ``erp_framework.E008``: a movements column has different types on two sources (internal type and
+  decimal places).
+- ``erp_framework.E009``: a ``columns`` mapping names a model that is not a source.
+- ``erp_framework.E010``: a declared source has no foreign key to the entity, or two declared
+  sources share rows (one inherits from the other).
 
 
 Movements views
@@ -122,27 +127,47 @@ transaction table with a foreign key to the entity, plus an unmanaged model to q
 
         CustomerMovements = entity_movements(Customer)  # rows grouped by the "customer" foreign key
 
-Run ``makemigrations``: it records an unmanaged ``CreateModel`` and no SQL. The view is named
-``erp_movements_<app>_<entity>`` and has the columns ``id`` (text, ``<app>.<model>-<pk>``), ``date``,
-``slug``, ``type``, ``value``, ``<field>_id``, ``content_type_id`` and ``object_id`` of the source row.
-
-Other numeric columns are declared with ``extra_columns``:
+Run ``makemigrations``: it records an unmanaged ``CreateModel`` and no SQL. The view belongs to the
+app that calls ``entity_movements()``: it is named ``erp_movements_<app>_<name>``, where ``name``
+defaults to ``<Entity>Movements``. Its columns are ``id`` (text, ``<app>.<model>-<pk>``), ``date``,
+``slug``, ``type``, ``value``, ``<entity>_id``, ``content_type_id`` and ``object_id`` of the source
+row, then the declared columns.
 
 .. code-block:: python
 
-        CustomerMovements = entity_movements(Customer, extra_columns=["discount", "quantity"])
+        entity_movements(Entity, name=None, include_numeric=False, columns=None, exclude=None, sources=None)
 
-Each name becomes a ``DecimalField(max_digits=19, decimal_places=2)`` of the model, as ``value``. A
-source supplies the column from its own field (MTI parents joined), cast to that type, or a typed
-``0`` when it has no such field. Reports aggregate it like ``value``, for example
-``ComputationField.create(Sum, "discount")``.
+- ``include_numeric=True`` adds every integer, decimal and float field of the sources (primary keys
+  and the base columns aside), minus the names in ``exclude``.
+- ``columns`` adds fields by name, as a list (``["discount"]``) or as a dict mapping a column to
+  per-source field names (``{"quantity": {"Sale": "quantity", "MilkSale": "liters"}}``). A source
+  is named by its class name or label; a source missing from a mapping supplies the field of the
+  column's own name.
+- ``sources`` lists the transaction models to read, one SELECT per model's table. The default is
+  every transaction table holding the entity foreign key. A source reaches fields of its MTI
+  parents; list a child model to reach the child's own fields.
+- A column takes the type of its first numeric source field and is nullable. A source without the
+  field gives a typed ``NULL``.
 
-A report targets the movements model like any model, with the doc types of the entity:
+Several movements models of one entity live side by side, in the library and in project apps:
+
+.. code-block:: python
+
+        # kheir/models.py
+        KheirClientMovements = entity_movements(
+            Client,
+            name="KheirClientMovements",
+            sources=[MilkSale, ClientPayment],
+            columns={"liters": {"MilkSale": "liters"}},
+        )
+
+A report targets the movements model like any model, with the doc types of the entity. A report on
+any movements model of ``Customer`` has ``base_model = Customer``, unless it sets another entity, and
+shows in the Customer reports group:
 
 .. code-block:: python
 
         class CustomerBalance(ReportView):
-            base_model = Customer
             report_model = CustomerMovements
             group_by = "customer"
             date_field = "date"
