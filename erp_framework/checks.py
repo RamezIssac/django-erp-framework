@@ -38,11 +38,11 @@ def doc_type_effects_check(app_configs=None, **kwargs):
 
 
 @register()
-def movements_extra_columns_check(app_configs=None, **kwargs):
-    from .movements import check_extra_columns, movements_models
+def movements_check(app_configs=None, **kwargs):
+    from .movements import check_movements, movements_models
 
     models = movements_models()
     if app_configs is not None:
         labels = {config.label for config in app_configs}
         models = [model for model in models if model._meta.app_label in labels]
-    return check_extra_columns(models)
+    return check_movements(models)

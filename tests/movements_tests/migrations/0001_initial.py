@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ("object_id", models.TextField()),
             ],
             options={
-                "db_table": "erp_movements_movements_tests_customer",
+                "db_table": "erp_movements_movements_tests_customermovements",
                 "managed": False,
                 "default_permissions": ("view",),
             },
@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                 ("object_id", models.TextField()),
             ],
             options={
-                "db_table": "erp_movements_movements_tests_treasury",
+                "db_table": "erp_movements_movements_tests_treasurymovements",
                 "managed": False,
                 "default_permissions": ("view",),
             },

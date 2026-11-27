@@ -33,6 +33,8 @@ class Sale(Movement):
 
 
 class SaleReturn(Movement):
+    returned_units = models.IntegerField(default=0)
+
     doc_type_effects = {"customer": MINUS}
 
 
@@ -69,5 +71,5 @@ class CustomerPayment(CashIn):
     doc_type_effects = {"customer": MINUS}
 
 
-CustomerMovements = entity_movements(Customer, extra_columns=["discount", "quantity"])
+CustomerMovements = entity_movements(Customer, include_numeric=True)
 TreasuryMovements = entity_movements(Treasury)

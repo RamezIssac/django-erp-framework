@@ -24,8 +24,10 @@ from .models import (
     TreasuryMovements,
 )
 
-CUSTOMER_VIEW = "erp_movements_movements_tests_customer"
-TREASURY_VIEW = "erp_movements_movements_tests_treasury"
+CUSTOMER_VIEW = "erp_movements_movements_tests_customermovements"
+TREASURY_VIEW = "erp_movements_movements_tests_treasurymovements"
+PROJECT_VIEW = "erp_movements_movements_project_tests_customersales"
+ALL_VIEWS = [PROJECT_VIEW, CUSTOMER_VIEW, TREASURY_VIEW]
 WHEN = datetime.datetime(2026, 3, 1, tzinfo=datetime.timezone.utc)
 
 
@@ -48,10 +50,11 @@ class MovementsMigrateTests(TransactionTestCase):
         "django.contrib.auth",
         "erp_framework",
         "movements_tests",
+        "movements_project_tests",
     ]
 
     def tearDown(self):
-        migrate()
+        call_command("migrate", verbosity=0, interactive=False)
         super().tearDown()
 
     def stamp(self):
@@ -62,7 +65,7 @@ class MovementsMigrateTests(TransactionTestCase):
         migrate("zero")
         self.assertEqual(movement_views(), [])
         migrate()
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)
         customer = Customer.objects.create(name="Acme", **self.stamp())
         till = Treasury.objects.create(name="Till", **self.stamp())
         Sale.objects.create(customer=customer, value=300, date=WHEN, **self.stamp())
@@ -81,7 +84,7 @@ class MovementsMigrateTests(TransactionTestCase):
             f"Movements view {CUSTOMER_VIEW} skips movements_tests.CustomerPayment, movements_tests.Movement",
             output,
         )
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)
         self.assertEqual(CustomerMovements.objects.count(), 0)
         till = Treasury.objects.create(name="Till", **self.stamp())
         with connection.cursor() as cursor:
@@ -130,7 +133,7 @@ class MovementsMigrateTests(TransactionTestCase):
         Sale.objects.create(customer=customer, value=300, date=WHEN, **self.stamp())
         migrate("0002")  # slug max_length 60 -> 50 on the movement table
         migrate()  # and back to 60
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)
         self.assertEqual(
             list(CustomerMovements.objects.values_list("type", "value")), [("sale", 300)]
         )
@@ -150,4 +153,4 @@ class MovementsMigrateTests(TransactionTestCase):
             pre_migrate.connect(
                 drop_movement_views_before_migrate, dispatch_uid="erp_movements_drop"
             )
-        self.assertEqual(movement_views(), [CUSTOMER_VIEW, TREASURY_VIEW])
+        self.assertEqual(movement_views(), ALL_VIEWS)

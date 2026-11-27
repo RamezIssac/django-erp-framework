@@ -15,7 +15,12 @@ class ERPFrameworkConfig(AppConfig):
         from .movements import (
             create_movement_views_after_migrate,
             drop_movement_views_before_migrate,
+            movement_columns,
+            movements_models,
         )
+
+        for model in movements_models():
+            movement_columns(model)
 
         pre_migrate.connect(
             drop_movement_views_before_migrate, dispatch_uid="erp_movements_drop"
